@@ -1,22 +1,20 @@
 ---
-// The 12 / 8 / 4 column container. Native CSS grid; children take
-// `grid-column: <start> / <end>` to occupy specific column ranges
-// (see spec §8 for the per-block defaults).
-//
-// `--cols`, `--gutter`, `--outer` come from tokens.css and shift at
-// breakpoints, so a single `<Grid>` adapts without per-component media
-// queries. Set `bleed` to render a full-bleed wrapper that still aligns its
-// children to the grid (used for the homepage carousel in Phase 2).
+// The 12 / 8 / 4 column container — the single grid every page is built on.
+// Children take a named track (see global.css `.t-*`) or a documented
+// `grid-column` range. `--cols`, `--gutter`, `--outer` come from tokens.css
+// and shift at breakpoints, so one `<Grid>` adapts without per-component media
+// queries. The grid is centred within `--content-max`; nothing breaks out to
+// the viewport edge any more (the old `bleed` mode is gone — use the Wide/Full
+// tracks instead).
 
 export interface Props {
   as?: keyof HTMLElementTagNameMap;
   class?: string;
-  bleed?: boolean;
 }
 
-const { as: Tag = 'div', class: className = '', bleed = false } = Astro.props;
+const { as: Tag = 'div', class: className = '' } = Astro.props;
 ---
-<Tag class:list={['grid', bleed && 'grid--bleed', className]}>
+<Tag class:list={['grid', className]}>
   <slot />
 </Tag>
 
@@ -25,12 +23,9 @@ const { as: Tag = 'div', class: className = '', bleed = false } = Astro.props;
     display: grid;
     grid-template-columns: repeat(var(--cols), 1fr);
     column-gap: var(--gutter);
+    width: 100%;
+    max-width: var(--content-max);
+    margin-inline: auto;
     padding-inline: var(--outer);
-  }
-
-  /* A bleed wrapper for sections that occupy the full viewport width but still
-   * align nested content to the same column grid through a nested .grid. */
-  .grid--bleed {
-    padding-inline: 0;
   }
 </style>

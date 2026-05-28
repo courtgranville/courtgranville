@@ -1,94 +1,78 @@
 /*
- * Design tokens — site-wide. Grid, type, colour, baseline, motion.
+ * Design tokens — the single source of truth for the whole site (v3).
  *
- * Grid: 12 / 8 / 4 columns at desktop / tablet / mobile, 24px gutter,
- * `max(36px, 5vw)` outer margin. The 8px baseline is the unit every vertical
- * rhythm reduces to.
- *
- * Type: Playfair Display Regular for editorial display + headings, Italic for
- * pull quotes; Raleway 400 for body, 500 for uppercase labels (Medium because
- * Regular Raleway in caps reads thin and lifestyle-y — Medium reads structural).
- *
- * The motion tokens are the locked motion language from the homepage build
- * spec §6 — one curve for reveals, one for the carousel, fixed durations.
+ * If a value isn't here, it shouldn't be in a component: one grid, one type
+ * scale, one label letter-spacing, one section rhythm, one visual field.
+ * Type is expressed as ROLES (one size per role), applied identically on every
+ * page — that is what makes the pages read as one designed object.
  */
 
 :root {
-  /* ─── Colour ─────────────────────────────────────────────────────── */
-  --bg:            #FFFFFF;
-  --text:          #161616;
-  --text-quiet:    rgba(22, 22, 22, 0.55);
-  --text-faint:    rgba(22, 22, 22, 0.32);
-  --rule:          rgba(22, 22, 22, 0.10);
-  --hairline:      #E5E5E5;
-  --accent:        #8E1B0E;
+  /* ── Colour ───────────────────────────────────────── */
+  --bg:         #FFFFFF;
+  --text:       #161616;
+  --text-quiet: rgba(22,22,22,0.55);
+  --text-faint: rgba(22,22,22,0.32);
+  --rule:       rgba(22,22,22,0.10);
+  --hairline:   #E5E5E5;
+  --accent:     #8E1B0E;
 
-  /* ─── Type families ──────────────────────────────────────────────── */
+  /* ── Type families ────────────────────────────────── */
   --serif: 'Playfair Display', Georgia, serif;
   --sans:  'Raleway', ui-sans-serif, system-ui, sans-serif;
 
-  /* ─── Type scale (px) — mobile-first defaults ────────────────────── */
-  --fs-display:      32px;
-  --lh-display:      40px;
-  --fs-h1:           40px;
-  --lh-h1:           48px;
-  --fs-h2:           28px;
-  --lh-h2:           32px;
-  --fs-pull:         32px;
-  --lh-pull:         40px;
-  --fs-body:         17px;
-  --lh-body:         28px;
-  --fs-body-small:   14px;
-  --lh-body-small:   24px;
-  --fs-label:        12px;
-  --lh-label:        16px;
-  --ls-label:        0.22em;
+  /* ── Type ROLES — one size per role, used everywhere ─ */
+  /* Display L: page statements, project name, about/contact/blog lead */
+  --fs-display-l: clamp(36px, 4.6vw, 60px);  --lh-display-l: 1.08;
+  /* Heading M: section headings, carousel + work names */
+  --fs-heading-m: clamp(26px, 3.0vw, 36px);  --lh-heading-m: 1.12;
+  /* Heading S: project framing italic, pull quotes */
+  --fs-heading-s: clamp(20px, 2.2vw, 26px);  --lh-heading-s: 1.30;
+  /* Body + small + label */
+  --fs-body:    17px;  --lh-body:    28px;
+  --fs-body-s:  14px;  --lh-body-s:  24px;
+  --fs-label:   12px;  --lh-label:   16px;
+  --ls-label:   0.18em;          /* THE caps letter-spacing. One value. */
+  --ls-label-tight: 0.10em;      /* allowed only for caps ≥ 16px */
 
-  /* ─── Baseline ───────────────────────────────────────────────────── */
-  --baseline:    8px;
-  --baseline-2:  16px;
-  --baseline-3:  24px;
-  --baseline-4:  32px;
-  --baseline-6:  48px;
-  --baseline-8:  64px;
-  --baseline-10: 80px;
-  --baseline-12: 96px;
+  /* ── Grid ─────────────────────────────────────────── */
+  --cols:        4;                       /* mobile-first; steps up below */
+  --gutter:      24px;
+  --outer:       clamp(20px, 4vw, 56px);  /* ONE outer margin, every page */
+  --content-max: 1600px;                  /* grid is centred within this */
 
-  /* ─── Grid (mobile-first — 4 cols) ───────────────────────────────── */
-  --cols:    4;
-  --gutter:  24px;
-  --outer:   max(24px, 5vw);
+  /* ── Vertical rhythm ──────────────────────────────── */
+  --space-page-top: clamp(48px, 9vh, 120px);   /* added on top of --nav-h */
+  --space-section:  clamp(80px, 12vh, 160px);  /* between every section, symmetric */
+  --space-block:    clamp(32px, 5vh, 56px);    /* label→content, block→block */
 
-  /* ─── Motion language ────────────────────────────────────────────── */
-  --ease-out:    cubic-bezier(0.16, 1, 0.30, 1);
-  --ease-inout:  cubic-bezier(0.65, 0, 0.35, 1);
-  --dur-hover:   200ms;
-  --dur-reveal:  700ms;
-  --dur-slide:   780ms;
-  --dur-nav-bg:  250ms;
+  /* ── The visual field ─────────────────────────────── */
+  --field-aspect: 3 / 2;                        /* canonical cell shape */
+  --field-bg:     #FAFAF8;                      /* defined near-white field */
+  --field-frame:  1px solid var(--rule);        /* the field reads as a frame */
+  --field-min-h:  clamp(280px, 42vh, 520px);    /* never too small */
+  --field-max-h:  82vh;
 
-  /* ─── Nav ────────────────────────────────────────────────────────── */
+  /* ── Motion ───────────────────────────────────────── */
+  --ease-out:   cubic-bezier(0.16, 1, 0.30, 1);
+  --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-hover:  200ms;
+  --dur-reveal: 700ms;
+  --dur-frame:  450ms;     /* image / field crossfades */
+  --dur-nav-bg: 250ms;
+
+  /* ── 3D ───────────────────────────────────────────── */
+  --tilt: 0.16;            /* shared parallax intensity, particle + photo cards */
+
   --nav-h: 76px;
 }
 
 /* Tablet: 8 columns. */
 @media (min-width: 768px) {
-  :root {
-    --cols:  8;
-    --outer: max(36px, 5vw);
-
-    /* Type scale steps up at tablet. */
-    --fs-display: 40px;
-    --lh-display: 48px;
-  }
+  :root { --cols: 8; }
 }
 
-/* Desktop: 12 columns; the full editorial display scale. */
+/* Desktop: 12 columns. */
 @media (min-width: 1200px) {
-  :root {
-    --cols: 12;
-
-    --fs-display: 56px;
-    --lh-display: 64px;
-  }
+  :root { --cols: 12; }
 }

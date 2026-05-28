@@ -61,20 +61,20 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { year: 'numeric', month:
   .prose :global(p),
   .prose :global(ul),
   .prose :global(ol) { font-size: var(--fs-body); line-height: var(--lh-body); color: var(--text);
-    max-width: 64ch; margin: 0 0 var(--baseline-3); }
+    max-width: 64ch; margin: 0 0 24px; }
   .prose :global(ul), .prose :global(ol) { padding-left: 1.3em; }
   .prose :global(li) { margin-bottom: 8px; }
   .prose :global(h2) { font-family: var(--serif); font-weight: 400; font-size: clamp(24px, 2.8vw, 34px);
-    line-height: 1.2; margin: var(--baseline-6) 0 var(--baseline-2); }
+    line-height: 1.2; margin: 48px 0 16px; }
   .prose :global(h3) { font-family: var(--serif); font-weight: 400; font-size: clamp(20px, 2.2vw, 26px);
-    line-height: 1.25; margin: var(--baseline-4) 0 var(--baseline-2); }
-  .prose :global(blockquote) { margin: var(--baseline-4) 0; padding-left: 24px;
+    line-height: 1.25; margin: 32px 0 16px; }
+  .prose :global(blockquote) { margin: 32px 0; padding-left: 24px;
     border-left: 2px solid var(--accent); font-family: var(--serif); font-style: italic;
     font-size: clamp(20px, 2.4vw, 28px); line-height: 1.4; color: var(--text); max-width: 50ch; }
   .prose :global(a) { color: var(--accent); border-bottom: 1px solid var(--accent); }
   .prose :global(code) { font-family: ui-monospace, monospace; font-size: 0.9em;
     background: rgba(22,22,22,0.05); padding: 1px 5px; border-radius: 3px; }
-  .prose :global(img) { width: 100%; height: auto; margin: var(--baseline-4) 0; }
+  .prose :global(img) { width: 100%; height: auto; margin: 32px 0; }
 
   .post-foot { margin-top: clamp(64px, 12vh, 120px); padding-top: clamp(28px, 4vh, 48px);
     border-top: 1px solid var(--rule); padding-bottom: clamp(48px, 6vh, 72px); }

@@ -81,6 +81,35 @@ h1, h2, h3, .display {
   color: var(--text-quiet);
 }
 
+/* ── Named grid tracks (§2.2) — the only column ranges a component may use ──
+ * Mobile-first: everything is full-width; tablet/desktop assign the ranges.
+ * Split pairs are mirror images (text 5 + visual 7 = 12). */
+.t-rail, .t-body, .t-aside, .t-wide, .t-full,
+.t-text-l, .t-visual-r, .t-text-r, .t-visual-l { grid-column: 1 / -1; }
+
+@media (min-width: 768px) {
+  .t-rail     { grid-column: 1 / 3; }
+  .t-body     { grid-column: 3 / 9; }
+  .t-aside    { grid-column: 1 / -1; }   /* stacks at tablet */
+  .t-wide     { grid-column: 2 / 9; }
+  .t-full     { grid-column: 1 / 9; }
+  .t-text-l   { grid-column: 1 / 4; }    /* text, visual on right */
+  .t-visual-r { grid-column: 4 / 9; }
+  .t-text-r   { grid-column: 6 / 9; }    /* text, visual on left */
+  .t-visual-l { grid-column: 1 / 6; }
+}
+@media (min-width: 1200px) {
+  .t-rail     { grid-column: 1 / 3; }
+  .t-body     { grid-column: 3 / 9; }
+  .t-aside    { grid-column: 9 / 13; }
+  .t-wide     { grid-column: 2 / 12; }
+  .t-full     { grid-column: 1 / 13; }
+  .t-text-l   { grid-column: 1 / 6; }
+  .t-visual-r { grid-column: 6 / 13; }
+  .t-text-r   { grid-column: 8 / 13; }
+  .t-visual-l { grid-column: 1 / 8; }
+}
+
 /* sr-only — for semantic headings that should not render visually. */
 .sr-only {
   position: absolute;

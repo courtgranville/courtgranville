@@ -1,24 +1,26 @@
 // object-canvas.js — a cursor-reactive 3D object built from a transparent
-// cutout PNG. The cutout is stacked into N alpha-cut layers along z, darkened
-// toward the back, so the silhouette reads as a solid EXTRUDED object with real
-// thickness. The object holds a small resting lean (so the depth is always
-// visible) and swings toward the cursor when the pointer is over the canvas.
+// cutout PNG. The clean photo is the front face; behind it the silhouette is
+// stacked into a few alpha-cut slices and darkened, giving the object a SUBTLE
+// real-depth body rather than a thick slab. At rest it faces front; on hover it
+// tips gently toward the pointer, the soft dark rim revealing the depth.
 //
-// Vanilla three.js, resolved through the CDN import map in Layout.astro. Shared
-// by the homepage Selected-Work carousel.
+// Each cutout is auto-cropped to its alpha bounding box at load, so objects with
+// large transparent margins still fill the frame and read at a consistent size.
+//
+// Vanilla three.js, resolved through the CDN import map in Layout.astro.
 //
 //   mountObjectCanvas(canvas, opts) -> { show(item), preload(srcs), destroy() }
-//   item = { src, aspect? }   (aspect is read from the decoded image if omitted)
+//   item = { src }
 
 import * as THREE from 'three';
 
 export function mountObjectCanvas(canvas, opts = {}) {
-  const LAYERS    = opts.layers   ?? 26;     // extrusion slices
-  const DEPTH     = opts.depth    ?? 0.13;   // total thickness (object height = 1)
-  const BACK_DARK = opts.backDark ?? 0.40;   // brightness of the rearmost slice
-  const REST_TILT = opts.restTilt ?? 0.18;   // resting y-lean → depth always shows
-  const TILT      = opts.tilt     ?? 0.5;    // cursor parallax intensity (radians)
-  const FILL      = opts.fill     ?? 0.86;   // fraction of the frustum to fill
+  const LAYERS    = opts.layers   ?? 22;     // depth slices behind the front face
+  const DEPTH     = opts.depth    ?? 0.06;   // total thickness (object height = 1) — subtle
+  const BACK_DARK = opts.backDark ?? 0.55;   // brightness of the rearmost slice
+  const REST_TILT = opts.restTilt ?? 0.06;   // tiny resting lean → a hint of depth
+  const TILT      = opts.tilt     ?? 0.32;   // cursor parallax intensity (radians)
+  const FILL      = opts.fill     ?? 0.9;    // fraction of the frustum to fill
   const CAM_Z     = opts.camZ     ?? 4.2;
 
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -29,13 +31,14 @@ export function mountObjectCanvas(canvas, opts = {}) {
   renderer.outputColorSpace = THREE.SRGBColorSpace;
 
   const scene  = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
+  const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
   camera.position.set(0, 0, CAM_Z);
 
   const group = new THREE.Group();
   scene.add(group);
 
-  // One shared plane; one mesh per slice, stepped back in z and darkened.
+  // Front face at +DEPTH/2 (the clean photo, full brightness), slices receding
+  // to -DEPTH/2 and darkening — the body sits BEHIND the photo. Pivot centred.
   const geo = new THREE.PlaneGeometry(1, 1);
   const meshes = [];
   for (let i = 0; i < LAYERS; i++) {
@@ -43,19 +46,59 @@ export function mountObjectCanvas(canvas, opts = {}) {
     const shade = 1 - t * (1 - BACK_DARK);
     const mat = new THREE.MeshBasicMaterial({
       color: new THREE.Color(shade, shade, shade),
-      alphaTest: 0.45,            // hard cutout edge → depth-correct extrusion
+      alphaTest: 0.4,             // hard cutout edge → depth-correct stacking
       transparent: false,
       side: THREE.DoubleSide,
       toneMapped: false,
     });
     const m = new THREE.Mesh(geo, mat);
     m.position.z = (0.5 - t) * DEPTH;
+    m.renderOrder = LAYERS - i;   // draw front-most first
     group.add(m);
     meshes.push(m);
   }
 
   const loader = new THREE.TextureLoader();
-  const cache  = new Map();
+  const cache  = new Map();   // src -> { tex, aspect }
+
+  // Find the cutout's content bounds from its alpha channel and bake them into
+  // the texture's offset/repeat, so the plane samples only the object (no
+  // transparent margin). Returns the cropped aspect ratio.
+  function cropToContent(tex) {
+    const img = tex.image;
+    const iw = img.width, ih = img.height;
+    const scale = Math.min(1, 512 / Math.max(iw, ih));
+    const w = Math.max(1, Math.round(iw * scale));
+    const h = Math.max(1, Math.round(ih * scale));
+    const cnv = document.createElement('canvas');
+    cnv.width = w; cnv.height = h;
+    const ctx = cnv.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0, w, h);
+    const data = ctx.getImageData(0, 0, w, h).data;
+    let minx = w, miny = h, maxx = -1, maxy = -1;
+    const A = 18;
+    for (let y = 0; y < h; y++) {
+      const row = y * w;
+      for (let x = 0; x < w; x++) {
+        if (data[(row + x) * 4 + 3] > A) {
+          if (x < minx) minx = x; if (x > maxx) maxx = x;
+          if (y < miny) miny = y; if (y > maxy) maxy = y;
+        }
+      }
+    }
+    if (maxx < 0) return iw / ih;                       // fully transparent → leave as-is
+    const pad = Math.round(Math.min(w, h) * 0.015);
+    minx = Math.max(0, minx - pad); miny = Math.max(0, miny - pad);
+    maxx = Math.min(w - 1, maxx + pad); maxy = Math.min(h - 1, maxy + pad);
+    const bw = (maxx - minx + 1) / w;
+    const bh = (maxy - miny + 1) / h;
+    const u0 = minx / w;
+    const v0 = 1 - (maxy + 1) / h;                      // flipY: image-top → v=1
+    tex.offset.set(u0, v0);
+    tex.repeat.set(bw, bh);
+    return (bw * iw) / (bh * ih);
+  }
+
   function loadTex(src) {
     if (cache.has(src)) return Promise.resolve(cache.get(src));
     return new Promise((resolve) => {
@@ -64,8 +107,10 @@ export function mountObjectCanvas(canvas, opts = {}) {
         tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
         tex.generateMipmaps = true;
         tex.minFilter = THREE.LinearMipmapLinearFilter;
-        cache.set(src, tex);
-        resolve(tex);
+        const aspect = cropToContent(tex);
+        const entry = { tex, aspect };
+        cache.set(src, entry);
+        resolve(entry);
       });
     });
   }
@@ -83,8 +128,8 @@ export function mountObjectCanvas(canvas, opts = {}) {
 
   async function show(item) {
     if (!item || !item.src) return;
-    const tex = await loadTex(item.src);
-    aspect = item.aspect ?? (tex.image.width / tex.image.height);
+    const { tex, aspect: a } = await loadTex(item.src);
+    aspect = a;
     for (const m of meshes) { m.material.map = tex; m.material.needsUpdate = true; }
     fit();
     if (opts.onShown) opts.onShown();
@@ -148,7 +193,7 @@ export function mountObjectCanvas(canvas, opts = {}) {
     canvas.removeEventListener('pointerleave', onLeave);
     geo.dispose();
     for (const m of meshes) m.material.dispose();
-    for (const tex of cache.values()) tex.dispose();
+    for (const { tex } of cache.values()) tex.dispose();
     renderer.dispose();
   }
 

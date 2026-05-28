@@ -30,12 +30,12 @@ const meta = [
         <p>My current thesis examines the public perception of contested technology — how design mediates what people come to believe about the systems shaping their lives. Alongside it, I build with code and AI as design materials, treating the medium as part of the craft.</p>
       </div>
 
-      <dl class="about-meta reveal" data-stagger="3">
+      <dl class="spec-table about-meta reveal" data-stagger="3">
         {meta.map(([k, v]) => (
-          <div class="about-meta-row">
-            <dt class="label">{k}</dt>
+          <>
+            <dt>{k}</dt>
             <dd>{v}</dd>
-          </div>
+          </>
         ))}
       </dl>
 
@@ -57,7 +57,7 @@ const meta = [
   .about-statement {
     grid-column: 1 / -1;
     font-family: var(--serif); font-weight: 400;
-    font-size: clamp(30px, 4.4vw, 60px); line-height: 1.12; letter-spacing: -0.005em;
+    font-size: var(--fs-display-l); line-height: var(--lh-display-l);
     color: var(--text); margin: 0; max-width: 18ch;
   }
   .about-body { grid-column: 1 / -1; }
@@ -67,20 +67,14 @@ const meta = [
   }
   .about-body p:last-child { margin-bottom: 0; }
 
-  .about-meta { grid-column: 1 / -1; margin: 0; display: grid; gap: 0; }
-  .about-meta-row {
-    display: grid; grid-template-columns: 1fr; gap: 4px;
-    padding: 16px 0; border-bottom: 1px solid var(--rule);
-  }
-  .about-meta-row dt { margin: 0; }
-  .about-meta-row dd { margin: 0; font-size: var(--fs-body-s); color: var(--text); }
+  .about-meta { grid-column: 1 / -1; }
 
   .about-cta { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 28px; margin-top: 8px; }
 
   @media (min-width: 768px) {
     .about-statement { grid-column: 1 / 8; }
     .about-body      { grid-column: 1 / 7; }
-    .about-meta      { grid-column: 1 / 8; grid-template-columns: repeat(2, 1fr); column-gap: var(--gutter); }
+    .about-meta      { grid-column: 1 / 8; }
     .about-cta       { grid-column: 1 / 7; }
   }
   @media (min-width: 1200px) {

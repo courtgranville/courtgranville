@@ -9,14 +9,24 @@
 //   - Adds `.scrolled` once we are past the hero (Phase 2 wires this from
 //     the homepage's Lenis scroll listener).
 //   - Brand is the home link — clicking smooth-scrolls to top.
+//   - The link matching the current section carries aria-current="page"
+//     (§6.7) with a held underline, so the visitor always knows where they are.
+
+const path = Astro.url.pathname;
+const links = [
+  { href: '/work/',    label: 'Work' },
+  { href: '/blog/',    label: 'Blog' },
+  { href: '/about/',   label: 'About' },
+  { href: '/contact/', label: 'Contact' },
+];
+const isCurrent = (href: string) => path === href || path.startsWith(href);
 ---
 <nav class="site-nav" aria-label="Primary">
   <a class="brand" href="#top" data-scroll-top>Court Granville</a>
   <div class="nav-links">
-    <a class="nav-link" href="/work/">Work</a>
-    <a class="nav-link" href="/blog/">Blog</a>
-    <a class="nav-link" href="/about/">About</a>
-    <a class="nav-link" href="/contact/">Contact</a>
+    {links.map((l) => (
+      <a class="nav-link" href={l.href} aria-current={isCurrent(l.href) ? 'page' : undefined}>{l.label}</a>
+    ))}
   </div>
 </nav>
 
@@ -68,16 +78,14 @@
     gap: 36px;
   }
 
-  /* Raleway 500 uppercase, letter-spaced — the structural face. Per §4 of the
-   * site-v2-build-spec, Medium (not Regular) keeps the caps from reading
-   * thin; letter-spacing 0.22em keeps the glyphs from crowding. */
+  /* Raleway 500 uppercase, on the one shared label letter-spacing (§4.2). */
   .nav-link {
     position: relative;
     font-family: var(--sans);
     font-weight: 500;
-    font-size: 12px;
-    line-height: 16px;
-    letter-spacing: 0.22em;
+    font-size: var(--fs-label);
+    line-height: var(--lh-label);
+    letter-spacing: var(--ls-label);
     text-transform: uppercase;
     color: var(--text);
     opacity: 0.82;
@@ -100,6 +108,10 @@
   }
   .nav-link:hover { color: var(--accent); opacity: 1; }
   .nav-link:hover::after { transform: scaleX(1); }
+
+  /* Active page — full opacity with a held underline (§6.7). */
+  .nav-link[aria-current='page'] { opacity: 1; }
+  .nav-link[aria-current='page']::after { transform: scaleX(1); }
 
   @media (max-width: 720px) {
     .site-nav { padding: 0 20px; }

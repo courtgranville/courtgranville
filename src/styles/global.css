@@ -110,6 +110,30 @@ h1, h2, h3, .display {
   .t-visual-l { grid-column: 1 / 8; }
 }
 
+/* ── The visual field (§3) — one cell, shared by every visual moment ───────
+ * Fixed 3:2 by default, bounded, with a defined near-white ground and a frame
+ * so letterboxing reads as a deliberate gallery placement. A <canvas> child
+ * fills it. The field never reshapes between items. */
+.field {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--field-aspect);
+  min-height: var(--field-min-h);
+  max-height: var(--field-max-h);
+  background: var(--field-bg);
+  border: var(--field-frame);
+  overflow: hidden;
+}
+.field > canvas,
+.field > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.field > img { object-fit: contain; }   /* images are never cropped */
+
 /* sr-only — for semantic headings that should not render visually. */
 .sr-only {
   position: absolute;

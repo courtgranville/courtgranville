@@ -1,11 +1,11 @@
 ---
 // Work index — a typographic project list (left) paired with a 3D image canvas
-// (right) that shows the hovered project's hero on a lit, cursor-parallax card.
-//
-// The canvas top-aligns with the first project row (a top rule sits above the
-// list), there is no frame box or label chrome around it — just the object.
-// Vanilla three.js (public/js/hero-canvas.js) via an is:inline module; project
-// data is handed over as JSON (frontmatter isn't visible to is:inline scripts).
+// (right). On desktop the canvas is a fixed panel, sized to fit the viewport
+// (the whole image is always visible, no scrolling) and positioned to sit
+// inline with the hovered project's row (clamped so it's never cut off or over
+// the footer). Hover-switching is bound to the project NAME only — moving
+// toward the canvas over the year/discipline won't switch. No cursor parallax
+// (it caused jitter); just a gentle idle sway.
 
 import Grid from './Grid.astro';
 import imageManifest from '../content/projects-images.json';
@@ -58,7 +58,6 @@ const clientData = PROJECTS.map((p) => ({ name: p.name, year: p.year, discipline
 <script type="application/json" id="wiData" is:inline set:html={JSON.stringify(clientData)}></script>
 
 <style>
-  /* :global — targets the <Grid> root element (no component scope hash). */
   :global(.work-index) {
     padding-block: calc(var(--nav-h) + clamp(40px, 7vh, 96px)) clamp(64px, 12vh, 140px);
     row-gap: clamp(28px, 4vh, 44px);
@@ -68,7 +67,6 @@ const clientData = PROJECTS.map((p) => ({ name: p.name, year: p.year, discipline
   .wi-kicker { grid-column: 1 / -1; display: block; }
 
   .wi-list { grid-column: 1 / -1; }
-  /* The rule above the first project — the canvas top aligns to this line. */
   .wi-rows { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
   .wi-row { border-bottom: 1px solid var(--rule); }
   .wi-row a {
@@ -83,7 +81,7 @@ const clientData = PROJECTS.map((p) => ({ name: p.name, year: p.year, discipline
     transition: padding-left var(--dur-hover) var(--ease-out), color var(--dur-hover) var(--ease-out);
   }
   .wi-num  { grid-area: num;  font-family: var(--sans); font-weight: 500; font-size: 11px; letter-spacing: 0.16em; color: var(--text-faint); }
-  .wi-name { grid-area: name; font-family: var(--serif); font-weight: 400; font-size: clamp(22px, 2.5vw, 30px); line-height: 1.1; }
+  .wi-name { grid-area: name; font-family: var(--serif); font-weight: 400; font-size: clamp(22px, 2.5vw, 30px); line-height: 1.1; width: fit-content; }
   .wi-year { grid-area: year; font-family: var(--sans); font-weight: 500; font-size: 13px; letter-spacing: 0.06em; color: var(--text-quiet); font-variant-numeric: tabular-nums; }
   .wi-disc { grid-area: disc; font-family: var(--sans); font-weight: 500; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-faint); }
 
@@ -92,19 +90,17 @@ const clientData = PROJECTS.map((p) => ({ name: p.name, year: p.year, discipline
   .wi-row.active .wi-num,
   .wi-row.active .wi-disc { color: rgba(142, 27, 14, 0.7); }
 
-  /* No frame box, no chrome — just the 3D object. */
   .wi-canvas-col { grid-column: 1 / -1; }
-  .wi-cell {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 4 / 5;
-    transition: aspect-ratio 0.55s var(--ease-out);
-  }
+  /* Mobile default: in-flow, stacked under the list. */
+  .wi-cell { position: relative; width: 100%; aspect-ratio: 4 / 5; }
   .wi-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
   @media (min-width: 768px) {
     .wi-list { grid-column: 1 / 5; }
     .wi-canvas-col { grid-column: 5 / 9; }
+    /* Desktop: a fixed panel — JS sets left/top/width/height; follows the
+       active row and is clamped to the viewport. */
+    .wi-cell { position: fixed; aspect-ratio: auto; transition: top 0.28s var(--ease-out); }
   }
   @media (min-width: 1200px) {
     .wi-list { grid-column: 1 / 8; }
@@ -120,21 +116,81 @@ const clientData = PROJECTS.map((p) => ({ name: p.name, year: p.year, discipline
 <script is:inline type="module">
   import { mountHeroCanvas } from '/js/hero-canvas.js';
 
-  const data   = JSON.parse(document.getElementById('wiData').textContent);
-  const canvas = document.getElementById('wiCanvas');
-  const cell   = document.querySelector('.wi-cell');
-  const rows   = Array.from(document.querySelectorAll('.wi-row'));
+  const data    = JSON.parse(document.getElementById('wiData').textContent);
+  const section = document.querySelector('.work-index');
+  const ph      = document.querySelector('.wi-canvas-col');
+  const cell    = document.querySelector('.wi-cell');
+  const canvas  = document.getElementById('wiCanvas');
+  const rows    = Array.from(document.querySelectorAll('.wi-row'));
+  const navH    = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 76;
+  const PAD     = 28;
+  const isDesktop = () => matchMedia('(min-width: 768px)').matches;
+
+  let curAspect = (data[0].hero && data[0].hero.aspect) || 1;
+  let activeIndex = 0;
+  let cellH = 0;
 
   const api = mountHeroCanvas(canvas, {
-    camZ: 7, fill: 0.9, anchorTop: true,
-    onAspect: (a) => { cell.style.aspectRatio = String(a); },
+    camZ: 7, fill: 0.86, paraY: 0, paraX: 0, swayY: 0.14, swayX: 0.05,
+    onAspect: (a) => { curAspect = a; layout(); },
   });
-  api.preload(data.map((d) => d.hero && d.hero.src));   // warm the cache → no hover flicker
+  api.preload(data.map((d) => d.hero && d.hero.src));
+
+  // Size the panel to fit the viewport (whole image always visible).
+  function layout() {
+    if (!isDesktop()) {
+      cell.style.cssText = '';                 // drop desktop inline styles
+      cell.style.aspectRatio = String(curAspect);
+      return;
+    }
+    const r = ph.getBoundingClientRect();
+    const colW = r.width;
+    const maxH = Math.max(200, window.innerHeight - navH - PAD * 2);
+    let h = Math.min(colW / curAspect, maxH);
+    let w = h * curAspect;
+    if (w > colW) { w = colW; h = w / curAspect; }
+    cellH = h;
+    cell.style.position = 'fixed';
+    cell.style.aspectRatio = 'auto';
+    cell.style.width  = w + 'px';
+    cell.style.height = h + 'px';
+    cell.style.left   = (r.left + (colW - w) / 2) + 'px';
+    position();
+  }
+
+  // Sit inline with the active row, clamped to the viewport and the section.
+  function position() {
+    if (!isDesktop()) return;
+    const sec = section.getBoundingClientRect();
+    const row = rows[activeIndex].getBoundingClientRect();
+    const rowCenter = row.top + row.height / 2;
+    const lo = Math.max(navH + PAD, sec.top);
+    const hi = Math.min(window.innerHeight - PAD - cellH, sec.bottom - cellH);
+    let top = rowCenter - cellH / 2;
+    top = Math.min(Math.max(top, lo), Math.max(lo, hi));
+    cell.style.top = top + 'px';
+  }
 
   function select(i) {
-    rows.forEach((r) => r.classList.toggle('active', Number(r.dataset.i) === i));
-    api.show(data[i].hero);
+    activeIndex = i;
+    rows.forEach((r, k) => r.classList.toggle('active', k === i));
+    api.show(data[i].hero);   // → onAspect → layout → position
+    position();
   }
-  rows.forEach((r) => r.addEventListener('pointerenter', () => select(Number(r.dataset.i))));
+
+  rows.forEach((r) => {
+    const i = Number(r.dataset.i);
+    r.querySelector('.wi-name').addEventListener('pointerenter', () => select(i));
+    r.querySelector('a').addEventListener('focusin', () => select(i));
+  });
+
+  let ticking = false;
+  addEventListener('scroll', () => {
+    if (ticking) return; ticking = true;
+    requestAnimationFrame(() => { position(); ticking = false; });
+  }, { passive: true });
+  addEventListener('resize', layout);
+
+  layout();
   select(0);
 </script>

@@ -105,7 +105,7 @@ const ogImage = new URL('/og.jpg', Astro.site);
       let lenis = null;
       if (!reducedMotion) {
         lenis = new Lenis({
-          duration: 1.0,
+          duration: 0.8,
           easing:   (x) => Math.min(1, 1.001 - Math.pow(2, -10 * x)),
           smoothWheel: true,
           smoothTouch: false,

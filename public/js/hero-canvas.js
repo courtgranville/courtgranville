@@ -109,6 +109,11 @@ export function mountHeroCanvas(canvas, opts = {}) {
   const clamp = (v) => Math.max(-1, Math.min(1, v));
   function onMove(e) {
     const r = canvas.getBoundingClientRect();
+    // Only react when the pointer is over the canvas itself — moving over the
+    // project list (or anywhere else) must not tilt it (that was the jitter).
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) {
+      active = false; return;
+    }
     tgt.x = clamp((e.clientX - (r.left + r.width / 2)) / r.width);
     tgt.y = clamp((e.clientY - (r.top + r.height / 2)) / r.height);
     active = true;

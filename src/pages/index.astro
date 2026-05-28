@@ -1,29 +1,97 @@
 ---
-// Homepage. Hero + Intro + Carousel + Footer on the grid.
+// Homepage — the canonical instance of the template. Three stacked sections on
+// the grid: Screen 1 Intro split (statement left / particle field right),
+// Screen 2 Selected Work (the Work-index component, mirrored — field left),
+// Screen 3 a quiet thesis band. (§6.1)
 
 import Layout from '../components/Layout.astro';
 import Nav from '../components/Nav.astro';
 import Hero from '../components/Hero.astro';
-import Intro from '../components/Intro.astro';
-import Carousel from '../components/Carousel.astro';
+import WorkIndex from '../components/WorkIndex.astro';
 import Footer from '../components/Footer.astro';
+import Grid from '../components/Grid.astro';
 ---
 <Layout title="Court Granville">
   <Nav />
   <main>
     <h1 class="sr-only">Court Granville — Product &amp; Interaction Designer, Madrid</h1>
-    <Hero />
-    <Intro />
-    <Carousel />
+
+    <!-- Screen 1 — Intro (split, visual RIGHT, split-index 0) -->
+    <section class="hp-section hp-intro" aria-label="Introduction">
+      <Grid class="hp-split">
+        <!-- Visual first in the DOM → mobile stacks field-above-text (§2.4). -->
+        <div class="t-visual-r hp-herocol reveal"><Hero /></div>
+        <div class="t-text-l hp-introtext">
+          <p class="hp-statement reveal">I&rsquo;m a product designer working where things turn technical &mdash; the complex, contested subjects most design avoids. The work is translation: making that complexity clear enough to trust, and to act on.</p>
+          <p class="label hp-factual reveal" data-stagger="1">Product Design &mdash; IE University, Madrid &middot; Previously brand strategy &amp; digital marketing &middot; Thesis on the public perception of contested technology</p>
+          <div class="hp-cta reveal" data-stagger="2">
+            <a class="textlink" href="/work/">View work &rarr;</a>
+            <a class="textlink" href="/about/">About &rarr;</a>
+          </div>
+        </div>
+      </Grid>
+    </section>
+
+    <!-- Screen 2 — Selected Work (split, visual LEFT, split-index 1) -->
+    <section class="hp-section" aria-label="Selected work">
+      <WorkIndex side="left" kicker="02 — Selected Work" />
+      <Grid>
+        <a class="textlink hp-allwork reveal" href="/work/">All work &rarr;</a>
+      </Grid>
+    </section>
+
+    <!-- Screen 3 — Thesis band -->
+    <section class="hp-section hp-thesis" aria-label="Thesis">
+      <Grid>
+        <div class="t-body hp-thesis-inner reveal">
+          <h2 class="hp-thesis-h">The Nuclear Question</h2>
+          <p class="hp-thesis-p">A thesis on how strategic communication shapes public trust in contested technology.</p>
+          <a class="textlink" href="/blog/">Read the thesis &rarr;</a>
+        </div>
+      </Grid>
+    </section>
   </main>
   <Footer />
 </Layout>
 
-<style is:global>
-  /* `main` sits above the fixed hero canvas so its opaque sections occlude
-   * the canvas as the user scrolls past the hero. */
-  main {
-    position: relative;
-    z-index: 2;
+<style>
+  .hp-section { padding-block: var(--space-section); }
+  .hp-intro { padding-top: calc(var(--nav-h) + var(--space-page-top)); }
+
+  /* dense packing keeps the statement (earlier column) beside the hero field
+     though the field is first in the DOM (first for the mobile stack). */
+  :global(.hp-split) { grid-auto-flow: dense; }
+
+  /* Screen 1 */
+  .hp-introtext {
+    align-self: center;
+    display: flex; flex-direction: column; gap: var(--space-block);
   }
+  .hp-statement {
+    font-family: var(--serif); font-weight: 400;
+    font-size: var(--fs-display-l); line-height: var(--lh-display-l);
+    color: var(--text); margin: 0;
+  }
+  .hp-factual { line-height: 1.9; max-width: 46ch; }
+  .hp-cta { display: flex; flex-wrap: wrap; gap: 28px; }
+
+  /* Screen 2 foot */
+  .hp-allwork { grid-column: 1 / -1; margin-top: var(--space-block); justify-self: start; }
+
+  /* Screen 3 — thesis band */
+  .hp-thesis { border-top: 1px solid var(--rule); }
+  .hp-thesis-inner { display: flex; flex-direction: column; gap: 16px; align-items: flex-start; }
+  .hp-thesis-h {
+    font-family: var(--serif); font-weight: 400;
+    font-size: var(--fs-heading-m); line-height: var(--lh-heading-m);
+    color: var(--text); margin: 0;
+  }
+  .hp-thesis-p {
+    font-size: var(--fs-body); line-height: var(--lh-body);
+    color: var(--text-quiet); max-width: 56ch; margin: 0;
+  }
+</style>
+
+<style is:global>
+  main { position: relative; z-index: 2; }
 </style>

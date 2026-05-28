@@ -1,14 +1,18 @@
 ---
-// Work index — a typographic project list (left) paired with a 3D image canvas
-// (right). On desktop the canvas is a fixed panel, sized to fit the viewport
-// (the whole image is always visible, no scrolling) and positioned to sit
-// inline with the hovered project's row (clamped so it's never cut off or over
-// the footer). Hover-switching is bound to the project NAME only — moving
-// toward the canvas over the year/discipline won't switch. No cursor parallax
-// (it caused jitter); just a gentle idle sway.
+// Work index — a typographic project list paired with the shared 3D image
+// field. Reusable: `side` mirrors the pairing (visual right on /work/, visual
+// left on the homepage Screen 2). One fixed orientation per placement; it does
+// not alternate. Hover a project NAME (or focus it) to preview its hero in the
+// field. Field contract per §3 (fixed 3:2, contain, flat, tilt-on-interaction).
 
 import Grid from './Grid.astro';
 import imageManifest from '../content/projects-images.json';
+
+export interface Props {
+  side?: 'left' | 'right';
+  kicker?: string;
+}
+const { side = 'right', kicker } = Astro.props;
 
 function heroFor(slug: string, heroSlug: string) {
   const manifest = (imageManifest as Record<string, { images: any[] }>)[slug];
@@ -28,50 +32,50 @@ const PROJECTS = [
 ];
 
 const clientData = PROJECTS.map((p) => ({ name: p.name, year: p.year, discipline: p.discipline, hero: p.hero }));
+const textTrack   = side === 'left' ? 't-text-r'   : 't-text-l';
+const visualTrack = side === 'left' ? 't-visual-l' : 't-visual-r';
 ---
 <Grid as="section" class="work-index" aria-label="Selected work">
-  <span class="label wi-kicker">Selected Work — 2022 / 2026</span>
-  <h1 class="sr-only">Work</h1>
+  {kicker && <span class="label wi-kicker reveal">{kicker}</span>}
 
-  <div class="wi-list">
+  <!-- Visual first in the DOM so mobile stacks field-above-text (§2.4); on
+       desktop the track classes place text and field by column regardless. -->
+  <div class:list={['wi-visual', visualTrack, 'reveal']} data-stagger="1">
+    <div class="field">
+      <canvas id="wiCanvas" aria-hidden="true"></canvas>
+    </div>
+  </div>
+
+  <div class:list={['wi-list', textTrack, 'reveal']} data-stagger="2">
     <ul class="wi-rows">
       {PROJECTS.map((p, i) => (
         <li class="wi-row" data-i={i}>
           <a href={`/work/${p.slug}/`}>
-            <span class="wi-num">{String(i + 1).padStart(2, '0')}</span>
+            <span class="wi-num label">{String(i + 1).padStart(2, '0')}</span>
             <span class="wi-name">{p.name}</span>
-            <span class="wi-year">{p.year}</span>
-            <span class="wi-disc">{p.discipline}</span>
+            <span class="wi-year label">{p.year}</span>
+            <span class="wi-disc label">{p.discipline}</span>
           </a>
         </li>
       ))}
     </ul>
-  </div>
-
-  <div class="wi-canvas-col">
-    <div class="wi-cell">
-      <canvas class="wi-canvas" id="wiCanvas" aria-hidden="true"></canvas>
-    </div>
   </div>
 </Grid>
 
 <script type="application/json" id="wiData" is:inline set:html={JSON.stringify(clientData)}></script>
 
 <style>
-  :global(.work-index) {
-    padding-block: calc(var(--nav-h) + clamp(40px, 7vh, 96px)) clamp(64px, 12vh, 140px);
-    row-gap: clamp(28px, 4vh, 44px);
-    align-items: start;
-  }
+  /* dense so the list (earlier column) sits beside the visual even though the
+     visual is first in the DOM (kept first for the mobile stack). */
+  :global(.work-index) { row-gap: var(--space-block); align-items: start; grid-auto-flow: dense; }
 
   .wi-kicker { grid-column: 1 / -1; display: block; }
 
-  .wi-list { grid-column: 1 / -1; }
   .wi-rows { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
   .wi-row { border-bottom: 1px solid var(--rule); }
   .wi-row a {
     display: grid;
-    grid-template-columns: 2.6rem 1fr auto;
+    grid-template-columns: 2.4rem 1fr auto;
     grid-template-areas: 'num name year' 'num disc disc';
     align-items: baseline;
     column-gap: 1rem;
@@ -80,35 +84,18 @@ const clientData = PROJECTS.map((p) => ({ name: p.name, year: p.year, discipline
     color: var(--text);
     transition: padding-left var(--dur-hover) var(--ease-out), color var(--dur-hover) var(--ease-out);
   }
-  .wi-num  { grid-area: num;  font-family: var(--sans); font-weight: 500; font-size: 11px; letter-spacing: 0.16em; color: var(--text-faint); }
-  .wi-name { grid-area: name; font-family: var(--serif); font-weight: 400; font-size: clamp(22px, 2.5vw, 30px); line-height: 1.1; width: fit-content; }
-  .wi-year { grid-area: year; font-family: var(--sans); font-weight: 500; font-size: 13px; letter-spacing: 0.06em; color: var(--text-quiet); font-variant-numeric: tabular-nums; }
-  .wi-disc { grid-area: disc; font-family: var(--sans); font-weight: 500; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-faint); }
+  .wi-num  { grid-area: num;  color: var(--text-faint); }
+  .wi-name { grid-area: name; font-family: var(--serif); font-weight: 400;
+             font-size: var(--fs-heading-m); line-height: var(--lh-heading-m); width: fit-content; }
+  .wi-year { grid-area: year; color: var(--text-quiet); font-variant-numeric: tabular-nums; }
+  .wi-disc { grid-area: disc; color: var(--text-faint); }
 
   .wi-row a:hover,
   .wi-row.active a { color: var(--accent); padding-left: clamp(6px, 1vw, 14px); }
   .wi-row.active .wi-num,
   .wi-row.active .wi-disc { color: rgba(142, 27, 14, 0.7); }
 
-  .wi-canvas-col { grid-column: 1 / -1; }
-  /* Mobile default: in-flow, stacked under the list. */
-  .wi-cell { position: relative; width: 100%; aspect-ratio: 4 / 5; }
-  .wi-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-
-  @media (min-width: 768px) {
-    .wi-list { grid-column: 1 / 5; }
-    .wi-canvas-col { grid-column: 5 / 9; }
-    /* Desktop: a fixed panel — JS sets left/top/width/height; follows the
-       active row and is clamped to the viewport. */
-    .wi-cell { position: fixed; aspect-ratio: auto; transition: top 0.28s var(--ease-out); }
-  }
-  @media (min-width: 1200px) {
-    .wi-list { grid-column: 1 / 8; }
-    .wi-canvas-col { grid-column: 8 / 13; }
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .wi-cell { transition: none; }
     .wi-row a { transition: none; }
   }
 </style>
@@ -116,84 +103,21 @@ const clientData = PROJECTS.map((p) => ({ name: p.name, year: p.year, discipline
 <script is:inline type="module">
   import { mountHeroCanvas } from '/js/hero-canvas.js';
 
-  const data    = JSON.parse(document.getElementById('wiData').textContent);
-  const section = document.querySelector('.work-index');
-  const ph      = document.querySelector('.wi-canvas-col');
-  const cell    = document.querySelector('.wi-cell');
-  const canvas  = document.getElementById('wiCanvas');
-  const rows    = Array.from(document.querySelectorAll('.wi-row'));
-  const navH    = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 76;
-  const PAD     = 28;
-  const isDesktop = () => matchMedia('(min-width: 768px)').matches;
+  const data   = JSON.parse(document.getElementById('wiData').textContent);
+  const canvas = document.getElementById('wiCanvas');
+  const rows   = Array.from(document.querySelectorAll('.wi-row'));
 
-  let curAspect = (data[0].hero && data[0].hero.aspect) || 1;
-  let activeIndex = 0;
-  let cellH = 0;
-
-  const api = mountHeroCanvas(canvas, {
-    camZ: 7, fill: 0.82,
-    paraY: 0.3, paraX: 0.24,            // parallax only fires when the cursor is over the canvas
-    baseY: 0.22, baseX: -0.07,          // constant 3/4 lean so it always reads 3D at rest
-    swayY: 0.06, swayX: 0.03,
-    onAspect: (a) => { curAspect = a; layout(); },
-  });
+  const api = mountHeroCanvas(canvas);          // field-contract defaults (flat, tilt-on-hover)
   api.preload(data.map((d) => d.hero && d.hero.src));
 
-  // Size the panel to fit the viewport (whole image always visible).
-  function layout() {
-    if (!isDesktop()) {
-      cell.style.cssText = '';                 // drop desktop inline styles
-      cell.style.aspectRatio = String(curAspect);
-      return;
-    }
-    const r = ph.getBoundingClientRect();
-    const colW = r.width;
-    const maxH = Math.max(200, window.innerHeight - navH - PAD * 2);
-    let h = Math.min(colW / curAspect, maxH);
-    let w = h * curAspect;
-    if (w > colW) { w = colW; h = w / curAspect; }
-    cellH = h;
-    cell.style.position = 'fixed';
-    cell.style.aspectRatio = 'auto';
-    cell.style.width  = w + 'px';
-    cell.style.height = h + 'px';
-    cell.style.left   = (r.left + (colW - w) / 2) + 'px';
-    position();
-  }
-
-  // Sit inline with the active row, clamped to the viewport and the section.
-  function position() {
-    if (!isDesktop()) return;
-    const sec = section.getBoundingClientRect();
-    const row = rows[activeIndex].getBoundingClientRect();
-    const rowCenter = row.top + row.height / 2;
-    const lo = Math.max(navH + PAD, sec.top);
-    const hi = Math.min(window.innerHeight - PAD - cellH, sec.bottom - cellH);
-    let top = rowCenter - cellH / 2;
-    top = Math.min(Math.max(top, lo), Math.max(lo, hi));
-    cell.style.top = top + 'px';
-  }
-
   function select(i) {
-    activeIndex = i;
     rows.forEach((r, k) => r.classList.toggle('active', k === i));
-    api.show(data[i].hero);   // → onAspect → layout → position
-    position();
+    api.show(data[i].hero);
   }
-
   rows.forEach((r) => {
     const i = Number(r.dataset.i);
     r.querySelector('.wi-name').addEventListener('pointerenter', () => select(i));
     r.querySelector('a').addEventListener('focusin', () => select(i));
   });
-
-  let ticking = false;
-  addEventListener('scroll', () => {
-    if (ticking) return; ticking = true;
-    requestAnimationFrame(() => { position(); ticking = false; });
-  }, { passive: true });
-  addEventListener('resize', layout);
-
-  layout();
   select(0);
 </script>

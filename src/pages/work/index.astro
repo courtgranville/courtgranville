@@ -1,6 +1,6 @@
 ---
-// Work — the project index. A typographic list paired with a 3D image canvas
-// (WorkIndex) that previews each project's hero on hover. The grid is the page.
+// Work — the project index. The grid is the page: a typographic list paired
+// with the shared 3D image field (WorkIndex), visual on the right.
 
 import Layout from '../../components/Layout.astro';
 import Nav from '../../components/Nav.astro';
@@ -9,15 +9,19 @@ import WorkIndex from '../../components/WorkIndex.astro';
 ---
 <Layout title="Work — Court Granville" description="Selected projects by Court Granville.">
   <Nav />
-  <main>
-    <WorkIndex />
+  <main class="work-main">
+    <h1 class="sr-only">Work</h1>
+    <WorkIndex side="right" kicker="Work" />
   </main>
   <Footer />
 </Layout>
 
-<style is:global>
-  main {
-    position: relative;
-    z-index: 2;
+<style>
+  .work-main {
+    padding-block: calc(var(--nav-h) + var(--space-page-top)) var(--space-section);
   }
+</style>
+
+<style is:global>
+  main { position: relative; z-index: 2; }
 </style>

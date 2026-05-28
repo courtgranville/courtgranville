@@ -1,0 +1,12 @@
+/*
+ * Type system: Playfair Display + Raleway, four weights.
+ *
+ * Playfair 700 is loaded because the WebGL hero rasterises "CG" at Bold to
+ * sample particle positions — the hero's letterform identity depends on it.
+ * It is not exposed in the editorial type scale (§4 of site-v2-build-spec-rev2);
+ * editorial display uses Regular only.
+ *
+ * `display=block` keeps glyph rendering deferred until the typeface is ready,
+ * which the hero's `document.fonts.ready` gate also relies on.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Raleway:wght@400;500&display=block');

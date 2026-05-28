@@ -1,0 +1,38 @@
+---
+// Body paragraph. Spec §8: cols 3 / 9 at desktop (comfortable measure ~62ch),
+// 2 / 8 at tablet, single column at mobile.
+
+export interface Props {
+  body: string;
+}
+const { body } = Astro.props;
+---
+<section class="block">
+  <p class="prose" set:html={body} />
+</section>
+
+<style>
+  .block {
+    display: grid;
+    grid-template-columns: repeat(var(--cols), 1fr);
+    column-gap: var(--gutter);
+    padding-inline: var(--outer);
+    margin-bottom: 24px;
+  }
+  .prose {
+    grid-column: 1 / -1;
+    font-family: var(--sans);
+    font-weight: 400;
+    font-size: var(--fs-body);
+    line-height: var(--lh-body);
+    color: var(--text);
+    max-width: 62ch;
+    margin: 0;
+  }
+  @media (min-width: 768px) {
+    .prose { grid-column: 2 / 8; }
+  }
+  @media (min-width: 1200px) {
+    .prose { grid-column: 3 / 9; }
+  }
+</style>

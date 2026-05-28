@@ -1,0 +1,28 @@
+---
+// Homepage. Hero + Intro + Carousel + Footer on the grid.
+
+import Layout from '../components/Layout.astro';
+import Nav from '../components/Nav.astro';
+import Hero from '../components/Hero.astro';
+import Intro from '../components/Intro.astro';
+import Carousel from '../components/Carousel.astro';
+import Footer from '../components/Footer.astro';
+---
+<Layout title="Court Granville">
+  <Nav />
+  <main>
+    <Hero />
+    <Intro />
+    <Carousel />
+  </main>
+  <Footer />
+</Layout>
+
+<style is:global>
+  /* `main` sits above the fixed hero canvas so its opaque sections occlude
+   * the canvas as the user scrolls past the hero. */
+  main {
+    position: relative;
+    z-index: 2;
+  }
+</style>

@@ -1,0 +1,133 @@
+---
+// Site-wide layout. Loads tokens, fonts and globals; hosts the WebGL import
+// map in the document head so the hero's <script is:inline> can resolve
+// `three`, `lil-gui` and `lenis` without going through Vite's bundler.
+//
+// Pinning the CDN-loaded versions here (jsDelivr) per CLAUDE.md so a moving
+// "latest" cannot drift the hero's behaviour.
+
+import '../styles/fonts.css';
+import '../styles/tokens.css';
+import '../styles/global.css';
+
+export interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'Court Granville',
+  description = 'Court Granville — product designer, IE University Madrid.',
+} = Astro.props;
+---
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <script type="importmap" is:inline>
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/",
+          "lil-gui": "https://cdn.jsdelivr.net/npm/lil-gui@0.19.2/dist/lil-gui.esm.min.js",
+          "lenis": "https://cdn.jsdelivr.net/npm/lenis@1.3.23/dist/lenis.mjs"
+        }
+      }
+    </script>
+  </head>
+  <body id="top">
+    <slot />
+
+    <script is:inline type="module">
+      // ─────────────────────────────────────────────────────────────────────
+      // Site-wide client behaviours: Lenis smooth scroll, reveal observer,
+      // nav scroll-state toggle, and the placeholder-link guard.
+      //
+      // Behaviours ported from the proven prototypes/hero/index.html.
+      //
+      // The homepage's hero dispatches a `hero:loaded` CustomEvent on `window`
+      // when the particle load-in finishes; we use that to fade the nav in.
+      // Pages without a hero (Work) have no such event — we detect the
+      // absence of `.hero-section` and fade the nav in immediately, with the
+      // scroll backdrop already on so it reads cleanly over content.
+      // ─────────────────────────────────────────────────────────────────────
+      import Lenis from 'lenis';
+
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const navEl   = document.querySelector('.site-nav');
+      const heroEl  = document.querySelector('.hero-section');
+
+      // On pages without a hero, the nav comes in immediately with the
+      // backdrop on — there is no load-in moment to wait for.
+      if (navEl && !heroEl) {
+        navEl.classList.add('in', 'scrolled');
+      }
+
+      // Inert placeholder links — `href="#"` would otherwise jolt the page to
+      // the top. The brand uses `#top` (real anchor) and `mailto:` keeps
+      // working because neither matches `#` exactly.
+      document.addEventListener('click', (e) => {
+        const a = e.target.closest('a');
+        if (a && a.getAttribute('href') === '#') e.preventDefault();
+      });
+
+      // Smooth-scroll target for the brand-as-home anchor.
+      let lenis = null;
+      if (!reducedMotion) {
+        lenis = new Lenis({
+          duration: 1.0,
+          easing:   (x) => Math.min(1, 1.001 - Math.pow(2, -10 * x)),
+          smoothWheel: true,
+          smoothTouch: false,
+        });
+        const lenisRaf = (time) => { lenis.raf(time); requestAnimationFrame(lenisRaf); };
+        requestAnimationFrame(lenisRaf);
+      }
+      function scrollToTop() {
+        if (lenis) lenis.scrollTo(0, { duration: 1.2 });
+        else window.scrollTo({ top: 0, behavior: 'auto' });
+      }
+      document.querySelectorAll('[data-scroll-top]').forEach(el => {
+        el.addEventListener('click', (e) => { e.preventDefault(); scrollToTop(); });
+      });
+
+      // Scroll-driven UI:
+      //   - Fade the SCROLL cue out as soon as scrolling begins.
+      //   - Toggle .scrolled on the nav once past the hero (homepage only).
+      const cueEl = document.getElementById('scrollCue');
+      function onScroll() {
+        const y = window.scrollY || window.pageYOffset;
+        if (cueEl) {
+          const fade = Math.max(0, 1 - y / 90);
+          cueEl.style.opacity = String(fade * 0.55);
+        }
+        if (heroEl && navEl) {
+          const navThreshold = window.innerHeight - 80;
+          navEl.classList.toggle('scrolled', y > navThreshold);
+        }
+      }
+      if (lenis) lenis.on('scroll', onScroll);
+      else window.addEventListener('scroll', onScroll, { passive: true });
+
+      // Reveal — IntersectionObserver, single trigger per element. Works for
+      // any `.reveal` on the page, including elements added later (a fresh
+      // observer is started for each).
+      const revealObserver = new IntersectionObserver((entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            e.target.classList.add('in');
+            revealObserver.unobserve(e.target);
+          }
+        }
+      }, { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
+      document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+    </script>
+  </body>
+</html>

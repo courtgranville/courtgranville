@@ -1,0 +1,68 @@
+---
+// Multi-image grid — 2, 3 or 4 across. Spec §8: cols 2 / 12 at desktop.
+// At tablet the grid collapses to 2 across regardless of count; at mobile,
+// single column.
+//
+// Each image gets equal weight; the layout assumes images are roughly
+// consistent in aspect, which the §10 categorisation step enforces.
+
+export interface Props {
+  images: Array<{ src: string; srcset?: string; aspect?: number | null }>;
+  alt: string;
+}
+const { images, alt } = Astro.props;
+const count = images.length;
+---
+<section class:list={['block', `block--${count}up`]}>
+  <div class="img-grid">
+    {images.map((img) => (
+      <figure class="figure">
+        <img
+          src={img.src}
+          srcset={img.srcset}
+          sizes={count >= 3
+            ? '(min-width: 1200px) 30vw, (min-width: 768px) 45vw, 100vw'
+            : '(min-width: 1200px) 40vw, (min-width: 768px) 45vw, 100vw'}
+          alt={alt}
+          loading="lazy"
+          decoding="async"
+          style={img.aspect ? `aspect-ratio: ${img.aspect};` : ''}
+        />
+      </figure>
+    ))}
+  </div>
+</section>
+
+<style>
+  .block {
+    display: grid;
+    grid-template-columns: repeat(var(--cols), 1fr);
+    column-gap: var(--gutter);
+    padding-inline: var(--outer);
+    margin: clamp(40px, 6vh, 64px) 0;
+  }
+  .img-grid {
+    grid-column: 1 / -1;
+    display: grid;
+    gap: var(--gutter);
+    grid-template-columns: 1fr;
+  }
+  .figure { margin: 0; }
+  .figure img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+    background: var(--hairline);
+  }
+
+  @media (min-width: 768px) {
+    .img-grid { grid-column: 1 / 9; grid-template-columns: 1fr 1fr; }
+  }
+  @media (min-width: 1200px) {
+    .img-grid { grid-column: 2 / 12; }
+    .block--2up .img-grid { grid-template-columns: 1fr 1fr; }
+    .block--3up .img-grid { grid-template-columns: 1fr 1fr 1fr; }
+    .block--4up .img-grid { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  }
+</style>

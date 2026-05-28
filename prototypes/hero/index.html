@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Court Granville</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Raleway:wght@400;500&display=block" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FFFFFF;
+    --text: #141414;
+    --text-quiet: rgba(20, 20, 20, 0.55);
+    --text-faint: rgba(20, 20, 20, 0.32);
+    --rule: rgba(20, 20, 20, 0.10);
+    --accent: #8E1B0E;
+
+    --sans:  'Raleway', ui-sans-serif, system-ui, sans-serif;
+    --serif: 'Playfair Display', Georgia, serif;
+
+    /* One motion language — these two curves are used everywhere. */
+    --ease-out:   cubic-bezier(0.16, 1, 0.30, 1);
+    --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+
+    --dur-hover:   200ms;
+    --dur-reveal:  700ms;
+    --dur-slide:   780ms;
+    --dur-nav-bg:  250ms;
+
+    --nav-h: 76px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: auto; } /* Lenis owns smooth scroll; native fallback used under reduced-motion */
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  ::selection { background: var(--text); color: var(--bg); }
+
+  a { color: inherit; text-decoration: none; }
+  button { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+
+  :focus-visible {
+    outline: 1.5px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 1px;
+  }
+
+  /* ─── HERO CANVAS ─────────────────────────────────────────────────── */
+  #c {
+    position: fixed; inset: 0; width: 100%; height: 100%;
+    display: block; z-index: 1;
+  }
+
+  /* ─── SITE NAV ────────────────────────────────────────────────────── */
+  .site-nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: var(--nav-h);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 max(28px, 3vw);
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 600ms ease-out;
+  }
+  .site-nav.in { opacity: 1; }
+
+  /* Backdrop appears once the hero is scrolled past. Sits behind the text. */
+  .site-nav::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: saturate(140%) blur(10px);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+    opacity: 0;
+    transition: opacity var(--dur-nav-bg) var(--ease-out);
+    z-index: -1;
+  }
+  .site-nav.scrolled::before { opacity: 1; }
+  .site-nav.scrolled { border-bottom: 1px solid var(--rule); }
+
+  .brand {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 22px;
+    line-height: 1;
+    letter-spacing: 0;
+    color: var(--text);
+    transition: opacity var(--dur-hover) var(--ease-out);
+  }
+  .brand:hover { opacity: 0.65; }
+
+  .nav-links {
+    display: flex;
+    gap: 36px;
+  }
+  .nav-link {
+    position: relative;
+    font-family: var(--sans);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--text);
+    opacity: 0.82;
+    padding: 6px 0;
+    transition: color var(--dur-hover) var(--ease-out), opacity var(--dur-hover) var(--ease-out);
+  }
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 1px;
+    background: currentColor;
+    transform-origin: left center;
+    transform: scaleX(0);
+    transition: transform var(--dur-hover) var(--ease-out);
+  }
+  .nav-link:hover { color: var(--accent); opacity: 1; }
+  .nav-link:hover::after { transform: scaleX(1); }
+
+  /* ─── HERO SECTION ────────────────────────────────────────────────── */
+  main { position: relative; z-index: 2; }
+
+  .hero-section {
+    position: relative;
+    height: 100vh;
+    background: transparent; /* canvas shows through */
+  }
+  .scroll-cue {
+    position: absolute; bottom: 28px; left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--sans);
+    font-size: 10px;
+    letter-spacing: 0.34em;
+    color: var(--text);
+    opacity: 0;
+    text-align: center;
+    transition: opacity 600ms ease-out;
+    pointer-events: none;
+  }
+  .scroll-cue.in { opacity: 0.55; }
+  .scroll-cue .arrow {
+    display: block;
+    margin-top: 8px;
+    font-size: 12px;
+    animation: bob 2.4s ease-in-out infinite;
+  }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0);  opacity: 0.55; }
+    50%      { transform: translateY(6px); opacity: 0.95; }
+  }
+
+  /* ─── SHARED ──────────────────────────────────────────────────────── */
+  .kicker {
+    font-family: var(--sans);
+    font-size: 10px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--text-quiet);
+  }
+  .textlink {
+    display: inline-flex; align-items: baseline; gap: 8px;
+    font-family: var(--sans);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text);
+    padding-bottom: 2px;
+    border-bottom: 1px solid transparent;
+    transition: color var(--dur-hover) var(--ease-out), border-color var(--dur-hover) var(--ease-out);
+  }
+  .textlink:hover { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ─── INTRO ───────────────────────────────────────────────────────── */
+  .intro-section {
+    position: relative;
+    background: var(--bg);
+    padding: clamp(120px, 18vh, 200px) 0 clamp(140px, 22vh, 240px);
+  }
+  .intro-inner {
+    max-width: 880px;
+    padding-left: max(36px, 8vw);
+    padding-right: max(36px, 5vw);
+  }
+  .intro-kicker { display: block; margin-bottom: 56px; }
+  .intro-statement {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(28px, 3.2vw, 44px);
+    line-height: 1.32;
+    letter-spacing: -0.005em;
+    color: var(--text);
+    margin-bottom: 48px;
+    max-width: 24ch;
+  }
+  .intro-factual {
+    font-family: var(--sans);
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    line-height: 1.85;
+    text-transform: uppercase;
+    color: var(--text-quiet);
+    max-width: 64ch;
+    margin-bottom: 56px;
+  }
+  .intro-link { }
+
+  /* ─── CAROUSEL ────────────────────────────────────────────────────── */
+  .carousel-section {
+    position: relative;
+    background: var(--bg);
+    padding-bottom: clamp(90px, 12vh, 140px);
+  }
+  .carousel-head {
+    padding: 0 max(36px, 5vw);
+    margin-bottom: 36px;
+  }
+  .carousel {
+    position: relative;
+    width: 100%;
+    height: 85vh;
+    overflow: hidden;
+    background: #1a1815;
+    user-select: none;
+  }
+  .carousel-track {
+    display: flex;
+    height: 100%;
+    will-change: transform;
+    transition: transform var(--dur-slide) var(--ease-inout);
+  }
+  .carousel.dragging .carousel-track { transition: none; }
+
+  .slide {
+    position: relative;
+    flex: 0 0 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  .slide-media {
+    position: absolute; inset: 0;
+    transform: scale(1.04);
+    transition: transform 1200ms var(--ease-out);
+    will-change: transform;
+  }
+  .slide.active .slide-media { transform: scale(1); }
+
+  .slide-media img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  /* Placeholder media block: tasteful mid-tone with centred project name. */
+  .slide-media.placeholder {
+    background: #3F3D38;
+    display: grid; place-items: center;
+  }
+  .slide-media.placeholder .ph-name {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(40px, 7vw, 92px);
+    color: rgba(255, 255, 255, 0.30);
+    line-height: 1;
+    letter-spacing: 0.005em;
+    padding: 0 6vw;
+    text-align: center;
+  }
+
+  /* Scrim anchored bottom-left so the overlay text always reads. */
+  .slide::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(35deg,
+      rgba(0, 0, 0, 0.52) 0%,
+      rgba(0, 0, 0, 0.22) 28%,
+      rgba(0, 0, 0, 0.00) 58%);
+    pointer-events: none;
+  }
+
+  .slide-overlay {
+    position: absolute;
+    left: max(36px, 5vw);
+    bottom: clamp(40px, 7vh, 72px);
+    right: max(36px, 5vw);
+    max-width: 760px;
+    color: #FFFFFF;
+    opacity: 0;
+    transition: opacity 600ms var(--ease-out) 150ms;
+  }
+  .slide.active .slide-overlay { opacity: 1; }
+  .slide-name {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(28px, 3.6vw, 52px);
+    line-height: 1.1;
+    margin-bottom: 18px;
+    color: #FFFFFF;
+  }
+  .slide-meta {
+    font-family: var(--sans);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.78);
+    margin-bottom: 20px;
+  }
+  .slide-link {
+    display: inline-flex; align-items: baseline; gap: 8px;
+    font-family: var(--sans);
+    font-size: 11px;
+    letter-spacing: 0.20em;
+    text-transform: uppercase;
+    color: #FFFFFF;
+    padding-bottom: 2px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+    transition: color var(--dur-hover) var(--ease-out), border-color var(--dur-hover) var(--ease-out);
+  }
+  .slide-link:hover { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* Controls bottom-right: index, prev, next. */
+  .carousel-controls {
+    position: absolute;
+    right: max(36px, 5vw);
+    bottom: clamp(40px, 7vh, 72px);
+    display: flex; align-items: center; gap: 22px;
+    color: #FFFFFF;
+  }
+  .slide-index {
+    font-family: var(--sans);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    color: rgba(255, 255, 255, 0.82);
+    min-width: 60px;
+    text-align: right;
+  }
+  .carousel-btn {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    color: #FFFFFF;
+    display: grid; place-items: center;
+    transition: background-color var(--dur-hover) var(--ease-out),
+                border-color var(--dur-hover) var(--ease-out),
+                color var(--dur-hover) var(--ease-out);
+  }
+  .carousel-btn:hover {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.85);
+  }
+  .carousel-btn:focus-visible {
+    outline-color: #FFFFFF;
+  }
+  .carousel-btn svg { display: block; }
+  .carousel-btn:disabled {
+    opacity: 0.32;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .carousel-foot {
+    padding: 28px max(36px, 5vw) 0;
+  }
+
+  /* ─── FOOTER ──────────────────────────────────────────────────────── */
+  footer {
+    background: var(--bg);
+    border-top: 1px solid var(--rule);
+    padding: clamp(56px, 9vh, 96px) max(36px, 5vw) 32px;
+  }
+  .footer-inner {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "contact links"
+      "copyright copyright";
+    gap: 60px 40px;
+    align-items: end;
+  }
+  .footer-contact { grid-area: contact; }
+  .footer-contact .kicker { display: block; margin-bottom: 12px; }
+  .footer-email {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(22px, 2.4vw, 32px);
+    color: var(--text);
+    transition: color var(--dur-hover) var(--ease-out);
+  }
+  .footer-email:hover { color: var(--accent); }
+
+  .footer-links {
+    grid-area: links;
+    display: flex; gap: 28px;
+  }
+  .footer-links a {
+    font-family: var(--sans);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--text-quiet);
+    transition: color var(--dur-hover) var(--ease-out);
+  }
+  .footer-links a:hover { color: var(--accent); }
+
+  .footer-copyright {
+    grid-area: copyright;
+    margin-top: 44px;
+    padding-top: 22px;
+    border-top: 1px solid var(--rule);
+    font-family: var(--sans);
+    font-size: 10px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+
+  /* ─── REVEAL UTILITY ──────────────────────────────────────────────── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition:
+      opacity var(--dur-reveal) var(--ease-out),
+      transform var(--dur-reveal) var(--ease-out);
+  }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal[data-stagger="1"] { transition-delay:  80ms; }
+  .reveal[data-stagger="2"] { transition-delay: 160ms; }
+  .reveal[data-stagger="3"] { transition-delay: 240ms; }
+  .reveal[data-stagger="4"] { transition-delay: 320ms; }
+
+  /* sr-only — for headings we need semantically but not visually. */
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0;
+    margin: -1px; overflow: hidden; clip: rect(0,0,0,0);
+    white-space: nowrap; border: 0;
+  }
+
+  /* ─── REDUCED MOTION ──────────────────────────────────────────────── */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+    .reveal { opacity: 1; transform: none; }
+    .slide-media { transform: none; }
+    .slide-overlay { opacity: 1; }
+  }
+
+  /* ─── lil-gui colour tweak ────────────────────────────────────────── */
+  .lil-gui {
+    --background-color:#101218; --widget-color:#1c2029;
+    --hover-color:#272d3a; --focus-color:#303746;
+    --text-color:#cfd3dc; --title-background-color:#070a12;
+    --font-size:11px;
+  }
+
+  /* ─── NARROW VIEWPORTS — keep layout sensible, don't polish ──────── */
+  @media (max-width: 720px) {
+    .site-nav { padding: 0 20px; }
+    .nav-links { gap: 22px; }
+    .brand { font-size: 18px; }
+    .intro-inner { padding-left: 24px; padding-right: 24px; }
+    .carousel-head, .carousel-foot { padding-left: 24px; padding-right: 24px; }
+    .slide-overlay { left: 24px; right: 24px; }
+    .carousel-controls { right: 24px; }
+    .footer-inner {
+      grid-template-columns: 1fr;
+      grid-template-areas: "contact" "links" "copyright";
+      gap: 36px;
+    }
+  }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/",
+    "lil-gui": "https://cdn.jsdelivr.net/npm/lil-gui@0.19.2/dist/lil-gui.esm.min.js",
+    "lenis": "https://cdn.jsdelivr.net/npm/lenis@1.3.23/dist/lenis.mjs"
+  }
+}
+</script>
+</head>
+<body id="top">
+
+<canvas id="c" aria-hidden="true"></canvas>
+
+<nav class="site-nav" aria-label="Primary">
+  <a class="brand" href="#top" data-scroll-top>Court Granville</a>
+  <div class="nav-links">
+    <a class="nav-link" href="#">Work</a>
+    <a class="nav-link" href="#">Blog</a>
+    <a class="nav-link" href="#">About</a>
+    <a class="nav-link" href="#">Contact</a>
+  </div>
+</nav>
+
+<main>
+  <section class="hero-section" aria-label="Hero">
+    <div class="scroll-cue" id="scrollCue">
+      SCROLL
+      <span class="arrow">&darr;</span>
+    </div>
+  </section>
+
+  <section class="intro-section" aria-labelledby="intro-h">
+    <div class="intro-inner">
+      <span class="kicker intro-kicker reveal" data-stagger="0">01 &mdash; Introduction</span>
+      <h2 id="intro-h" class="intro-statement reveal" data-stagger="1">
+        I&rsquo;m a product designer drawn to the technical, complex, and contested subjects that design too often leaves alone. The real work, I&rsquo;ve come to think, is translation &mdash; turning that complexity into something people can understand, trust, and act on.
+      </h2>
+      <p class="intro-factual reveal" data-stagger="2">
+        Product Design &mdash; IE University, Madrid &middot; Previously Brand Strategy &amp; Digital Marketing &middot; Current thesis on the public perception of contested technology
+      </p>
+      <a class="textlink intro-link reveal" data-stagger="3" href="#">About &rarr;</a>
+    </div>
+  </section>
+
+  <section class="carousel-section" aria-labelledby="carousel-h">
+    <div class="carousel-head">
+      <span class="kicker reveal">02 &mdash; Selected Work</span>
+      <h2 id="carousel-h" class="sr-only">Selected work</h2>
+    </div>
+    <div class="carousel reveal"
+         id="carousel"
+         role="region"
+         aria-roledescription="carousel"
+         aria-label="Featured projects"
+         tabindex="0">
+      <div class="carousel-track" id="carouselTrack"></div>
+      <div class="carousel-controls">
+        <span class="slide-index" id="slideIndex" aria-live="polite">01 / 05</span>
+        <button class="carousel-btn carousel-prev" id="carouselPrev" aria-label="Previous project">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            <path d="M14.5 6 L9.5 12 L14.5 18" stroke="currentColor" stroke-width="1.25" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button class="carousel-btn carousel-next" id="carouselNext" aria-label="Next project">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            <path d="M9.5 6 L14.5 12 L9.5 18" stroke="currentColor" stroke-width="1.25" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="carousel-foot">
+      <a class="textlink reveal" href="#">All work &rarr;</a>
+    </div>
+  </section>
+
+  <footer aria-label="Site footer">
+    <div class="footer-inner">
+      <div class="footer-contact reveal">
+        <span class="kicker">Get in touch</span>
+        <a class="footer-email" href="mailto:court@courtgranville.com">court@courtgranville.com</a>
+      </div>
+      <nav class="footer-links" aria-label="Footer">
+        <a href="#">Work</a>
+        <a href="#">Blog</a>
+        <a href="#">About</a>
+        <a href="#">Contact</a>
+      </nav>
+      <div class="footer-copyright">&copy; 2026 Court Granville</div>
+    </div>
+  </footer>
+</main>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass }     from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass }     from 'three/addons/postprocessing/ShaderPass.js';
+import { RGBShiftShader } from 'three/addons/shaders/RGBShiftShader.js';
+import GUI   from 'lil-gui';
+import Lenis from 'lenis';
+
+const TAU = Math.PI * 2;
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ─────────────────────────────────────────────────────────────────────────
+// CONFIG — locked to Court's tuned values (§0 of homepage-spec.md).
+// The GUI stays in place for future tuning, but defaults are now the
+// "shipped" look: crisp, stark, fully-opaque particle field, no atmosphere.
+// ─────────────────────────────────────────────────────────────────────────
+const CONFIG = {
+  scene: {
+    bgColor:            '#FFFFFF',
+    cameraDistance:     15,
+    cameraFov:          32,
+    cameraDriftEnabled: false,
+    cameraDriftAmp:     0,
+    cameraDriftSpeed:   0,
+  },
+  glyph: {
+    text:           'CG',
+    worldHeight:    3.1,
+    depth:          0.39,
+    canvasWidth:    2400,
+    fontWeight:     700,
+    alphaThreshold: 80,
+  },
+  particles: {
+    count:              140000,
+    contourBoost:       0,
+    baseSize:           0.032,
+    sizeVariance:       0.22,
+    inkColor:           '#161616',
+    inkLightnessVar:    0,
+    opacity:            1,
+    depthFade:          0,
+  },
+  physics: {
+    springK:         15,
+    damping:         0.99,
+    maxVel:          12.1,
+    maxDisplacement: 4,
+    ambientMode:     'off',
+    ambientAmp:      0.003,
+    ambientFreq:     0.11,
+  },
+  pointer: {
+    mode:      'repel',
+    radius:    0.27,
+    strength:  25,
+    falloff:   'smoothstep',
+    smoothing: 0.59,
+  },
+  rotation: {
+    mode:           'continuous',
+    speed:          reducedMotion ? 0 : 0.06,
+    oscAngle:       0.55,
+    oscFreq:        0.32,
+    parallax:       false,
+    parallaxAmount: 0.06,
+    parallaxLerp:   0.05,
+  },
+  loadIn: {
+    duration:    1.6,
+    stagger:     0.7,
+    staggerMode: 'leftToRight',
+    easing:      'easeOutCubic',
+    startVolume: 7,
+    uiFadeDelay: 0.15,
+  },
+  post: {
+    grain:               0,
+    vignette:            0,
+    chromaticAberration: 0,
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────
+const easings = {
+  linear:         t => t,
+  easeOutCubic:   t => 1 - Math.pow(1 - t, 3),
+  easeOutExpo:    t => t >= 1 ? 1 : 1 - Math.pow(2, -10 * t),
+  easeInOutCubic: t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+};
+
+function pickIndices(n, k) {
+  k = Math.min(n, k);
+  const arr = new Uint32Array(n);
+  for (let i = 0; i < n; i++) arr[i] = i;
+  for (let i = 0; i < k; i++) {
+    const j = i + ((Math.random() * (n - i)) | 0);
+    const t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+  }
+  return arr.subarray(0, k);
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// GlyphSampler
+// ─────────────────────────────────────────────────────────────────────────
+class GlyphSampler {
+  async sample(cfg) {
+    await document.fonts.load(`${cfg.glyph.fontWeight} 96px "Playfair Display"`);
+    await document.fonts.ready;
+
+    const w = cfg.glyph.canvasWidth;
+    const h = Math.round(w * 0.72);
+    const cnv = document.createElement('canvas');
+    cnv.width = w; cnv.height = h;
+    const ctx = cnv.getContext('2d', { willReadFrequently: true });
+    ctx.fillStyle = '#ffffff';
+    ctx.textBaseline = 'alphabetic';
+
+    let fontSize = Math.round(h * 0.96);
+    ctx.font = `${cfg.glyph.fontWeight} ${fontSize}px "Playfair Display"`;
+    let m = ctx.measureText(cfg.glyph.text);
+    if (m.width > w * 0.94) {
+      fontSize = Math.floor(fontSize * (w * 0.94) / m.width);
+      ctx.font = `${cfg.glyph.fontWeight} ${fontSize}px "Playfair Display"`;
+      m = ctx.measureText(cfg.glyph.text);
+    }
+    const ascent  = m.actualBoundingBoxAscent;
+    const descent = m.actualBoundingBoxDescent;
+    const drawX = (w - m.width) / 2;
+    const drawY = h / 2 + (ascent - descent) / 2;
+    ctx.fillText(cfg.glyph.text, drawX, drawY);
+
+    const img = ctx.getImageData(0, 0, w, h).data;
+    const thresh = cfg.glyph.alphaThreshold;
+    const filled = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) {
+      const row = y * w;
+      for (let x = 0; x < w; x++) {
+        if (img[(row + x) * 4 + 3] > thresh) filled[row + x] = 1;
+      }
+    }
+
+    let minX = w, minY = h, maxX = -1, maxY = -1;
+    for (let y = 0; y < h; y++) {
+      const row = y * w;
+      for (let x = 0; x < w; x++) {
+        if (filled[row + x]) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (maxX < 0) throw new Error('GlyphSampler: no pixels drawn — is Playfair Display loaded?');
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const scale = cfg.glyph.worldHeight / (maxY - minY);
+
+    const all     = [];
+    const contour = [];
+    for (let y = minY; y <= maxY; y++) {
+      const row = y * w;
+      for (let x = minX; x <= maxX; x++) {
+        if (!filled[row + x]) continue;
+        const wx =  (x - cx) * scale;
+        const wy = -(y - cy) * scale;
+        all.push(wx, wy);
+        const up    = y > 0     ? filled[row - w + x] : 0;
+        const down  = y < h - 1 ? filled[row + w + x] : 0;
+        const left  = x > 0     ? filled[row + x - 1] : 0;
+        const right = x < w - 1 ? filled[row + x + 1] : 0;
+        if (!(up && down && left && right)) {
+          contour.push(wx, wy);
+        }
+      }
+    }
+    return { all, contour };
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// ParticleSystem
+// ─────────────────────────────────────────────────────────────────────────
+const VERT = `
+attribute float aSeed;
+attribute float aSizeMul;
+attribute float aLight;
+uniform float uBaseSize;
+uniform float uSizeScale;
+uniform float uFadeNear;
+uniform float uFadeFar;
+uniform float uDepthFade;
+varying float vFade;
+varying float vLight;
+void main() {
+  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  gl_PointSize = uBaseSize * aSizeMul * (uSizeScale / -mv.z);
+  gl_Position = projectionMatrix * mv;
+  float vd = -mv.z;
+  float t = clamp((vd - uFadeNear) / max(uFadeFar - uFadeNear, 0.0001), 0.0, 1.0);
+  vFade  = t * uDepthFade;
+  vLight = aLight;
+}
+`;
+const FRAG = `
+precision highp float;
+varying float vFade;
+varying float vLight;
+uniform vec3 uInkColor;
+uniform vec3 uBgColor;
+uniform float uLightnessVar;
+uniform float uOpacity;
+void main() {
+  vec2 c = gl_PointCoord - 0.5;
+  float r = length(c) * 2.0;
+  if (r >= 1.0) discard;
+  float a = smoothstep(1.0, 0.25, r);
+  vec3 ink = clamp(uInkColor + vec3(vLight * uLightnessVar), 0.0, 1.0);
+  vec3 col = mix(ink, uBgColor, vFade);
+  gl_FragColor = vec4(col, a * uOpacity);
+}
+`;
+
+class ParticleSystem {
+  constructor(samples, cfg) {
+    const nAll     = samples.all.length / 2;
+    const nContour = samples.contour.length / 2;
+
+    const wantContour = Math.min(nContour, Math.round(cfg.particles.count * cfg.particles.contourBoost));
+    const wantMain    = Math.max(0, cfg.particles.count - wantContour);
+    const idxMain     = pickIndices(nAll,     wantMain);
+    const idxContour  = pickIndices(nContour, wantContour);
+    const count = idxMain.length + idxContour.length;
+
+    const positions = new Float32Array(count * 3);
+    const home      = new Float32Array(count * 3);
+    const seed      = new Float32Array(count);
+    const sizeMul   = new Float32Array(count);
+    const light     = new Float32Array(count);
+    this.vel        = new Float32Array(count * 3);
+
+    const v     = cfg.particles.sizeVariance;
+    const depth = cfg.glyph.depth;
+    let w = 0;
+    const writePoint = (sx, sy) => {
+      const i3 = w * 3;
+      const z = (Math.random() - 0.5) * depth;
+      home[i3]     = sx; home[i3+1]     = sy; home[i3+2]     = z;
+      positions[i3] = sx; positions[i3+1] = sy; positions[i3+2] = z;
+      seed[w]    = Math.random();
+      sizeMul[w] = 1 + (Math.random() - 0.5) * v;
+      light[w]   = Math.random() - 0.5;
+      w++;
+    };
+    for (let i = 0; i < idxMain.length; i++) {
+      const k = idxMain[i] * 2;
+      writePoint(samples.all[k], samples.all[k + 1]);
+    }
+    for (let i = 0; i < idxContour.length; i++) {
+      const k = idxContour[i] * 2;
+      writePoint(samples.contour[k], samples.contour[k + 1]);
+    }
+
+    this.count = count;
+    this.home  = home;
+    this.geometry = new THREE.BufferGeometry();
+    this.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    this.geometry.setAttribute('aSeed',    new THREE.BufferAttribute(seed, 1));
+    this.geometry.setAttribute('aSizeMul', new THREE.BufferAttribute(sizeMul, 1));
+    this.geometry.setAttribute('aLight',   new THREE.BufferAttribute(light, 1));
+
+    this.material = new THREE.ShaderMaterial({
+      uniforms: {
+        uBaseSize:     { value: cfg.particles.baseSize },
+        uSizeScale:    { value: 1 },
+        uFadeNear:     { value: 0 },
+        uFadeFar:      { value: 0 },
+        uDepthFade:    { value: cfg.particles.depthFade },
+        uInkColor:     { value: new THREE.Color(cfg.particles.inkColor) },
+        uBgColor:      { value: new THREE.Color(cfg.scene.bgColor) },
+        uLightnessVar: { value: cfg.particles.inkLightnessVar },
+        uOpacity:      { value: cfg.particles.opacity },
+      },
+      vertexShader:   VERT,
+      fragmentShader: FRAG,
+      transparent: true,
+      depthWrite:  false,
+      depthTest:   false,
+      blending:    THREE.NormalBlending,
+    });
+
+    this.points = new THREE.Points(this.geometry, this.material);
+    this.points.frustumCulled = false;
+  }
+  dispose() {
+    this.geometry.dispose();
+    this.material.dispose();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Simulator
+// ─────────────────────────────────────────────────────────────────────────
+class Simulator {
+  constructor(particleSystem, cfg) {
+    this.ps  = particleSystem;
+    this.cfg = cfg;
+  }
+  step(dt, time, probe) {
+    const pos  = this.ps.geometry.attributes.position.array;
+    const seed = this.ps.geometry.attributes.aSeed.array;
+    const vel  = this.ps.vel;
+    const home = this.ps.home;
+    const count = this.ps.count;
+
+    const p   = this.cfg.physics;
+    const ptr = this.cfg.pointer;
+
+    const k    = p.springK;
+    const dmp  = p.damping;
+    const mode = p.ambientMode;
+    const aOn  = mode !== 'off';
+    const aSin = mode === 'sin';
+    const aAmp = p.ambientAmp;
+    const aFrq = p.ambientFreq;
+    const maxV = p.maxVel,  maxV2 = maxV * maxV;
+    const maxD = p.maxDisplacement, maxD2 = maxD * maxD;
+
+    const probeActive = probe.active;
+    const ox = probe.localOrigin.x, oy = probe.localOrigin.y, oz = probe.localOrigin.z;
+    const rx = probe.localDir.x,    ry = probe.localDir.y,    rz = probe.localDir.z;
+    const r  = ptr.radius,          r2 = r * r;
+    const sign = ptr.mode === 'attract' ? -1 : 1;
+    const str  = ptr.strength * sign;
+    const useSmooth = ptr.falloff === 'smoothstep';
+
+    for (let i = 0; i < count; i++) {
+      const i3 = i * 3;
+      const s = seed[i];
+
+      let ax = 0, ay = 0, az = 0;
+      if (aOn) {
+        const a = time * aFrq + s * TAU;
+        if (aSin) {
+          ax = aAmp * Math.sin(a);
+          ay = aAmp * Math.sin(a * 1.31 + 1.7);
+          az = aAmp * 0.5 * Math.sin(a * 0.77 + 3.4);
+        } else {
+          ax = aAmp *  Math.sin(a * 1.1) * Math.cos(a * 0.7 + 1.0);
+          ay = aAmp *  Math.cos(a * 0.9 + 2.0) * Math.sin(a * 1.3);
+          az = aAmp * 0.5 * Math.sin(a + s * 5.0);
+        }
+      }
+      const tx = home[i3]   + ax;
+      const ty = home[i3+1] + ay;
+      const tz = home[i3+2] + az;
+
+      let fx = -k * (pos[i3]   - tx);
+      let fy = -k * (pos[i3+1] - ty);
+      let fz = -k * (pos[i3+2] - tz);
+
+      if (probeActive) {
+        const vx = pos[i3]   - ox;
+        const vy = pos[i3+1] - oy;
+        const vz = pos[i3+2] - oz;
+        const proj = vx * rx + vy * ry + vz * rz;
+        const perpX = vx - proj * rx;
+        const perpY = vy - proj * ry;
+        const perpZ = vz - proj * rz;
+        const pd2 = perpX * perpX + perpY * perpY + perpZ * perpZ;
+        if (pd2 < r2) {
+          const pd = Math.sqrt(pd2) || 0.0001;
+          const u = 1 - pd / r;
+          const sm = useSmooth ? u * u * (3 - 2 * u) : u;
+          const mag = (str * sm) / pd;
+          fx += perpX * mag;
+          fy += perpY * mag;
+          fz += perpZ * mag;
+        }
+      }
+
+      let vx = (vel[i3]   + fx * dt) * dmp;
+      let vy = (vel[i3+1] + fy * dt) * dmp;
+      let vz = (vel[i3+2] + fz * dt) * dmp;
+
+      const v2 = vx * vx + vy * vy + vz * vz;
+      if (v2 > maxV2) {
+        const sv = maxV / Math.sqrt(v2);
+        vx *= sv; vy *= sv; vz *= sv;
+      }
+      vel[i3] = vx; vel[i3+1] = vy; vel[i3+2] = vz;
+
+      let nx = pos[i3]   + vx * dt;
+      let ny = pos[i3+1] + vy * dt;
+      let nz = pos[i3+2] + vz * dt;
+
+      const odx = nx - home[i3];
+      const ody = ny - home[i3+1];
+      const odz = nz - home[i3+2];
+      const od2 = odx * odx + ody * ody + odz * odz;
+      if (od2 > maxD2) {
+        const sd = maxD / Math.sqrt(od2);
+        nx = home[i3]   + odx * sd;
+        ny = home[i3+1] + ody * sd;
+        nz = home[i3+2] + odz * sd;
+      }
+      pos[i3] = nx; pos[i3+1] = ny; pos[i3+2] = nz;
+    }
+    this.ps.geometry.attributes.position.needsUpdate = true;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Probe — cursor ray into local space.
+// ─────────────────────────────────────────────────────────────────────────
+class Probe {
+  constructor(cfg) {
+    this.cfg = cfg;
+    this.raycaster   = new THREE.Raycaster();
+    this.targetNDC   = new THREE.Vector2();
+    this.smoothedNDC = new THREE.Vector2();
+    this.localOrigin = new THREE.Vector3(1e6, 1e6, 1e6);
+    this.localDir    = new THREE.Vector3(0, 0, -1);
+    this.active = false;
+    this._needSnap = false;
+    this._invMat = new THREE.Matrix4();
+  }
+  setNDC(x, y) { this.targetNDC.set(x, y); }
+  setActive(a) {
+    if (a && !this.active) this._needSnap = true;
+    this.active = a;
+    if (!a) this.localOrigin.set(1e6, 1e6, 1e6);
+  }
+  update(camera, group) {
+    if (!this.active) return;
+    if (this._needSnap) {
+      this.smoothedNDC.copy(this.targetNDC);
+      this._needSnap = false;
+    } else {
+      this.smoothedNDC.lerp(this.targetNDC, this.cfg.pointer.smoothing);
+    }
+    this.raycaster.setFromCamera(this.smoothedNDC, camera);
+    this._invMat.copy(group.matrixWorld).invert();
+    this.localOrigin.copy(this.raycaster.ray.origin).applyMatrix4(this._invMat);
+    this.localDir.copy(this.raycaster.ray.direction).transformDirection(this._invMat);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// RotationController
+// ─────────────────────────────────────────────────────────────────────────
+class RotationController {
+  constructor(cfg) {
+    this.cfg = cfg;
+    this.accumY = 0;
+    this.parX = 0; this.parY = 0;
+    this.tgtX = 0; this.tgtY = 0;
+  }
+  update(dt, time, group, pointerNDC, pointerActive) {
+    const r = this.cfg.rotation;
+    const baseY = r.mode === 'continuous'
+      ? (this.accumY += r.speed * dt, this.accumY)
+      : r.oscAngle * Math.sin(time * r.oscFreq);
+    if (r.parallax && pointerActive) {
+      this.tgtY =  pointerNDC.x * r.parallaxAmount;
+      this.tgtX = -pointerNDC.y * r.parallaxAmount;
+    } else {
+      this.tgtX *= 0.94; this.tgtY *= 0.94;
+    }
+    this.parX += (this.tgtX - this.parX) * r.parallaxLerp;
+    this.parY += (this.tgtY - this.parY) * r.parallaxLerp;
+    group.rotation.y = baseY + this.parY;
+    group.rotation.x = this.parX;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// LoadIn
+// ─────────────────────────────────────────────────────────────────────────
+class LoadIn {
+  constructor(particleSystem, cfg) {
+    this.ps  = particleSystem;
+    this.cfg = cfg;
+    this.active = false;
+    this.startTime = 0;
+    this.starts = new Float32Array(particleSystem.count * 3);
+    this.delays = new Float32Array(particleSystem.count);
+    this.onComplete = null;
+  }
+  prepare() {
+    const home  = this.ps.home;
+    const count = this.ps.count;
+    const vol   = this.cfg.loadIn.startVolume;
+    const mode  = this.cfg.loadIn.staggerMode;
+    const total = this.cfg.loadIn.stagger;
+
+    let minX = Infinity, maxX = -Infinity, maxR = 0;
+    for (let i = 0; i < count; i++) {
+      const i3 = i * 3;
+      const x = home[i3];
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      const rr = Math.hypot(home[i3], home[i3 + 1]);
+      if (rr > maxR) maxR = rr;
+    }
+    const xRange = (maxX - minX) || 1;
+    maxR = maxR || 1;
+
+    for (let i = 0; i < count; i++) {
+      const i3 = i * 3;
+      this.starts[i3]     = (Math.random() - 0.5) * vol;
+      this.starts[i3 + 1] = (Math.random() - 0.5) * vol;
+      this.starts[i3 + 2] = (Math.random() - 0.5) * vol * 0.5;
+      if (mode === 'leftToRight') {
+        this.delays[i] = ((home[i3] - minX) / xRange) * total;
+      } else if (mode === 'centreOut') {
+        const rr = Math.hypot(home[i3], home[i3 + 1]);
+        this.delays[i] = (rr / maxR) * total;
+      } else {
+        this.delays[i] = Math.random() * total;
+      }
+    }
+  }
+  start(time) {
+    this.prepare();
+    this.startTime = time;
+    this.active = true;
+    this.ps.vel.fill(0);
+    const pos = this.ps.geometry.attributes.position.array;
+    pos.set(this.starts);
+    this.ps.geometry.attributes.position.needsUpdate = true;
+  }
+  step(time) {
+    const dur   = this.cfg.loadIn.duration;
+    const total = dur + this.cfg.loadIn.stagger;
+    const t     = time - this.startTime;
+    const ease  = easings[this.cfg.loadIn.easing] || easings.easeOutCubic;
+    const pos   = this.ps.geometry.attributes.position.array;
+    const home  = this.ps.home;
+    const starts = this.starts;
+    const delays = this.delays;
+    const count  = this.ps.count;
+
+    for (let i = 0; i < count; i++) {
+      const lt = (t - delays[i]) / dur;
+      const u = lt <= 0 ? 0 : lt >= 1 ? 1 : ease(lt);
+      const i3 = i * 3;
+      const inv = 1 - u;
+      pos[i3]     = starts[i3]     * inv + home[i3]     * u;
+      pos[i3 + 1] = starts[i3 + 1] * inv + home[i3 + 1] * u;
+      pos[i3 + 2] = starts[i3 + 2] * inv + home[i3 + 2] * u;
+    }
+    this.ps.geometry.attributes.position.needsUpdate = true;
+
+    if (t >= total) {
+      this.active = false;
+      pos.set(home);
+      this.ps.vel.fill(0);
+      this.ps.geometry.attributes.position.needsUpdate = true;
+      if (this.onComplete) this.onComplete();
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// PostFX
+// ─────────────────────────────────────────────────────────────────────────
+const VignetteGrainShader = {
+  uniforms: {
+    tDiffuse:  { value: null },
+    uVignette: { value: 0 },
+    uGrain:    { value: 0 },
+    uTime:     { value: 0 },
+    uBgColor:  { value: new THREE.Color('#FFFFFF') },
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main(){
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    precision highp float;
+    uniform sampler2D tDiffuse;
+    uniform float uVignette;
+    uniform float uGrain;
+    uniform float uTime;
+    uniform vec3  uBgColor;
+    varying vec2 vUv;
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+    void main() {
+      vec4 c = texture2D(tDiffuse, vUv);
+      vec2 uv = vUv - 0.5;
+      float d2 = dot(uv, uv);
+      float vig = smoothstep(0.18, 0.78, d2) * uVignette;
+      vec3 vigColor = uBgColor * 0.78;
+      c.rgb = mix(c.rgb, vigColor, vig);
+      float g = (hash(vUv * 1024.0 + uTime) - 0.5) * uGrain;
+      c.rgb += g;
+      gl_FragColor = c;
+    }
+  `,
+};
+
+class PostFX {
+  constructor(renderer, scene, camera, cfg) {
+    this.composer = new EffectComposer(renderer);
+    this.composer.addPass(new RenderPass(scene, camera));
+
+    this.vig = new ShaderPass(VignetteGrainShader);
+    this.vig.uniforms.uVignette.value = cfg.post.vignette;
+    this.vig.uniforms.uGrain.value    = cfg.post.grain;
+    this.vig.uniforms.uBgColor.value.set(cfg.scene.bgColor);
+    this.composer.addPass(this.vig);
+
+    this.rgb = new ShaderPass(RGBShiftShader);
+    this.rgb.uniforms.amount.value = cfg.post.chromaticAberration;
+    this.composer.addPass(this.rgb);
+  }
+  setSize(w, h) { this.composer.setSize(w, h); }
+  setTime(t)    { this.vig.uniforms.uTime.value = t; }
+  render()      { this.composer.render(); }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// HERO — three.js setup
+// ─────────────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const scrollCueEl = document.getElementById('scrollCue');
+const siteNavEl = document.querySelector('.site-nav');
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+renderer.setSize(window.innerWidth, window.innerHeight, false);
+renderer.setClearColor(new THREE.Color(CONFIG.scene.bgColor));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(CONFIG.scene.bgColor);
+
+const camera = new THREE.PerspectiveCamera(
+  CONFIG.scene.cameraFov,
+  window.innerWidth / window.innerHeight,
+  0.1, 100,
+);
+camera.position.set(0, 0, CONFIG.scene.cameraDistance);
+camera.lookAt(0, 0, 0);
+
+const group = new THREE.Group();
+scene.add(group);
+
+const sampler     = new GlyphSampler();
+const probe       = new Probe(CONFIG);
+const rotationCtl = new RotationController(CONFIG);
+
+let particleSystem = null;
+let simulator      = null;
+let loadIn         = null;
+
+const postFX = new PostFX(renderer, scene, camera, CONFIG);
+postFX.setSize(window.innerWidth, window.innerHeight);
+
+function setSizeScale() {
+  if (!particleSystem) return;
+  const target = new THREE.Vector2();
+  renderer.getDrawingBufferSize(target);
+  particleSystem.material.uniforms.uSizeScale.value = target.y * 0.5;
+}
+
+function updateFadeRange() {
+  if (!particleSystem) return;
+  const camZ = CONFIG.scene.cameraDistance;
+  const halfExtent = CONFIG.glyph.worldHeight * 0.5 + CONFIG.glyph.depth * 0.5 + 0.4;
+  particleSystem.material.uniforms.uFadeNear.value = camZ - halfExtent;
+  particleSystem.material.uniforms.uFadeFar.value  = camZ + halfExtent;
+}
+
+async function buildSystem() {
+  if (particleSystem) {
+    group.remove(particleSystem.points);
+    particleSystem.dispose();
+  }
+  const samples = await sampler.sample(CONFIG);
+  particleSystem = new ParticleSystem(samples, CONFIG);
+  group.add(particleSystem.points);
+  simulator = new Simulator(particleSystem, CONFIG);
+  loadIn = new LoadIn(particleSystem, CONFIG);
+  loadIn.onComplete = () => {
+    setTimeout(() => {
+      siteNavEl.classList.add('in');
+      scrollCueEl.classList.add('in');
+    }, CONFIG.loadIn.uiFadeDelay * 1000);
+  };
+  setSizeScale();
+  updateFadeRange();
+  loadIn.start(clock.elapsedTime);
+}
+
+const pointerNDC = new THREE.Vector2();
+let pointerActive = false;
+
+window.addEventListener('pointermove', (e) => {
+  // Skip when scrolled past the hero — the cursor magnetism only matters there.
+  if (!heroVisible) return;
+  const x =  (e.clientX / window.innerWidth)  * 2 - 1;
+  const y = -(e.clientY / window.innerHeight) * 2 + 1;
+  pointerNDC.set(x, y);
+  probe.setNDC(x, y);
+  probe.setActive(true);
+  pointerActive = true;
+});
+window.addEventListener('pointerleave', () => {
+  probe.setActive(false);
+  pointerActive = false;
+});
+
+window.addEventListener('resize', () => {
+  const w = window.innerWidth, h = window.innerHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false);
+  postFX.setSize(w, h);
+  setSizeScale();
+});
+
+const clock = new THREE.Clock();
+clock.getDelta();
+
+await buildSystem();
+setupGUI();
+
+// ─── Hero render loop with visibility-gated rAF ────────────────────
+let heroVisible = true;
+let rafId = null;
+
+function tick() {
+  rafId = null;
+  const dt = Math.min(clock.getDelta(), 1 / 30);
+  const t  = clock.elapsedTime;
+
+  if (CONFIG.scene.cameraDriftEnabled) {
+    const a = CONFIG.scene.cameraDriftAmp;
+    const s = CONFIG.scene.cameraDriftSpeed;
+    camera.position.x = a * Math.sin(t * s);
+    camera.position.y = a * Math.sin(t * s * 0.7 + 1.3) * 0.6;
+  } else {
+    camera.position.x = 0;
+    camera.position.y = 0;
+  }
+  camera.position.z = CONFIG.scene.cameraDistance;
+  camera.lookAt(0, 0, 0);
+
+  rotationCtl.update(dt, t, group, pointerNDC, pointerActive);
+  group.updateMatrixWorld();
+  probe.update(camera, group);
+
+  if (loadIn.active)  loadIn.step(t);
+  else if (simulator) simulator.step(dt, t, probe);
+
+  postFX.setTime(t);
+  postFX.render();
+
+  if (heroVisible) rafId = requestAnimationFrame(tick);
+}
+tick();
+
+// Pause the WebGL loop when the hero is fully off-screen — no point spending
+// GPU on a particle system the user can't see.
+const heroSectionEl = document.querySelector('.hero-section');
+new IntersectionObserver(([entry]) => {
+  if (entry.isIntersecting) {
+    if (!heroVisible) {
+      heroVisible = true;
+      clock.getDelta(); // absorb the paused interval so dt stays sensible
+      if (rafId === null) tick();
+    }
+  } else {
+    heroVisible = false;
+    probe.setActive(false); // cursor magnetism only meaningful over the hero
+  }
+}, { threshold: 0 }).observe(heroSectionEl);
+
+// ─────────────────────────────────────────────────────────────────────────
+// GUI — preserved for tuning. Folders start closed; root collapsed.
+// ─────────────────────────────────────────────────────────────────────────
+function setupGUI() {
+  const gui = new GUI({ title: 'CG tuning', width: 320 });
+
+  const fScene = gui.addFolder('Scene');
+  fScene.addColor(CONFIG.scene, 'bgColor').onChange(v => {
+    const c = new THREE.Color(v);
+    renderer.setClearColor(c);
+    scene.background = c;
+    document.documentElement.style.setProperty('--bg', v);
+    if (particleSystem) particleSystem.material.uniforms.uBgColor.value.set(c);
+    if (postFX) postFX.vig.uniforms.uBgColor.value.set(c);
+  });
+  fScene.add(CONFIG.scene, 'cameraDistance', 3, 30, 0.05).onChange(() => updateFadeRange());
+  fScene.add(CONFIG.scene, 'cameraFov', 20, 70, 1).onChange(v => {
+    camera.fov = v; camera.updateProjectionMatrix();
+  });
+  fScene.add(CONFIG.scene, 'cameraDriftEnabled');
+  fScene.add(CONFIG.scene, 'cameraDriftAmp',   0, 0.3, 0.005);
+  fScene.add(CONFIG.scene, 'cameraDriftSpeed', 0, 2,   0.01);
+
+  const fParticles = gui.addFolder('Particles');
+  fParticles.add(CONFIG.particles, 'count', 40000, 200000, 1000)
+    .onFinishChange(() => buildSystem());
+  fParticles.add(CONFIG.particles, 'contourBoost', 0, 0.15, 0.005)
+    .onFinishChange(() => buildSystem());
+  fParticles.add(CONFIG.particles, 'baseSize', 0.005, 0.2, 0.001)
+    .onChange(v => particleSystem.material.uniforms.uBaseSize.value = v);
+  fParticles.add(CONFIG.particles, 'sizeVariance', 0, 1.5, 0.01)
+    .onFinishChange(() => buildSystem());
+  fParticles.add(CONFIG.glyph, 'depth', 0.05, 1.5, 0.01)
+    .onFinishChange(() => { buildSystem(); updateFadeRange(); });
+  fParticles.add(CONFIG.particles, 'opacity', 0.1, 1.0, 0.01)
+    .onChange(v => particleSystem.material.uniforms.uOpacity.value = v);
+  fParticles.add(CONFIG.particles, 'depthFade', 0, 1, 0.01)
+    .onChange(v => particleSystem.material.uniforms.uDepthFade.value = v);
+  fParticles.add(CONFIG.particles, 'inkLightnessVar', 0, 0.2, 0.005)
+    .onChange(v => particleSystem.material.uniforms.uLightnessVar.value = v);
+  fParticles.addColor(CONFIG.particles, 'inkColor').onChange(v => {
+    particleSystem.material.uniforms.uInkColor.value.set(v);
+  });
+
+  const fPhysics = gui.addFolder('Physics');
+  fPhysics.add(CONFIG.physics, 'springK', 1, 80, 0.5);
+  fPhysics.add(CONFIG.physics, 'damping', 0.5, 0.99, 0.005);
+  fPhysics.add(CONFIG.physics, 'maxVel', 0.5, 25, 0.1);
+  fPhysics.add(CONFIG.physics, 'maxDisplacement', 0.1, 4, 0.05);
+  fPhysics.add(CONFIG.physics, 'ambientMode', ['off', 'sin', 'curl']);
+  fPhysics.add(CONFIG.physics, 'ambientAmp', 0, 0.1, 0.001);
+  fPhysics.add(CONFIG.physics, 'ambientFreq', 0, 3, 0.01);
+
+  const fPointer = gui.addFolder('Pointer');
+  fPointer.add(CONFIG.pointer, 'mode', ['repel', 'attract']);
+  fPointer.add(CONFIG.pointer, 'radius', 0.05, 1.5, 0.01);
+  fPointer.add(CONFIG.pointer, 'strength', 0, 50, 0.5);
+  fPointer.add(CONFIG.pointer, 'falloff', ['smoothstep', 'linear']);
+  fPointer.add(CONFIG.pointer, 'smoothing', 0.02, 1.0, 0.01);
+
+  const fRot = gui.addFolder('Rotation');
+  fRot.add(CONFIG.rotation, 'mode', ['continuous', 'oscillate']);
+  fRot.add(CONFIG.rotation, 'speed', 0, 1.5, 0.01);
+  fRot.add(CONFIG.rotation, 'oscAngle', 0, 1.5, 0.01);
+  fRot.add(CONFIG.rotation, 'oscFreq', 0, 1.5, 0.01);
+  fRot.add(CONFIG.rotation, 'parallax');
+  fRot.add(CONFIG.rotation, 'parallaxAmount', 0, 0.5, 0.01);
+  fRot.add(CONFIG.rotation, 'parallaxLerp', 0.005, 0.2, 0.005);
+
+  const fLoad = gui.addFolder('Load-in');
+  fLoad.add(CONFIG.loadIn, 'duration', 0.3, 4, 0.05);
+  fLoad.add(CONFIG.loadIn, 'stagger',  0,   3, 0.05);
+  fLoad.add(CONFIG.loadIn, 'staggerMode', ['leftToRight', 'centreOut', 'random']);
+  fLoad.add(CONFIG.loadIn, 'easing', ['easeOutCubic', 'easeOutExpo', 'easeInOutCubic', 'linear']);
+  fLoad.add(CONFIG.loadIn, 'startVolume', 2, 15, 0.1);
+
+  const fPost = gui.addFolder('Post');
+  fPost.add(CONFIG.post, 'grain', 0, 0.2, 0.001)
+    .onChange(v => postFX.vig.uniforms.uGrain.value = v);
+  fPost.add(CONFIG.post, 'vignette', 0, 1.5, 0.01)
+    .onChange(v => postFX.vig.uniforms.uVignette.value = v);
+  fPost.add(CONFIG.post, 'chromaticAberration', 0, 0.02, 0.0001)
+    .onChange(v => postFX.rgb.uniforms.amount.value = v);
+
+  const actions = {
+    replay: () => {
+      siteNavEl.classList.remove('in');
+      scrollCueEl.classList.remove('in');
+      loadIn.start(clock.elapsedTime);
+    },
+    logConfig: () => console.log(JSON.stringify(CONFIG, null, 2)),
+  };
+  gui.add(actions, 'replay').name('Replay load-in');
+  gui.add(actions, 'logConfig').name('Log CONFIG as JSON');
+
+  // Collapse everything by default — this is the "shipped" view; tuning is
+  // an option, not a distraction.
+  [fScene, fParticles, fPhysics, fPointer, fRot, fLoad, fPost].forEach(f => f.close());
+  gui.close();
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// SMOOTH SCROLL (Lenis) — skipped under reduced-motion.
+// ─────────────────────────────────────────────────────────────────────────
+let lenis = null;
+if (!reducedMotion) {
+  lenis = new Lenis({
+    duration: 1.0,          // subtle inertia, not floaty
+    easing:   (x) => Math.min(1, 1.001 - Math.pow(2, -10 * x)),
+    smoothWheel: true,
+    smoothTouch: false,
+  });
+  function lenisRaf(time) {
+    lenis.raf(time);
+    requestAnimationFrame(lenisRaf);
+  }
+  requestAnimationFrame(lenisRaf);
+}
+
+function scrollToTop() {
+  if (lenis) lenis.scrollTo(0, { duration: 1.2 });
+  else window.scrollTo({ top: 0, behavior: 'auto' });
+}
+document.querySelectorAll('[data-scroll-top]').forEach(el => {
+  el.addEventListener('click', (e) => { e.preventDefault(); scrollToTop(); });
+});
+
+// Inert placeholder links — `href="#"` would otherwise jolt the page to top.
+// Delegated so dynamically-built carousel slide links are covered too. The
+// brand uses `#top` (real anchor) and the footer email uses `mailto:` — both
+// keep working because neither matches `href="#"`.
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('a');
+  if (a && a.getAttribute('href') === '#') e.preventDefault();
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// Scroll-driven UI:
+//   - Fade the SCROLL cue out as soon as scrolling begins.
+//   - Add the .scrolled state to the nav once we're past the hero.
+// ─────────────────────────────────────────────────────────────────────────
+function onScroll() {
+  const y = window.scrollY || window.pageYOffset;
+  const fade = Math.max(0, 1 - y / 90);
+  scrollCueEl.style.opacity = String(fade * 0.55);
+  const navThreshold = window.innerHeight - 80;
+  siteNavEl.classList.toggle('scrolled', y > navThreshold);
+}
+if (lenis) lenis.on('scroll', onScroll);
+else window.addEventListener('scroll', onScroll, { passive: true });
+
+// ─────────────────────────────────────────────────────────────────────────
+// REVEAL — IntersectionObserver, single trigger per element.
+// ─────────────────────────────────────────────────────────────────────────
+const revealObserver = new IntersectionObserver((entries) => {
+  for (const e of entries) {
+    if (e.isIntersecting) {
+      e.target.classList.add('in');
+      revealObserver.unobserve(e.target);
+    }
+  }
+}, { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
+
+document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+// ─────────────────────────────────────────────────────────────────────────
+// CAROUSEL — custom, data-driven.
+// ─────────────────────────────────────────────────────────────────────────
+const PROJECTS = [
+  { name: 'The Nuclear Question',    year: 2026, discipline: 'Data Visualisation / Information Design', image: null, featured: true  },
+  { name: 'Mantis',                  year: 2026, discipline: 'Product Design',                          image: null, featured: true  },
+  { name: 'Wave',                    year: 2026, discipline: 'Product Design',                          image: null, featured: true  },
+  { name: 'Gravity Wave Backgammon', year: 2024, discipline: 'Product Design',                          image: null, featured: true  },
+  { name: 'LUMI',                    year: 2023, discipline: 'Critical / Product Design',               image: null, featured: true  },
+  { name: 'YourPAL',                 year: 2023, discipline: 'App Design / UX·UI',                      image: null, featured: false },
+  { name: 'Spider-209',              year: 2022, discipline: 'Product Design',                          image: null, featured: false },
+  { name: 'Wabi Sabi',               year: 2022, discipline: 'Product Design',                          image: null, featured: false },
+];
+
+const featured = PROJECTS.filter(p => p.featured);
+const track       = document.getElementById('carouselTrack');
+const carouselEl  = document.getElementById('carousel');
+const slideIndex  = document.getElementById('slideIndex');
+const prevBtn     = document.getElementById('carouselPrev');
+const nextBtn     = document.getElementById('carouselNext');
+
+function buildSlides() {
+  track.innerHTML = '';
+  featured.forEach((p, i) => {
+    const slide = document.createElement('article');
+    slide.className = 'slide';
+    slide.setAttribute('role', 'group');
+    slide.setAttribute('aria-roledescription', 'slide');
+    slide.setAttribute('aria-label', `${i + 1} of ${featured.length}: ${p.name}`);
+
+    const media = document.createElement('div');
+    media.className = 'slide-media';
+    if (p.image) {
+      const img = document.createElement('img');
+      img.src = p.image;
+      img.alt = `${p.name} — ${p.discipline}`;
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      media.appendChild(img);
+    } else {
+      media.classList.add('placeholder');
+      const ph = document.createElement('div');
+      ph.className = 'ph-name';
+      ph.textContent = p.name;
+      media.appendChild(ph);
+    }
+    slide.appendChild(media);
+
+    const overlay = document.createElement('div');
+    overlay.className = 'slide-overlay';
+    overlay.innerHTML = `
+      <h3 class="slide-name">${p.name}</h3>
+      <div class="slide-meta">${p.year} &middot; ${p.discipline}</div>
+      <a class="slide-link" href="#" tabindex="0">View project &rarr;</a>
+    `;
+    slide.appendChild(overlay);
+
+    track.appendChild(slide);
+  });
+}
+buildSlides();
+
+const slides = Array.from(track.children);
+const N = slides.length;
+let current = 0;
+
+function setSlide(i) {
+  // Clamped, not wrapping. Wrapping with a single translated track would
+  // visibly rewind across every slide at the ends — a seamless infinite
+  // loop would need cloned slides; clamping is the robust choice for five.
+  current = Math.max(0, Math.min(N - 1, i));
+  track.style.transform = `translate3d(${-current * 100}%, 0, 0)`;
+  slides.forEach((s, idx) => s.classList.toggle('active', idx === current));
+  slideIndex.textContent = `${String(current + 1).padStart(2, '0')} / ${String(N).padStart(2, '0')}`;
+  prevBtn.disabled = current === 0;
+  nextBtn.disabled = current === N - 1;
+}
+setSlide(0);
+
+nextBtn.addEventListener('click', () => setSlide(current + 1));
+prevBtn.addEventListener('click', () => setSlide(current - 1));
+
+// Keyboard — only when the carousel itself, or one of its descendants, has focus.
+carouselEl.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight') { e.preventDefault(); setSlide(current + 1); }
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); setSlide(current - 1); }
+});
+
+// Pointer drag — track follows the pointer; snaps on release.
+let dragging = false, dragStartX = 0, dragDx = 0, dragWidth = 0;
+function dragStart(e) {
+  if (e.target.closest('button, a')) return; // controls own their own clicks
+  if (e.button !== undefined && e.button !== 0) return;
+  dragging = true;
+  dragStartX = e.clientX;
+  dragDx = 0;
+  dragWidth = carouselEl.clientWidth;
+  carouselEl.classList.add('dragging');
+  carouselEl.setPointerCapture(e.pointerId);
+}
+function dragMove(e) {
+  if (!dragging) return;
+  dragDx = e.clientX - dragStartX;
+  // Rubber-band past the ends so the track never reveals empty space.
+  let effective = dragDx;
+  if (current === 0 && dragDx > 0)         effective = dragDx / 3;
+  else if (current === N - 1 && dragDx < 0) effective = dragDx / 3;
+  const base = -current * 100;
+  const pct  = (effective / dragWidth) * 100;
+  track.style.transform = `translate3d(${base + pct}%, 0, 0)`;
+}
+function dragEnd(e) {
+  if (!dragging) return;
+  dragging = false;
+  carouselEl.classList.remove('dragging');
+  try { carouselEl.releasePointerCapture(e.pointerId); } catch {}
+  const threshold = dragWidth * 0.12;
+  if (Math.abs(dragDx) > threshold) setSlide(current + (dragDx < 0 ? 1 : -1));
+  else setSlide(current);
+  dragDx = 0;
+}
+carouselEl.addEventListener('pointerdown', dragStart);
+carouselEl.addEventListener('pointermove', dragMove);
+carouselEl.addEventListener('pointerup',   dragEnd);
+carouselEl.addEventListener('pointercancel', dragEnd);
+</script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+---
+// Persistent site navigation. Ported verbatim from prototypes/hero/index.html
+// — fade-in after hero load-in, scroll-backdrop transition, underline-wipe
+// hover, brand-as-home anchor — only the markup moves into a real component.
+//
+// Behaviours:
+//   - Fades in (`.in`) when the hero's load-in completes; the hero dispatches
+//     a `hero:loaded` event from Hero.astro for that handoff.
+//   - Adds `.scrolled` once we are past the hero (Phase 2 wires this from
+//     the homepage's Lenis scroll listener).
+//   - Brand is the home link — clicking smooth-scrolls to top.
+---
+<nav class="site-nav" aria-label="Primary">
+  <a class="brand" href="#top" data-scroll-top>Court Granville</a>
+  <div class="nav-links">
+    <a class="nav-link" href="/work/">Work</a>
+    <a class="nav-link" href="#">Blog</a>
+    <a class="nav-link" href="#">About</a>
+    <a class="nav-link" href="#">Contact</a>
+  </div>
+</nav>
+
+<style>
+  .site-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--nav-h);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 max(28px, 3vw);
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 600ms var(--ease-out);
+  }
+  .site-nav.in { opacity: 1; }
+
+  /* Subtle blurred backdrop appears once the hero is scrolled past, so the
+   * text stays legible over carousel imagery. */
+  .site-nav::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: saturate(140%) blur(10px);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+    opacity: 0;
+    transition: opacity var(--dur-nav-bg) var(--ease-out);
+    z-index: -1;
+  }
+  .site-nav.scrolled::before { opacity: 1; }
+  .site-nav.scrolled { border-bottom: 1px solid var(--rule); }
+
+  .brand {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--text);
+    transition: opacity var(--dur-hover) var(--ease-out);
+  }
+  .brand:hover { opacity: 0.65; }
+
+  .nav-links {
+    display: flex;
+    gap: 36px;
+  }
+
+  /* Raleway 500 uppercase, letter-spaced — the structural face. Per §4 of the
+   * site-v2-build-spec, Medium (not Regular) keeps the caps from reading
+   * thin; letter-spacing 0.22em keeps the glyphs from crowding. */
+  .nav-link {
+    position: relative;
+    font-family: var(--sans);
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 16px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--text);
+    opacity: 0.82;
+    padding: 6px 0;
+    transition:
+      color var(--dur-hover) var(--ease-out),
+      opacity var(--dur-hover) var(--ease-out);
+  }
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: currentColor;
+    transform-origin: left center;
+    transform: scaleX(0);
+    transition: transform var(--dur-hover) var(--ease-out);
+  }
+  .nav-link:hover { color: var(--accent); opacity: 1; }
+  .nav-link:hover::after { transform: scaleX(1); }
+
+  @media (max-width: 720px) {
+    .site-nav { padding: 0 20px; }
+    .nav-links { gap: 22px; }
+    .brand { font-size: 18px; }
+  }
+</style>

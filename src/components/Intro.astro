@@ -1,0 +1,106 @@
+---
+// Homepage intro — the quiet typographic counterpoint to the kinetic hero.
+//
+// On the grid per spec §12:
+//   SectionLabel    cols 1 / 3
+//   Playfair stmt   cols 3 / 9
+//   Factual line    cols 3 / 12
+//   About →         cols 3 / 5
+//
+// Copy is verbatim from homepage-build-spec.md §3 — do not alter without a
+// content note. The 24ch max-width on the statement is preserved because it
+// is the line-break Court verified during the homepage QA pass.
+
+import Grid from './Grid.astro';
+---
+<section class="intro-section" aria-labelledby="intro-h">
+  <Grid class="intro-grid">
+    <span class="label intro-kicker reveal" data-stagger="0">01 &mdash; Introduction</span>
+    <h2 id="intro-h" class="intro-statement reveal" data-stagger="1">
+      I&rsquo;m a product designer drawn to the technical, complex, and contested subjects that design too often leaves alone. The real work, I&rsquo;ve come to think, is translation &mdash; turning that complexity into something people can understand, trust, and act on.
+    </h2>
+    <p class="intro-factual reveal" data-stagger="2">
+      Product Design &mdash; IE University, Madrid &middot; Previously Brand Strategy &amp; Digital Marketing &middot; Current thesis on the public perception of contested technology
+    </p>
+    <a class="textlink intro-link reveal" data-stagger="3" href="#">About &rarr;</a>
+  </Grid>
+</section>
+
+<style>
+  .intro-section {
+    position: relative;
+    background: var(--bg);
+    padding: clamp(120px, 18vh, 200px) 0 clamp(140px, 22vh, 240px);
+    z-index: 2;
+  }
+
+  /* Each child takes its own column range; below tablet they collapse to
+   * a single column for legibility. */
+  .intro-kicker    { grid-column: 1 / -1; margin-bottom: 56px; display: block; }
+  .intro-statement { grid-column: 1 / -1; margin-bottom: 48px; }
+  .intro-factual   { grid-column: 1 / -1; margin-bottom: 56px; }
+  .intro-link      { grid-column: 1 / -1; }
+
+  .intro-statement {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(28px, 3.2vw, 44px);
+    line-height: 1.32;
+    letter-spacing: -0.005em;
+    color: var(--text);
+    max-width: 24ch;
+  }
+
+  /* The factual line is Raleway 500 caps, structurally-letter-spaced. */
+  .intro-factual {
+    font-family: var(--sans);
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 1.85;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-quiet);
+    max-width: 64ch;
+  }
+
+  /* Tablet — the spec'd column ranges. */
+  @media (min-width: 768px) {
+    .intro-kicker    { grid-column: 1 / 3; }
+    .intro-statement { grid-column: 3 / 9; }
+    .intro-factual   { grid-column: 3 / 9; }
+    .intro-link      { grid-column: 3 / 5; }
+  }
+
+  /* Desktop — the same starting columns, with the factual line extended to
+   * col 12 per §12. */
+  @media (min-width: 1200px) {
+    .intro-kicker    { grid-column: 1 / 3; }
+    .intro-statement { grid-column: 3 / 9; }
+    .intro-factual   { grid-column: 3 / 12; }
+    .intro-link      { grid-column: 3 / 5; }
+  }
+</style>
+
+<style is:global>
+  /* Reusable text-link — Raleway caps, underline-on-hover with deep-red. */
+  .textlink {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    font-family: var(--sans);
+    font-weight: 500;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text);
+    padding-bottom: 2px;
+    border-bottom: 1px solid transparent;
+    transition:
+      color var(--dur-hover) var(--ease-out),
+      border-color var(--dur-hover) var(--ease-out);
+  }
+  .textlink:hover {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+</style>

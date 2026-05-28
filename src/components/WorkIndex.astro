@@ -1,0 +1,155 @@
+---
+// Work index — a typographic project list (left) paired with a 3D image
+// canvas (right) that shows the hovered project's hero, wrapped over a lit,
+// cursor-parallax card. Replaces the tile gallery (WorkGrid) on /work/.
+//
+// The 3D canvas is vanilla three.js (public/js/hero-canvas.js) mounted via an
+// is:inline module so the CDN import map resolves `three`. Project data is
+// handed to the client through a JSON <script> (frontmatter vars aren't
+// visible to is:inline scripts).
+
+import Grid from './Grid.astro';
+import imageManifest from '../content/projects-images.json';
+
+function heroFor(slug: string, heroSlug: string) {
+  const manifest = (imageManifest as Record<string, { images: any[] }>)[slug];
+  const img = manifest?.images.find((i) => i.slug === heroSlug);
+  if (!img) return null;
+  return { src: img.src.replace('-2400.webp', '-1200.webp'), aspect: img.aspect as number };
+}
+
+const PROJECTS = [
+  { name: 'Mantis',                  year: 2026, discipline: 'Product Design',            slug: 'mantis',               hero: heroFor('mantis', '04-final-hero') },
+  { name: 'Wave',                    year: 2026, discipline: 'Product Design',            slug: 'wave',                 hero: heroFor('wave', '03-final-hero') },
+  { name: 'Gravity Wave Backgammon', year: 2024, discipline: 'Product Design',            slug: 'backgammon',           hero: heroFor('backgammon', '07-final-hero') },
+  { name: 'LUMI',                    year: 2023, discipline: 'Critical / Product Design', slug: 'lumi',                 hero: heroFor('lumi', '04-final-hero') },
+  { name: 'YourPAL',                 year: 2023, discipline: 'App Design / UX·UI',        slug: 'yourpal',              hero: heroFor('yourpal', '04-final-hero') },
+  { name: 'Spider-209',              year: 2022, discipline: 'Product Design',            slug: 'spider-209',           hero: heroFor('spider-209', '04-final') },
+  { name: 'Universal Phone Case',    year: 2022, discipline: 'Product Design',            slug: 'universal-phone-case', hero: heroFor('universal-phone-case', '07-final-hero') },
+];
+
+const clientData = PROJECTS.map((p) => ({ name: p.name, year: p.year, discipline: p.discipline, hero: p.hero }));
+---
+<Grid as="section" class="work-index" aria-label="Selected work">
+  <div class="wi-list">
+    <span class="label wi-kicker">Selected Work — 2022 / 2026</span>
+    <h1 class="sr-only">Work</h1>
+    <ul class="wi-rows">
+      {PROJECTS.map((p, i) => (
+        <li class="wi-row" data-i={i}>
+          <a href={`/work/${p.slug}/`}>
+            <span class="wi-num">{String(i + 1).padStart(2, '0')}</span>
+            <span class="wi-name">{p.name}</span>
+            <span class="wi-year">{p.year}</span>
+            <span class="wi-disc">{p.discipline}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+
+  <div class="wi-canvas-col">
+    <div class="wi-cell">
+      <span class="wi-tag" id="wiTag">{PROJECTS[0].name}</span>
+      <span class="wi-tag wi-tag-r">Hover index</span>
+      <canvas class="wi-canvas" id="wiCanvas" aria-hidden="true"></canvas>
+    </div>
+    <p class="label wi-cap" id="wiCap">{PROJECTS[0].discipline} &mdash; {PROJECTS[0].year}</p>
+  </div>
+</Grid>
+
+<script type="application/json" id="wiData" is:inline set:html={JSON.stringify(clientData)}></script>
+
+<style>
+  /* :global — this rule targets the <Grid> component's root element, which
+     does not carry this component's scope hash. */
+  :global(.work-index) {
+    padding-block: calc(var(--nav-h) + clamp(40px, 7vh, 96px)) clamp(64px, 12vh, 140px);
+    row-gap: clamp(40px, 6vh, 72px);
+    align-items: start;
+  }
+
+  .wi-list { grid-column: 1 / -1; }
+  .wi-kicker { display: block; margin-bottom: clamp(20px, 3vh, 36px); }
+
+  .wi-rows { list-style: none; margin: 0; padding: 0; }
+  .wi-row { border-bottom: 1px solid var(--rule); }
+  .wi-row a {
+    display: grid;
+    grid-template-columns: 2.6rem 1fr auto;
+    grid-template-areas: 'num name year' 'num disc disc';
+    align-items: baseline;
+    column-gap: 1rem;
+    row-gap: 4px;
+    padding: clamp(14px, 1.6vh, 20px) 0;
+    color: var(--text);
+    transition: padding-left var(--dur-hover) var(--ease-out), color var(--dur-hover) var(--ease-out);
+  }
+  .wi-num  { grid-area: num;  font-family: var(--sans); font-weight: 500; font-size: 11px; letter-spacing: 0.16em; color: var(--text-faint); }
+  .wi-name { grid-area: name; font-family: var(--serif); font-weight: 400; font-size: clamp(22px, 2.5vw, 30px); line-height: 1.1; }
+  .wi-year { grid-area: year; font-family: var(--sans); font-weight: 500; font-size: 13px; letter-spacing: 0.06em; color: var(--text-quiet); font-variant-numeric: tabular-nums; }
+  .wi-disc { grid-area: disc; font-family: var(--sans); font-weight: 500; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-faint); }
+
+  .wi-row a:hover,
+  .wi-row.active a { color: var(--accent); padding-left: clamp(6px, 1vw, 14px); }
+  .wi-row.active .wi-num,
+  .wi-row.active .wi-disc { color: rgba(142, 27, 14, 0.7); }
+
+  .wi-canvas-col { grid-column: 1 / -1; }
+  .wi-cell {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    border: 1px solid var(--text);
+  }
+  .wi-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .wi-tag {
+    position: absolute; top: 14px; left: 16px; z-index: 1;
+    font-family: var(--sans); font-weight: 500; font-size: 11px;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-quiet);
+  }
+  .wi-tag-r { left: auto; right: 16px; color: var(--accent); }
+  .wi-cap { margin-top: 14px; }
+
+  /* Tablet — list and canvas side by side. */
+  @media (min-width: 768px) {
+    .wi-list { grid-column: 1 / 5; }
+    .wi-canvas-col { grid-column: 5 / 9; position: sticky; top: var(--nav-h); }
+  }
+
+  /* Desktop — 12-col: list 1–7, canvas 8–12. */
+  @media (min-width: 1200px) {
+    .wi-list { grid-column: 1 / 8; }
+    .wi-canvas-col { grid-column: 8 / 13; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wi-row a { transition: none; }
+  }
+</style>
+
+<script is:inline type="module">
+  import { mountHeroCanvas } from '/js/hero-canvas.js';
+
+  const data   = JSON.parse(document.getElementById('wiData').textContent);
+  const canvas = document.getElementById('wiCanvas');
+  const cell   = document.querySelector('.wi-cell');
+  const tagEl  = document.getElementById('wiTag');
+  const capEl  = document.getElementById('wiCap');
+  const rows   = Array.from(document.querySelectorAll('.wi-row'));
+
+  const api = mountHeroCanvas(canvas, {
+    camZ: 7, fill: 0.92,
+    onAspect: (a) => { cell.style.aspectRatio = String(a); },
+  });
+
+  function select(i) {
+    rows.forEach((r) => r.classList.toggle('active', Number(r.dataset.i) === i));
+    const p = data[i];
+    api.show(p.hero);
+    tagEl.textContent = p.name;
+    capEl.innerHTML = `${p.discipline} &mdash; ${p.year}`;
+  }
+  rows.forEach((r) => r.addEventListener('pointerenter', () => select(Number(r.dataset.i))));
+  select(0);
+</script>

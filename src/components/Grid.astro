@@ -1,0 +1,36 @@
+---
+// The 12 / 8 / 4 column container. Native CSS grid; children take
+// `grid-column: <start> / <end>` to occupy specific column ranges
+// (see spec §8 for the per-block defaults).
+//
+// `--cols`, `--gutter`, `--outer` come from tokens.css and shift at
+// breakpoints, so a single `<Grid>` adapts without per-component media
+// queries. Set `bleed` to render a full-bleed wrapper that still aligns its
+// children to the grid (used for the homepage carousel in Phase 2).
+
+export interface Props {
+  as?: keyof HTMLElementTagNameMap;
+  class?: string;
+  bleed?: boolean;
+}
+
+const { as: Tag = 'div', class: className = '', bleed = false } = Astro.props;
+---
+<Tag class:list={['grid', bleed && 'grid--bleed', className]}>
+  <slot />
+</Tag>
+
+<style>
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(var(--cols), 1fr);
+    column-gap: var(--gutter);
+    padding-inline: var(--outer);
+  }
+
+  /* A bleed wrapper for sections that occupy the full viewport width but still
+   * align nested content to the same column grid through a nested .grid. */
+  .grid--bleed {
+    padding-inline: 0;
+  }
+</style>

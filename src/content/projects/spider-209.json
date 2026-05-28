@@ -1,0 +1,42 @@
+{
+  "name": "Spider-209",
+  "year": 2022,
+  "discipline": "Product Design",
+  "framing": "A desk-lamp version of Joe Colombo's 1965 Spider, fabricated from materials found on the streets of Madrid.",
+  "heroImage": "04-final",
+  "group": true,
+  "blocks": [
+    { "type": "label", "text": "01 / The Brief" },
+    {
+      "type": "text",
+      "body": "Our first product design project at IE University. The brief: take a well-known lamp design and reproduce it, using only materials found or recycled from the streets of Madrid. We chose Joe Colombo's Spider — a 1965 design for O Luce — and adapted it from its original ceiling form into a desk lamp, built from the ground up in metal, plastics, wood and electronics."
+    },
+    { "type": "label", "text": "02 / Process" },
+    {
+      "type": "text",
+      "body": "Research and drawings first — studying the original closely enough to reproduce it from scrap. Then a cardboard prototype to check proportions and assembly. Then the working build."
+    },
+    {
+      "type": "imageGrid",
+      "imageSlugs": ["01-sketch-1", "02-sketch-2"],
+      "alt": "Hand sketches studying the original lamp's proportions"
+    },
+    {
+      "type": "image",
+      "imageSlug": "03-prototype",
+      "variant": "wide",
+      "alt": "The cardboard prototype, before the final build"
+    },
+    { "type": "label", "text": "03 / Resolved" },
+    {
+      "type": "text",
+      "body": "The finished desk lamp: Colombo's form, reproduced from what we could find."
+    },
+    {
+      "type": "image",
+      "imageSlug": "04-final",
+      "variant": "bleed",
+      "alt": "The finished Spider-209 desk lamp"
+    }
+  ]
+}

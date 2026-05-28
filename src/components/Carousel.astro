@@ -1,24 +1,30 @@
 ---
-// Selected-Work carousel — the homepage showcase. Each project's cutout shows
-// as a cursor-reactive 3D EXTRUDED object (public/js/object-canvas.js): it holds
-// a small resting lean and swings toward the pointer, the layered silhouette
-// giving it real thickness. Prev/Next and the arrow keys rotate through the set.
-// Distinct from the /work/ index (a flat typographic list) by design.
+// Selected-Work carousel — the homepage showcase. Each project is a textured GLB
+// shown as a real 3D object you grab and spin (src/components/r3f/ProjectViewer
+// .tsx — R3F + drei + GSAP, hydrated client:visible). The editorial chrome
+// (index, name, meta, prev/next) stays static here and drives the island by
+// dispatching a `cg:project` CustomEvent with the new index. YourPAL has no model
+// (app design) and falls back to a flat cutout. Distinct from the /work/ index (a
+// flat typographic list) by design.
 
 import Grid from './Grid.astro';
+import ProjectViewer from './r3f/ProjectViewer.tsx';
 
+// `fill` = how much of the 3D frame the model's bounding sphere occupies (the
+// per-project size knob in ProjectViewer; default 0.92, never clips). Mantis is
+// the largest physical product so it fills the frame; the rest sit a touch back.
 const PROJECTS = [
-  { name: 'Mantis',                  year: 2026, discipline: 'Product Design',            slug: 'mantis',               img: '/assets/pngs/mantis.png' },
-  { name: 'Wave',                    year: 2026, discipline: 'Product Design',            slug: 'wave',                 img: '/assets/pngs/speaker.png' },
-  { name: 'Gravity Wave Backgammon', year: 2024, discipline: 'Product Design',            slug: 'backgammon',           img: '/assets/pngs/backgammon.png' },
-  { name: 'LUMI',                    year: 2023, discipline: 'Critical / Product Design', slug: 'lumi',                 img: '/assets/pngs/lumi.png' },
+  { name: 'Mantis',                  year: 2026, discipline: 'Product Design',            slug: 'mantis',               img: '/assets/pngs/mantis.png',     model: '/models/mantis.glb',    fill: 1.0  },
+  { name: 'Wave',                    year: 2026, discipline: 'Product Design',            slug: 'wave',                 img: '/assets/pngs/speaker.png',    model: '/models/speaker.glb',   fill: 0.92 },
+  { name: 'Gravity Wave Backgammon', year: 2024, discipline: 'Product Design',            slug: 'backgammon',           img: '/assets/pngs/backgammon.png', model: '/models/backgammon.glb', fill: 0.92 },
+  { name: 'LUMI',                    year: 2023, discipline: 'Critical / Product Design', slug: 'lumi',                 img: '/assets/pngs/lumi.png',       model: '/models/lumi.glb',      fill: 0.92 },
   { name: 'YourPAL',                 year: 2023, discipline: 'App Design / UX·UI',        slug: 'yourpal',              img: '/assets/pngs/YourPal.png' },
-  { name: 'Spider-209',              year: 2022, discipline: 'Product Design',            slug: 'spider-209',           img: '/assets/pngs/spider.png' },
-  { name: 'Universal Phone Case',    year: 2022, discipline: 'Product Design',            slug: 'universal-phone-case', img: '/assets/pngs/WabiSabi.png' },
+  { name: 'Spider-209',              year: 2022, discipline: 'Product Design',            slug: 'spider-209',           img: '/assets/pngs/spider.png',     model: '/models/spider.glb',    fill: 0.92 },
+  { name: 'Universal Phone Case',    year: 2022, discipline: 'Product Design',            slug: 'universal-phone-case', img: '/assets/pngs/WabiSabi.png',   model: '/models/wabiSabi.glb',  fill: 0.92 },
 ];
 
 const clientData = PROJECTS.map((p) => ({
-  name: p.name, year: p.year, discipline: p.discipline, href: `/work/${p.slug}/`, src: p.img,
+  name: p.name, year: p.year, discipline: p.discipline, href: `/work/${p.slug}/`, src: p.img, model: p.model, fill: p.fill,
 }));
 const N = PROJECTS.length;
 ---
@@ -43,7 +49,7 @@ const N = PROJECTS.length;
   </div>
 
   <div class="c-stage reveal" data-stagger="2" id="carousel" role="region" aria-roledescription="carousel" aria-label="Featured projects" tabindex="0">
-    <canvas class="c-canvas" id="cCanvas" aria-hidden="true"></canvas>
+    <ProjectViewer client:visible projects={clientData} />
   </div>
 </Grid>
 
@@ -70,7 +76,9 @@ const N = PROJECTS.length;
   }
   .c-btn:hover { border-color: var(--accent); color: var(--accent); }
 
-  /* Borderless stage — the object floats on the page ground, no field frame. */
+  /* Borderless stage — the object floats on the page ground, no field frame.
+     The R3F island mounts inside; Astro wraps it in <astro-island>, so that
+     wrapper must fill the stage for the canvas's 100% height to resolve. */
   .c-stage {
     grid-column: 1 / -1;
     position: relative;
@@ -79,12 +87,8 @@ const N = PROJECTS.length;
     min-height: clamp(320px, 48vh, 560px);
     cursor: grab;
   }
-  .c-canvas {
-    position: absolute; inset: 0; width: 100%; height: 100%; display: block;
-    opacity: 0; transition: opacity var(--dur-frame) var(--ease-out);
-  }
+  .c-stage > :global(astro-island) { display: block; width: 100%; height: 100%; }
   .c-stage:focus-visible { outline: 1.5px solid var(--accent); outline-offset: 6px; border-radius: 2px; }
-  @media (prefers-reduced-motion: reduce) { .c-canvas { transition: none; opacity: 1; } }
 
   @media (min-width: 768px) {
     .c-kicker { grid-column: 1 / -1; }
@@ -98,11 +102,11 @@ const N = PROJECTS.length;
 </style>
 
 <script is:inline type="module">
-  import { mountObjectCanvas } from '/js/object-canvas.js';
-
+  // Editorial chrome only: update the text and tell the R3F island which project
+  // to show via a `cg:project` CustomEvent. The 3D stage hydrates separately
+  // (client:visible) and listens for this event.
   const data   = JSON.parse(document.getElementById('cData').textContent);
   const N      = data.length;
-  const canvas = document.getElementById('cCanvas');
   const nameEl = document.getElementById('cName');
   const metaEl = document.getElementById('cMeta');
   const linkEl = document.getElementById('cLink');
@@ -110,22 +114,16 @@ const N = PROJECTS.length;
   const prev   = document.getElementById('cPrev');
   const next   = document.getElementById('cNext');
   const region = document.getElementById('carousel');
-
-  const api = mountObjectCanvas(canvas, {
-    onShown: () => { canvas.style.opacity = '1'; },
-  });
-  api.preload(data.map((d) => d.src));
   let cur = 0;
 
   function go(i) {
     cur = (i + N) % N;
     const p = data[cur];
-    canvas.style.opacity = '0';
-    api.show({ src: p.src });
     nameEl.textContent = p.name;
     metaEl.innerHTML = `${p.year} &middot; ${p.discipline}`;
     linkEl.setAttribute('href', p.href);
     idxEl.textContent = `${String(cur + 1).padStart(2, '0')} / ${String(N).padStart(2, '0')}`;
+    window.dispatchEvent(new CustomEvent('cg:project', { detail: { index: cur } }));
   }
   go(0);
 

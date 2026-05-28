@@ -1,12 +1,11 @@
 ---
-// Work index — a typographic project list (left) paired with a 3D image
-// canvas (right) that shows the hovered project's hero, wrapped over a lit,
-// cursor-parallax card. Replaces the tile gallery (WorkGrid) on /work/.
+// Work index — a typographic project list (left) paired with a 3D image canvas
+// (right) that shows the hovered project's hero on a lit, cursor-parallax card.
 //
-// The 3D canvas is vanilla three.js (public/js/hero-canvas.js) mounted via an
-// is:inline module so the CDN import map resolves `three`. Project data is
-// handed to the client through a JSON <script> (frontmatter vars aren't
-// visible to is:inline scripts).
+// The canvas top-aligns with the first project row (a top rule sits above the
+// list), there is no frame box or label chrome around it — just the object.
+// Vanilla three.js (public/js/hero-canvas.js) via an is:inline module; project
+// data is handed over as JSON (frontmatter isn't visible to is:inline scripts).
 
 import Grid from './Grid.astro';
 import imageManifest from '../content/projects-images.json';
@@ -31,9 +30,10 @@ const PROJECTS = [
 const clientData = PROJECTS.map((p) => ({ name: p.name, year: p.year, discipline: p.discipline, hero: p.hero }));
 ---
 <Grid as="section" class="work-index" aria-label="Selected work">
+  <span class="label wi-kicker">Selected Work — 2022 / 2026</span>
+  <h1 class="sr-only">Work</h1>
+
   <div class="wi-list">
-    <span class="label wi-kicker">Selected Work — 2022 / 2026</span>
-    <h1 class="sr-only">Work</h1>
     <ul class="wi-rows">
       {PROJECTS.map((p, i) => (
         <li class="wi-row" data-i={i}>
@@ -50,29 +50,26 @@ const clientData = PROJECTS.map((p) => ({ name: p.name, year: p.year, discipline
 
   <div class="wi-canvas-col">
     <div class="wi-cell">
-      <span class="wi-tag" id="wiTag">{PROJECTS[0].name}</span>
-      <span class="wi-tag wi-tag-r">Hover index</span>
       <canvas class="wi-canvas" id="wiCanvas" aria-hidden="true"></canvas>
     </div>
-    <p class="label wi-cap" id="wiCap">{PROJECTS[0].discipline} &mdash; {PROJECTS[0].year}</p>
   </div>
 </Grid>
 
 <script type="application/json" id="wiData" is:inline set:html={JSON.stringify(clientData)}></script>
 
 <style>
-  /* :global — this rule targets the <Grid> component's root element, which
-     does not carry this component's scope hash. */
+  /* :global — targets the <Grid> root element (no component scope hash). */
   :global(.work-index) {
     padding-block: calc(var(--nav-h) + clamp(40px, 7vh, 96px)) clamp(64px, 12vh, 140px);
-    row-gap: clamp(40px, 6vh, 72px);
+    row-gap: clamp(28px, 4vh, 44px);
     align-items: start;
   }
 
-  .wi-list { grid-column: 1 / -1; }
-  .wi-kicker { display: block; margin-bottom: clamp(20px, 3vh, 36px); }
+  .wi-kicker { grid-column: 1 / -1; display: block; }
 
-  .wi-rows { list-style: none; margin: 0; padding: 0; }
+  .wi-list { grid-column: 1 / -1; }
+  /* The rule above the first project — the canvas top aligns to this line. */
+  .wi-rows { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
   .wi-row { border-bottom: 1px solid var(--rule); }
   .wi-row a {
     display: grid;
@@ -95,39 +92,27 @@ const clientData = PROJECTS.map((p) => ({ name: p.name, year: p.year, discipline
   .wi-row.active .wi-num,
   .wi-row.active .wi-disc { color: rgba(142, 27, 14, 0.7); }
 
+  /* No frame box, no chrome — just the 3D object. */
   .wi-canvas-col { grid-column: 1 / -1; }
   .wi-cell {
     position: relative;
     width: 100%;
     aspect-ratio: 4 / 5;
-    border: 1px solid var(--text);
     transition: aspect-ratio 0.55s var(--ease-out);
   }
-  @media (prefers-reduced-motion: reduce) {
-    .wi-cell { transition: none; }
-  }
   .wi-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  .wi-tag {
-    position: absolute; top: 14px; left: 16px; z-index: 1;
-    font-family: var(--sans); font-weight: 500; font-size: 11px;
-    letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-quiet);
-  }
-  .wi-tag-r { left: auto; right: 16px; color: var(--accent); }
-  .wi-cap { margin-top: 14px; }
 
-  /* Tablet — list and canvas side by side. */
   @media (min-width: 768px) {
     .wi-list { grid-column: 1 / 5; }
-    .wi-canvas-col { grid-column: 5 / 9; position: sticky; top: var(--nav-h); }
+    .wi-canvas-col { grid-column: 5 / 9; }
   }
-
-  /* Desktop — 12-col: list 1–7, canvas 8–12. */
   @media (min-width: 1200px) {
     .wi-list { grid-column: 1 / 8; }
     .wi-canvas-col { grid-column: 8 / 13; }
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .wi-cell { transition: none; }
     .wi-row a { transition: none; }
   }
 </style>
@@ -138,21 +123,17 @@ const clientData = PROJECTS.map((p) => ({ name: p.name, year: p.year, discipline
   const data   = JSON.parse(document.getElementById('wiData').textContent);
   const canvas = document.getElementById('wiCanvas');
   const cell   = document.querySelector('.wi-cell');
-  const tagEl  = document.getElementById('wiTag');
-  const capEl  = document.getElementById('wiCap');
   const rows   = Array.from(document.querySelectorAll('.wi-row'));
 
   const api = mountHeroCanvas(canvas, {
-    camZ: 7, fill: 0.92,
+    camZ: 7, fill: 0.9, anchorTop: true,
     onAspect: (a) => { cell.style.aspectRatio = String(a); },
   });
+  api.preload(data.map((d) => d.hero && d.hero.src));   // warm the cache → no hover flicker
 
   function select(i) {
     rows.forEach((r) => r.classList.toggle('active', Number(r.dataset.i) === i));
-    const p = data[i];
-    api.show(p.hero);
-    tagEl.textContent = p.name;
-    capEl.innerHTML = `${p.discipline} &mdash; ${p.year}`;
+    api.show(data[i].hero);
   }
   rows.forEach((r) => r.addEventListener('pointerenter', () => select(Number(r.dataset.i))));
   select(0);

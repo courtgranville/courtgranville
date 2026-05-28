@@ -141,6 +141,7 @@ const N = PROJECTS.length;
     onAspect: (a) => { cell.style.aspectRatio = String(a); },
     onShown: () => { canvas.style.opacity = '1'; },   // fade in once loaded
   });
+  api.preload(data.map((d) => d.hero && d.hero.src));   // warm the cache → no flicker on step
   let cur = 0;
 
   function go(i) {

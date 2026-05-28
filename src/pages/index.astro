@@ -1,8 +1,9 @@
 ---
 // Homepage. The CG particle hero is the first screen — large and borderless,
-// the fixed full-window canvas as Court designed it, with a small text
-// complement anchored lower-left. Selected Work + the thesis band sit below in
-// an opaque layer that scrolls up over the fixed canvas.
+// its canvas confined to the hero so it lives at the top only (it scrolls away
+// with the first screen rather than sitting as a fixed layer behind the page).
+// A small text complement is anchored lower-left; Selected Work + the thesis
+// band follow in normal flow.
 
 import Layout from '../components/Layout.astro';
 import Nav from '../components/Nav.astro';
@@ -57,7 +58,7 @@ import Grid from '../components/Grid.astro';
   }
   .hero-cta { font-size: var(--fs-label); }
 
-  /* Everything after the hero rides above the fixed canvas on a white ground. */
+  /* Everything after the hero, on the white ground, in normal flow. */
   .hp-below {
     position: relative;
     z-index: 2;
@@ -81,7 +82,6 @@ import Grid from '../components/Grid.astro';
 </style>
 
 <style is:global>
-  /* main establishes the stacking context that contains the fixed hero canvas
-     (z-index 1); its opaque sections (hp-below) then occlude it on scroll. */
+  /* main is the page's positioned wrapper; sections stack in normal flow. */
   main { position: relative; z-index: 2; }
 </style>

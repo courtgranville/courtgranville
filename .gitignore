@@ -2,6 +2,12 @@
 dist/
 .astro/
 
+# 3D model sources — raw + textured Meshy exports, large (~30–40 MB each).
+# The optimised, served copies in public/models/ ARE committed; these big
+# originals stay local (re-optimise via scripts/optimize-models.mjs).
+assets/glbs/
+assets/models/
+
 # deps
 node_modules/
 

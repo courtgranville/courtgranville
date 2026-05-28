@@ -7,7 +7,7 @@
 import Layout from '../components/Layout.astro';
 import Nav from '../components/Nav.astro';
 import Hero from '../components/Hero.astro';
-import WorkIndex from '../components/WorkIndex.astro';
+import Carousel from '../components/Carousel.astro';
 import Footer from '../components/Footer.astro';
 import Grid from '../components/Grid.astro';
 ---
@@ -25,7 +25,7 @@ import Grid from '../components/Grid.astro';
     <!-- Below the hero — opaque, occludes the fixed canvas as it scrolls up. -->
     <div class="hp-below">
       <section class="hp-section" aria-label="Selected work">
-        <WorkIndex side="left" kicker="01 — Selected Work" />
+        <Carousel />
         <Grid>
           <a class="textlink hp-allwork reveal" href="/work/">All work &rarr;</a>
         </Grid>

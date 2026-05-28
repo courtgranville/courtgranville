@@ -1,0 +1,138 @@
+---
+// Selected-Work carousel — the homepage showcase. Each project's cutout shows
+// as a cursor-reactive 3D EXTRUDED object (public/js/object-canvas.js): it holds
+// a small resting lean and swings toward the pointer, the layered silhouette
+// giving it real thickness. Prev/Next and the arrow keys rotate through the set.
+// Distinct from the /work/ index (a flat typographic list) by design.
+
+import Grid from './Grid.astro';
+
+const PROJECTS = [
+  { name: 'Mantis',                  year: 2026, discipline: 'Product Design',            slug: 'mantis',               img: '/assets/pngs/mantis.png' },
+  { name: 'Wave',                    year: 2026, discipline: 'Product Design',            slug: 'wave',                 img: '/assets/pngs/speaker.png' },
+  { name: 'Gravity Wave Backgammon', year: 2024, discipline: 'Product Design',            slug: 'backgammon',           img: '/assets/pngs/backgammon.png' },
+  { name: 'LUMI',                    year: 2023, discipline: 'Critical / Product Design', slug: 'lumi',                 img: '/assets/pngs/lumi.png' },
+  { name: 'YourPAL',                 year: 2023, discipline: 'App Design / UX·UI',        slug: 'yourpal',              img: '/assets/pngs/YourPal.png' },
+  { name: 'Spider-209',              year: 2022, discipline: 'Product Design',            slug: 'spider-209',           img: '/assets/pngs/spider.png' },
+  { name: 'Universal Phone Case',    year: 2022, discipline: 'Product Design',            slug: 'universal-phone-case', img: '/assets/pngs/WabiSabi.png' },
+];
+
+const clientData = PROJECTS.map((p) => ({
+  name: p.name, year: p.year, discipline: p.discipline, href: `/work/${p.slug}/`, src: p.img,
+}));
+const N = PROJECTS.length;
+---
+<Grid as="section" class="carousel" aria-labelledby="carousel-h">
+  <span class="label c-kicker reveal">01 &mdash; Selected Work</span>
+  <h2 id="carousel-h" class="sr-only">Selected work</h2>
+
+  <div class="c-text reveal" data-stagger="1">
+    <span class="c-index label" id="cIndex" aria-live="polite">01 / {String(N).padStart(2, '0')}</span>
+    <h3 class="c-name" id="cName">{PROJECTS[0].name}</h3>
+    <div class="c-meta label" id="cMeta">{PROJECTS[0].year} &middot; {PROJECTS[0].discipline}</div>
+    <a class="textlink c-link" id="cLink" href={`/work/${PROJECTS[0].slug}/`}>View project &rarr;</a>
+
+    <div class="c-controls">
+      <button class="c-btn" id="cPrev" aria-label="Previous project">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M14.5 6 L9.5 12 L14.5 18" stroke="currentColor" stroke-width="1.25" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="c-btn" id="cNext" aria-label="Next project">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M9.5 6 L14.5 12 L9.5 18" stroke="currentColor" stroke-width="1.25" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="c-stage reveal" data-stagger="2" id="carousel" role="region" aria-roledescription="carousel" aria-label="Featured projects" tabindex="0">
+    <canvas class="c-canvas" id="cCanvas" aria-hidden="true"></canvas>
+  </div>
+</Grid>
+
+<script type="application/json" id="cData" is:inline set:html={JSON.stringify(clientData)}></script>
+
+<style>
+  :global(.carousel) { row-gap: var(--space-block); align-items: center; }
+
+  .c-kicker { grid-column: 1 / -1; display: block; }
+
+  .c-text { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: flex-start; }
+  .c-index { color: var(--text-faint); font-variant-numeric: tabular-nums; margin-bottom: 18px; }
+  .c-name {
+    font-family: var(--serif); font-weight: 400;
+    font-size: var(--fs-heading-m); line-height: var(--lh-heading-m);
+    color: var(--text); margin: 0 0 14px;
+  }
+  .c-meta { color: var(--text-quiet); margin-bottom: 24px; }
+  .c-controls { display: flex; gap: 14px; margin-top: clamp(24px, 4vh, 40px); }
+  .c-btn {
+    width: 46px; height: 46px; border-radius: 50%; border: 1px solid var(--rule);
+    color: var(--text); display: grid; place-items: center;
+    transition: border-color var(--dur-hover) var(--ease-out), color var(--dur-hover) var(--ease-out);
+  }
+  .c-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Borderless stage — the object floats on the page ground, no field frame. */
+  .c-stage {
+    grid-column: 1 / -1;
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    min-height: clamp(320px, 48vh, 560px);
+    cursor: grab;
+  }
+  .c-canvas {
+    position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+    opacity: 0; transition: opacity var(--dur-frame) var(--ease-out);
+  }
+  .c-stage:focus-visible { outline: 1.5px solid var(--accent); outline-offset: 6px; border-radius: 2px; }
+  @media (prefers-reduced-motion: reduce) { .c-canvas { transition: none; opacity: 1; } }
+
+  @media (min-width: 768px) {
+    .c-kicker { grid-column: 1 / -1; }
+    .c-text   { grid-column: 1 / 4; }
+    .c-stage  { grid-column: 4 / 9; }
+  }
+  @media (min-width: 1200px) {
+    .c-text   { grid-column: 1 / 5; }
+    .c-stage  { grid-column: 5 / 13; }
+  }
+</style>
+
+<script is:inline type="module">
+  import { mountObjectCanvas } from '/js/object-canvas.js';
+
+  const data   = JSON.parse(document.getElementById('cData').textContent);
+  const N      = data.length;
+  const canvas = document.getElementById('cCanvas');
+  const nameEl = document.getElementById('cName');
+  const metaEl = document.getElementById('cMeta');
+  const linkEl = document.getElementById('cLink');
+  const idxEl  = document.getElementById('cIndex');
+  const prev   = document.getElementById('cPrev');
+  const next   = document.getElementById('cNext');
+  const region = document.getElementById('carousel');
+
+  const api = mountObjectCanvas(canvas, {
+    onShown: () => { canvas.style.opacity = '1'; },
+  });
+  api.preload(data.map((d) => d.src));
+  let cur = 0;
+
+  function go(i) {
+    cur = (i + N) % N;
+    const p = data[cur];
+    canvas.style.opacity = '0';
+    api.show({ src: p.src });
+    nameEl.textContent = p.name;
+    metaEl.innerHTML = `${p.year} &middot; ${p.discipline}`;
+    linkEl.setAttribute('href', p.href);
+    idxEl.textContent = `${String(cur + 1).padStart(2, '0')} / ${String(N).padStart(2, '0')}`;
+  }
+  go(0);
+
+  next.addEventListener('click', () => go(cur + 1));
+  prev.addEventListener('click', () => go(cur - 1));
+  region.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') { e.preventDefault(); go(cur + 1); }
+    if (e.key === 'ArrowLeft')  { e.preventDefault(); go(cur - 1); }
+  });
+</script>

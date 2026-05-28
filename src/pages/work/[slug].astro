@@ -22,6 +22,7 @@ import imageManifest from '../../content/projects-images.json';
 
 // Canonical order — most-recent-first; matches the Work index.
 const ORDER = [
+  'the-nuclear-question',
   'mantis',
   'wave',
   'backgammon',
@@ -40,7 +41,7 @@ export async function getStaticPaths() {
 }
 
 const { project } = Astro.props as { project: Awaited<ReturnType<typeof getCollection<'projects'>>>[number] };
-const { name, year, discipline, framing, spec, exhibitions, blocks, heroImage } = project.data;
+const { name, year, discipline, framing, spec, exhibitions, blocks, heroImage, liveUrl } = project.data;
 
 const slug = project.id.replace(/\.json$/, '');
 const manifest = (imageManifest as any)[slug];
@@ -53,7 +54,9 @@ function img(imgSlug: string) {
   return entry;
 }
 
-const hero = img(heroImage);
+// Web/data projects (e.g. The Nuclear Question) ship without a hero image —
+// the header falls back to a text-forward treatment.
+const hero = heroImage ? img(heroImage) : null;
 
 // ── Group the flat block array into sections, classify, assign split sides ──
 type Block = (typeof blocks)[number];
@@ -106,25 +109,31 @@ const nextName = nextProject?.data.name ?? '';
   <main>
     <article>
       <!-- Header — the first split (visual RIGHT, split-index 0). Visual first
-           in the DOM so mobile stacks field-above-text (§2.4). -->
-      <Grid class="proj-head">
-        <div class="t-visual-r proj-head-visual reveal">
-          <div class="field">
-            <img
-              src={hero.src}
-              srcset={hero.srcset}
-              sizes="(min-width: 1200px) 58vw, 100vw"
-              alt={`${name} — hero`}
-              loading="eager"
-              fetchpriority="high"
-              decoding="async"
-            />
+           in the DOM so mobile stacks field-above-text (§2.4). Projects without
+           a hero image (web/data work) get a text-forward header instead. -->
+      <Grid class:list={['proj-head', !hero && 'proj-head--text']}>
+        {hero && (
+          <div class="t-visual-r proj-head-visual reveal">
+            <div class="field">
+              <img
+                src={hero.src}
+                srcset={hero.srcset}
+                sizes="(min-width: 1200px) 58vw, 100vw"
+                alt={`${name} — hero`}
+                loading="eager"
+                fetchpriority="high"
+                decoding="async"
+              />
+            </div>
           </div>
-        </div>
-        <div class="t-text-l proj-head-text reveal" data-stagger="1">
+        )}
+        <div class:list={[hero ? 't-text-l' : 't-body', 'proj-head-text', 'reveal']} data-stagger="1">
           <span class="label proj-meta">{discipline} &middot; {year}</span>
           <h1 class="proj-name">{name}</h1>
           <p class="proj-framing">{framing}</p>
+          {liveUrl && (
+            <a class="textlink proj-live" href={liveUrl} target="_blank" rel="noopener">Visit the live site &rarr;</a>
+          )}
           {spec && (
             <dl class="spec-table proj-spec">
               {Object.entries(spec).map(([k, v]) => (
@@ -281,6 +290,7 @@ const nextName = nextProject?.data.name ?? '';
     font-size: var(--fs-heading-s); line-height: var(--lh-heading-s);
     color: var(--text); margin: 0; max-width: 40ch;
   }
+  .proj-live { width: fit-content; margin-top: 4px; }
   .proj-spec { margin-top: 8px; }
   .proj-exhibitions { margin-top: 8px; }
   .proj-exhibitions ul {

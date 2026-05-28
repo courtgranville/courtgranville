@@ -2,7 +2,7 @@
   "name": "Mantis",
   "year": 2026,
   "discipline": "Product Design",
-  "framing": "A standing lamp made from a broken wooden side table — its surface the base, its legs reconnected with 3D-printed joints.",
+  "framing": "A side table in need of repair, reborn as a standing lamp.",
   "heroImage": "04-final-hero",
   "group": true,
   "exhibitions": [
@@ -13,12 +13,12 @@
     { "type": "label", "text": "01 — The Brief" },
     {
       "type": "text",
-      "body": "The brief was a transformation: take a found object — an artefact, a product — and turn it into something new. We took a wooden side table that needed repair."
+      "body": "My most recent lamp. The brief was to take a found object and transform it into a new product; we took a wooden side table that needed repair and turned it into a standing lamp."
     },
     { "type": "label", "text": "02 — Making" },
     {
       "type": "text",
-      "body": "The table's surface became the lamp's base. Its legs, reconnected with 3D-printed joints, became its structure. The remaining components — bulb, fittings, lampshade — were purchased and assembled into the body of the new object."
+      "body": "The tabletop became the base, the legs were rejoined with 3D-printed joints, and the remaining components were sourced and assembled into the body of the new object."
     },
     {
       "type": "imageGrid",
@@ -28,7 +28,7 @@
     { "type": "label", "text": "03 — Exhibited" },
     {
       "type": "text",
-      "body": "Selected for IE University's School of Architecture and Design final exhibition, and for the Meyrit Biennale, Madrid."
+      "body": "MANTIS was selected for IE University's exhibition of the School of Architecture and Design's best projects, and for an external exhibition at the Meyrit Biennale in Madrid."
     }
   ]
 }

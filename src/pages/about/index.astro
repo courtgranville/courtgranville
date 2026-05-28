@@ -1,47 +1,190 @@
 ---
-// About — first person, to match the homepage Intro voice. Grounded in known
-// facts (IE University, brand-strategy background, contested-tech thesis).
-// Copy is a starting point for Court to refine.
+// About — first person, the fullest statement of who Court is and how he works.
+// Built on the shared column grid: a label kicker on the rail (t-rail), content
+// on the body track (t-body), with sections separated by hairlines. Copy is the
+// v2 portfolio copy — multidisciplinary designer, product design as the root.
 
 import Layout from '../../components/Layout.astro';
 import Nav from '../../components/Nav.astro';
 import Footer from '../../components/Footer.astro';
 import Grid from '../../components/Grid.astro';
 
-const meta = [
-  ['Education',  'IE University, Madrid — Product Design'],
-  ['Background', 'Brand Strategy & Digital Marketing'],
-  ['Focus',      'Product · Interaction · Critical Design'],
-  ['Based',      'Madrid, Spain'],
+const quickFacts: [string, string][] = [
+  ['Who',    'Court Granville'],
+  ['What',   'Multidisciplinary Designer'],
+  ['Where',  'London & Madrid'],
+  ['Focus',  'Technology, energy & contested subjects'],
+  ['Status', 'Graduating 2026 · Open to work'],
+];
+
+const disciplines: [string, string][] = [
+  ['Product & Industrial Design', 'Where I started, and still the core of how I think. Physical objects from lamps to speaker enclosures — research, 3D modelling, CNC machining, 3D printing, and hands-on fabrication.'],
+  ['UX / UI & Interaction Design', 'Apps and interfaces built around how people actually move through them. User journeys, flows, wireframes and prototyping — from a productivity app to interactive data tools.'],
+  ['Data Visualisation & Information Design', 'Making complex, often contested data navigable for people who aren’t specialists. Turning technical literature and datasets into something you can read, explore and trust.'],
+  ['Web Design & AI-assisted Development', 'Designing and building interactive websites end to end — HTML, CSS and JavaScript, with AI as a collaborator rather than a crutch. The kind of work behind thenuclearquestion.com and this site.'],
+  ['Brand & Communication Strategy', 'The professional side: positioning, narrative, market research and paid media, from brand-strategy work at Big Fish and others. Understanding audiences and shaping how something is understood.'],
+];
+
+const principles: [string, string][] = [
+  ['Research first', 'Understand the system before designing for it.'],
+  ['Build to learn', 'Prototype early, iterate often, stay unprecious.'],
+  ['Translate, don’t decorate', 'Make the technical legible, not just pretty.'],
+  ['Add meaning, not clutter', 'Improve people’s lives rather than adding to them.'],
+];
+
+const skills: [string, string][] = [
+  ['Design Software', 'Adobe Creative Suite (Illustrator, InDesign, Photoshop), Figma, Blender, Rhino'],
+  ['Data & Visualisation', 'RAWGraphs, editorial poster design, information architecture, cross-dataset analysis, visual storytelling for non-specialist audiences'],
+  ['Technical', 'HTML, CSS, JavaScript, Processing (creative coding), Git / GitHub, WordPress, AI tools (Anthropic, OpenAI), website design'],
+  ['Research & Analysis', 'Primary research (expert interviews, survey design), academic literature synthesis, competitor analysis, market research'],
+  ['Digital Marketing', 'Google Ads, Meta Ads, paid-media analytics'],
+  ['Communication', 'Client presentations, stakeholder workshops, professional writing, concept development'],
+  ['Languages', 'English (native), Spanish (intermediate)'],
+];
+
+const education: { school: string; place: string; award: string; year: string }[] = [
+  { school: 'IE University', place: 'Madrid', award: 'Bachelor in Design', year: '2026' },
+  { school: 'City & Guilds of London Art School', place: 'London', award: 'Level 4 Foundation Diploma in Art & Design', year: '2022' },
+  { school: 'Latymer Upper School', place: 'London', award: 'Academic Scholar · A Levels: Art History, History, Maths', year: '2021' },
+];
+
+const experience: { org: string; place: string; role: string; year: string; blurb: string }[] = [
+  { org: 'Big Fish', place: 'London', role: 'Design & Strategy Intern', year: '2025', blurb: 'Competitor research, trend analysis and market audits to inform brand positioning; brand narratives and visual identities for food and beverage clients; client workshops and live briefs from research to concept delivery.' },
+  { org: 'Kandidly', place: 'London', role: 'Digital Marketing Intern', year: '2023', blurb: 'Paid media, social campaigns and data analysis; Google Ads and Meta campaigns with localised targeting and performance tracking.' },
+  { org: 'Christie’s Auction House', place: 'London', role: 'Furniture Department Intern', year: '2019', blurb: 'Cataloguing, filing and research.' },
 ];
 ---
-<Layout title="About — Court Granville" description="Court Granville — product designer working between the technical and the human, at IE University, Madrid.">
+<Layout
+  title="About — Court Granville"
+  description="Court Granville is a multidisciplinary designer working where technology meets communication — across objects, interfaces, data and the web. London & Madrid."
+>
   <Nav />
   <main>
+    <!-- Intro -->
     <Grid as="article" class="about">
       <span class="label about-kicker reveal">About</span>
       <h1 class="about-statement reveal" data-stagger="1">
-        I design for the technical, complex, and contested subjects that design too often leaves alone.
+        Design as the bridge between technical complexity and human understanding.
       </h1>
 
       <div class="about-body reveal" data-stagger="2">
-        <p>I&rsquo;m a product designer based in Madrid, studying at IE University. Before design I worked in brand strategy and digital marketing — a grounding in how ideas are positioned and communicated that still shapes how I approach a problem.</p>
-        <p>My work runs from industrial and product design to interaction and critical design. The thread through all of it is translation: turning technical complexity into something people can understand, trust, and act on.</p>
-        <p>My current thesis examines the public perception of contested technology — how design mediates what people come to believe about the systems shaping their lives. Alongside it, I build with code and AI as design materials, treating the medium as part of the craft.</p>
+        <p>I’m Court Granville, a multidisciplinary designer guided by a deep-seated curiosity about how the world — and the things and systems within it — actually work. My training is primarily in product design, but a growing interest in technology, AI and systems has pushed me wider, toward something broader: design as the bridge between technical complexity and human understanding.</p>
+        <p>What drives me is solving problems for people in thoughtful, meaningful and beautiful ways. I’m drawn to technical industries — the ones usually dominated by scientists, engineers and developers — because I believe design is naturally positioned to translate the technical into something that can be understood, enjoyed, bought and used by people around the world.</p>
+        <p>AI has been central to turning that interest into something tangible; it has dramatically lowered the barrier to entry for designers working with technical subjects. My thesis is the clearest example: with AI, it morphed from a series of physical posters into an interactive, animated and emotionally provocative design intervention, accessible to anyone in the world via the web. I’m clear-eyed about its limits, but I can’t help seeing it as a huge multiplier for designers who use it properly — not just to “do their homework”.</p>
+        <p>I don’t shy away from the academic, the technical or the analytical. A background in History, Art History and Maths isn’t a typical entry point into design, but it has given me a particular perspective on how design fits into the world — usually as a problem solver, and occasionally as a problem creator. I care about work that genuinely improves people’s lives rather than simply adding more to them; the design I find truly beautiful is the kind that sparks curiosity, fulfilment and long-lasting satisfaction. Lately that’s led me toward complex, contested technologies — the energy industry in particular — and it’s where I hope to keep working.</p>
+        <p>Alongside design, I’ve worked in brand strategy and digital marketing — at Big Fish, Christie’s and others — building brand narratives, running market research and managing paid-media campaigns. It’s the same instinct from a different angle: understanding audiences, shaping positioning, and closing the gap between technical complexity and public understanding.</p>
       </div>
+    </Grid>
 
-      <dl class="spec-table about-meta reveal" data-stagger="3">
-        {meta.map(([k, v]) => (
+    <!-- Quick facts -->
+    <Grid as="section" class="ab-sec" aria-label="Quick facts">
+      <span class="label t-rail ab-kicker reveal">Quick facts</span>
+      <dl class="t-body spec-table ab-facts reveal" data-stagger="1">
+        {quickFacts.map(([k, v]) => (
           <>
             <dt>{k}</dt>
             <dd>{v}</dd>
           </>
         ))}
       </dl>
+    </Grid>
 
-      <div class="about-cta reveal" data-stagger="4">
+    <!-- Disciplines -->
+    <Grid as="section" class="ab-sec" aria-label="Disciplines">
+      <span class="label t-rail ab-kicker reveal">Disciplines</span>
+      <div class="t-body ab-content reveal" data-stagger="1">
+        <p class="ab-lead">I work across disciplines rather than inside one. The common thread is translation — taking something technical or complex and making it make sense.</p>
+        <div class="ab-disciplines">
+          {disciplines.map(([h, p]) => (
+            <div class="ab-disc">
+              <h3 class="ab-disc-h">{h}</h3>
+              <p class="ab-disc-p">{p}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Grid>
+
+    <!-- Approach -->
+    <Grid as="section" class="ab-sec" aria-label="Approach">
+      <span class="label t-rail ab-kicker reveal">Approach</span>
+      <div class="t-body ab-content reveal" data-stagger="1">
+        <p class="ab-lead">How I work, in four lines.</p>
+        <dl class="ab-principles">
+          {principles.map(([t, d]) => (
+            <div class="ab-principle">
+              <dt class="ab-principle-t">{t}</dt>
+              <dd class="ab-principle-d">{d}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </Grid>
+
+    <!-- Skills & tools -->
+    <Grid as="section" class="ab-sec" aria-label="Skills and tools">
+      <span class="label t-rail ab-kicker reveal">Skills &amp; tools</span>
+      <dl class="t-body ab-skills reveal" data-stagger="1">
+        {skills.map(([k, v]) => (
+          <div class="ab-skill">
+            <dt class="ab-skill-t">{k}</dt>
+            <dd class="ab-skill-d">{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </Grid>
+
+    <!-- Education -->
+    <Grid as="section" class="ab-sec" aria-label="Education">
+      <span class="label t-rail ab-kicker reveal">Education</span>
+      <div class="t-body ab-list reveal" data-stagger="1">
+        {education.map((e) => (
+          <div class="ab-item">
+            <h3 class="ab-item-h">{e.school}</h3>
+            <span class="label ab-item-meta">{e.place} · {e.year}</span>
+            <p class="ab-item-detail">{e.award}</p>
+          </div>
+        ))}
+      </div>
+    </Grid>
+
+    <!-- Selected experience -->
+    <Grid as="section" class="ab-sec" aria-label="Selected experience">
+      <span class="label t-rail ab-kicker reveal">Selected experience</span>
+      <div class="t-body ab-list reveal" data-stagger="1">
+        {experience.map((x) => (
+          <div class="ab-item">
+            <h3 class="ab-item-h">{x.org}</h3>
+            <span class="label ab-item-meta">{x.role} · {x.place} · {x.year}</span>
+            <p class="ab-item-detail">{x.blurb}</p>
+          </div>
+        ))}
+      </div>
+    </Grid>
+
+    <!-- Now / availability -->
+    <Grid as="section" class="ab-sec" aria-label="Now">
+      <span class="label t-rail ab-kicker reveal">Now</span>
+      <p class="t-body ab-now reveal" data-stagger="1">
+        Right now — finishing my Bachelor in Design at IE University in Madrid, building this site, and writing about contested technologies. I’m looking for what comes next, and open to roles, freelance and collaborations — particularly in technology, energy and other technical fields where design can do real work.
+      </p>
+    </Grid>
+
+    <!-- Colophon -->
+    <Grid as="section" class="ab-sec" aria-label="Colophon">
+      <span class="label t-rail ab-kicker reveal">Colophon</span>
+      <div class="t-body ab-colophon reveal" data-stagger="1">
+        <p>This site was designed and built by me, with AI as a collaborator rather than a crutch. It’s built with Astro — component by component, no template and no page builder — its WebGL hero and 3D work hand-written in three.js, the layout and interaction iterated through Claude, version-managed on GitHub, and deployed on Cloudflare Pages. The images are my own work, served at full resolution.</p>
+        <p>I built it this way on purpose. My thesis turned a set of physical posters into an interactive site I couldn’t have made alone a year ago; this portfolio is the same idea turned on itself. AI lowered the barrier, but every decision here is still mine — which is exactly the point I’d want a portfolio to make.</p>
+      </div>
+    </Grid>
+
+    <!-- CTA -->
+    <Grid as="section" class="ab-sec ab-cta-sec" aria-label="Get in touch">
+      <div class="t-body ab-cta reveal">
         <a class="textlink" href="mailto:court@courtgranville.com">Get in touch &rarr;</a>
         <a class="textlink" href="/work/">See the work &rarr;</a>
+        <a class="textlink" href="/court-granville-cv.pdf" target="_blank" rel="noopener">Download CV &rarr;</a>
       </div>
     </Grid>
   </main>
@@ -49,8 +192,9 @@ const meta = [
 </Layout>
 
 <style>
+  /* ── Intro ──────────────────────────────────────────────────────────────── */
   :global(.about) {
-    padding-block: calc(var(--nav-h) + clamp(48px, 9vh, 120px)) clamp(80px, 14vh, 160px);
+    padding-block: calc(var(--nav-h) + clamp(48px, 9vh, 120px)) clamp(32px, 5vh, 56px);
     row-gap: clamp(28px, 4vh, 48px);
   }
   .about-kicker    { grid-column: 1 / -1; display: block; }
@@ -58,32 +202,111 @@ const meta = [
     grid-column: 1 / -1;
     font-family: var(--serif); font-weight: 400;
     font-size: var(--fs-display-l); line-height: var(--lh-display-l);
-    color: var(--text); margin: 0; max-width: 18ch;
+    color: var(--text); margin: 0; max-width: 20ch;
   }
   .about-body { grid-column: 1 / -1; }
   .about-body p {
     font-size: var(--fs-body); line-height: var(--lh-body); color: var(--text);
-    max-width: 60ch; margin: 0 0 24px;
+    max-width: 62ch; margin: 0 0 24px;
   }
   .about-body p:last-child { margin-bottom: 0; }
-
-  .about-meta { grid-column: 1 / -1; }
-
-  .about-cta { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 28px; margin-top: 8px; }
 
   @media (min-width: 768px) {
     .about-statement { grid-column: 1 / 8; }
     .about-body      { grid-column: 1 / 7; }
-    .about-meta      { grid-column: 1 / 8; }
-    .about-cta       { grid-column: 1 / 7; }
   }
   @media (min-width: 1200px) {
     .about-kicker    { grid-column: 1 / 3; }
     .about-statement { grid-column: 3 / 11; }
     .about-body      { grid-column: 3 / 9; }
-    .about-meta      { grid-column: 3 / 11; }
-    .about-cta       { grid-column: 3 / 9; }
   }
+
+  /* ── Repeating sections — kicker on t-rail, content on t-body ───────────── */
+  /* Grid roots render inside <Grid> and miss this file's scope hash → :global. */
+  :global(.ab-sec) {
+    padding-block: clamp(40px, 7vh, 88px);
+    border-top: 1px solid var(--rule);
+    row-gap: var(--space-block);
+    align-items: start;
+  }
+  .ab-kicker { display: block; align-self: start; }
+
+  .ab-lead {
+    font-size: var(--fs-body); line-height: var(--lh-body);
+    color: var(--text-quiet); margin: 0 0 var(--space-block); max-width: 56ch;
+  }
+
+  /* Quick facts — the shared spec-table, a touch more room between rows. */
+  .ab-facts { row-gap: 14px; }
+
+  /* Disciplines */
+  .ab-disciplines { display: flex; flex-direction: column; gap: clamp(24px, 4vh, 40px); }
+  .ab-disc-h {
+    font-family: var(--serif); font-weight: 400;
+    font-size: var(--fs-heading-s); line-height: var(--lh-heading-s);
+    color: var(--text); margin: 0 0 8px;
+  }
+  .ab-disc-p {
+    font-size: var(--fs-body); line-height: var(--lh-body);
+    color: var(--text-quiet); margin: 0; max-width: 58ch;
+  }
+
+  /* Approach — four principles */
+  .ab-principles { margin: 0; display: flex; flex-direction: column; gap: 18px; }
+  .ab-principle { display: flex; flex-direction: column; gap: 4px; }
+  .ab-principle-t {
+    font-family: var(--sans); font-weight: 500;
+    font-size: var(--fs-label); line-height: var(--lh-label);
+    letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--text);
+  }
+  .ab-principle-d {
+    margin: 0; font-size: var(--fs-body); line-height: var(--lh-body);
+    color: var(--text-quiet); max-width: 56ch;
+  }
+
+  /* Skills — category / items rows */
+  .ab-skills { margin: 0; display: flex; flex-direction: column; gap: 18px; }
+  .ab-skill { display: grid; gap: 4px; }
+  .ab-skill-t {
+    font-family: var(--sans); font-weight: 500;
+    font-size: var(--fs-label); line-height: var(--lh-label);
+    letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--text-quiet);
+  }
+  .ab-skill-d {
+    margin: 0; font-size: var(--fs-body-s); line-height: var(--lh-body-s); color: var(--text);
+    max-width: 60ch;
+  }
+
+  /* Education / experience items */
+  .ab-list { display: flex; flex-direction: column; gap: clamp(24px, 4vh, 40px); }
+  .ab-item-h {
+    font-family: var(--serif); font-weight: 400;
+    font-size: var(--fs-heading-s); line-height: var(--lh-heading-s);
+    color: var(--text); margin: 0 0 6px;
+  }
+  .ab-item-meta { display: block; color: var(--text-quiet); margin-bottom: 8px; }
+  .ab-item-detail {
+    font-size: var(--fs-body-s); line-height: var(--lh-body-s);
+    color: var(--text); margin: 0; max-width: 60ch;
+  }
+
+  /* Now — given a little more presence as the availability moment */
+  .ab-now {
+    font-family: var(--serif); font-weight: 400;
+    font-size: var(--fs-heading-s); line-height: var(--lh-heading-s);
+    color: var(--text); margin: 0; max-width: 34ch;
+  }
+
+  /* Colophon */
+  .ab-colophon p {
+    font-size: var(--fs-body); line-height: var(--lh-body);
+    color: var(--text-quiet); margin: 0 0 20px; max-width: 60ch;
+  }
+  .ab-colophon p:last-child { margin-bottom: 0; }
+
+  /* CTA */
+  .ab-cta { display: flex; flex-wrap: wrap; gap: 28px; }
+  :global(.ab-cta-sec) { padding-bottom: clamp(64px, 12vh, 140px); }
 </style>
 
 <style is:global>

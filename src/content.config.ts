@@ -56,7 +56,11 @@ const projects = defineCollection({
     year: z.number(),
     discipline: z.string(),
     framing: z.string(),
-    heroImage: z.string(),
+    // Optional: web/data projects (e.g. The Nuclear Question) have no hero
+    // image — the route renders a text-forward header when this is absent.
+    heroImage: z.string().optional(),
+    // Optional external link (e.g. a live site) surfaced in the project header.
+    liveUrl: z.string().optional(),
     group: z.boolean().optional().default(false),
     spec: z.record(z.string(), z.string()).optional(),
     exhibitions: z.array(z.string()).optional(),

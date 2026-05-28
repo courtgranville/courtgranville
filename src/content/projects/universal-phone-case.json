@@ -1,8 +1,8 @@
 {
-  "name": "Universal Phone Case",
+  "name": "Wabi Sabi",
   "year": 2022,
   "discipline": "Product Design",
-  "framing": "A brief from MUJI's design language, met by a 3D-printed iPhone case engineered to fit every model from the SE to the 14.",
+  "framing": "A universal iPhone case for MUJI — beauty in serenity, simplicity and imperfection.",
   "heroImage": "07-final-hero",
   "group": true,
   "spec": {
@@ -15,17 +15,17 @@
     { "type": "label", "text": "01 — The Brief" },
     {
       "type": "text",
-      "body": "An early studio project — the first to introduce our class to 3D modelling. The brief was to design something MUJI could sell, in MUJI's \"this will do\" design language."
+      "body": "An ambitious early project, and my introduction to 3D modelling. The brief was to design something MUJI could sell — the brand known for its minimalist, \"this will do\" approach."
     },
     { "type": "label", "text": "02 — Concept" },
     {
       "type": "text",
-      "body": "We named the project Wabi Sabi — the Japanese principle of beauty in serenity, simplicity and imperfection — and worked toward an object that would be honest in form and useful in function: a universal phone case."
+      "body": "We named the project Wabi Sabi, after the Japanese principle of finding beauty in serenity, simplicity and imperfection — and worked toward an object honest in form and useful in function: a universal phone case."
     },
     { "type": "label", "text": "03 — Key Decisions" },
     {
       "type": "text",
-      "body": "Two decisions defined the project. The first was scope. We wanted a case that fit every phone; budget and time pulled that back to iPhones, and within iPhones, the range from the SE up to the 14 — the most recent model at the time. The second was material. We chose a flexible 3D-printing filament: its give meant the same case could expand and contract to fit different phone sizes, and as a second-order property, it absorbed impact better than the brittle standard filaments. That second property became a design feature on its own — padded corners, the only addition we allowed ourselves on top of the bare case form."
+      "body": "Using a flexible 3D-printing filament, we developed a universal case that could expand and contract to fit every iPhone from the SE to the 14 — the most recent model at the time. The flexible material doubled as protection, which became a design feature on its own: padded corners, the only addition we allowed ourselves on top of the bare case form."
     },
     {
       "type": "imageGrid",
@@ -35,7 +35,7 @@
     { "type": "label", "text": "04 — Resolved" },
     {
       "type": "text",
-      "body": "A working prototype that fits every iPhone from the SE to the 14, made from one material, with one functional addition."
+      "body": "Many iterations later we had a functional prototype that fit the whole range — kept deliberately minimal, made from one material, with one functional addition."
     },
     {
       "type": "imageGrid",

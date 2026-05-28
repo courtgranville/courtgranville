@@ -2,7 +2,7 @@
   "name": "Wave",
   "year": 2026,
   "discipline": "Product Design",
-  "framing": "A custom CNC'd enclosure for a pair of broken Edifier desktop speakers — built across a ten-week studio with ten weekly deliverables.",
+  "framing": "A salvaged pair of speakers, rebuilt into a custom desktop enclosure.",
   "heroImage": "03-final-hero",
   "group": true,
   "spec": {
@@ -14,12 +14,12 @@
     { "type": "label", "text": "01 — The Brief" },
     {
       "type": "text",
-      "body": "A group project with an unusual structure: deliver ten different things over ten consecutive weeks. The deliverables compounded — each week built on the last — until the final object became the culmination of a semester's range of work. Our group's interests sat across electronics, woodworking, audio design and product design, and we let the project move across all four."
+      "body": "Born from a group brief to ship ten different deliverables a week for ten weeks, the WAVE Speaker brought together our interests in electronics, woodworking, audio and product design. The deliverables compounded — each week built on the last — until the final object became the culmination of a semester's range of work."
     },
     { "type": "label", "text": "02 — Process" },
     {
       "type": "text",
-      "body": "Many of those weeks were spent in materials — testing different woods, learning CNC machining, 3D-printing internal components — and in researching sound and speaker design. The build emerged from those weeks rather than being designed up front."
+      "body": "We spent weeks in materials — testing wood samples, CNC-machining, 3D-printing internal components — and researching sound and speaker design. The build emerged from those weeks rather than being designed up front."
     },
     {
       "type": "imageGrid",
@@ -29,7 +29,7 @@
     { "type": "label", "text": "03 — Key Decision" },
     {
       "type": "text",
-      "body": "We started from a broken pair of Edifier desktop speakers. The drivers were salvageable; the housings weren't. We rebuilt them — drivers given a new custom enclosure, sized and tuned for them, CNC'd from solid wood, sanded and finished by hand. The internal mounting was 3D-printed and CNC'd to fit."
+      "body": "We started from a broken pair of Edifier desktop speakers. The drivers were salvageable; the housings weren't. We repaired them and rehoused the desktop drivers in a custom-built case — CNC'd from solid wood, sanded and finished by hand, with the internal components 3D-printed and machined to fit."
     },
     { "type": "label", "text": "04 — Resolved" },
     {

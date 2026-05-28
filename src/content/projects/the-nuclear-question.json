@@ -1,0 +1,29 @@
+{
+  "name": "The Nuclear Question",
+  "year": 2026,
+  "discipline": "Data Visualisation · Information Design · Interaction Design · Web Design · UX·UI",
+  "framing": "A public platform that makes the case for, and against, nuclear energy legible to anyone.",
+  "liveUrl": "https://thenuclearquestion.com",
+  "group": false,
+  "blocks": [
+    { "type": "label", "text": "01 — Overview" },
+    {
+      "type": "text",
+      "body": "The most ambitious thing I've built, and the bridge between my design practice and my thesis research. The Nuclear Question is a public-facing platform — live at <a href=\"https://thenuclearquestion.com\" target=\"_blank\" rel=\"noopener\">thenuclearquestion.com</a> — with interactive data-visualisation tools that make nuclear energy's strengths, weaknesses and risks navigable for non-technical audiences."
+    },
+    { "type": "label", "text": "02 — The Research" },
+    {
+      "type": "text",
+      "body": "It examines the architecture of public communication around nuclear energy, and by extension other contested decarbonisation technologies: how framings of ownership, financing and risk travel from technical literature into mainstream UK discourse."
+    },
+    {
+      "type": "text",
+      "body": "The work is grounded in original research — expert interviews with a nuclear-sector investor and a senior PR practitioner, and a public-perception survey (n=60) on misconceptions of risk, cost and waste — alongside an editorial data-poster series drawing on Our World in Data, the IPCC AR5, UNECE 2021 lifecycle estimates, Ember's UK generation data, and peer-reviewed energy-mortality figures."
+    },
+    { "type": "label", "text": "03 — The Role" },
+    {
+      "type": "text",
+      "body": "It frames the designer as an <em>epistemic facilitator</em>, working in the tradition of investigative data journalism and climate accountability."
+    }
+  ]
+}

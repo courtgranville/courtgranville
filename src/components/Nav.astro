@@ -15,9 +15,10 @@
 const path = Astro.url.pathname;
 const links = [
   { href: '/work/',    label: 'Work' },
-  { href: '/blog/',    label: 'Blog' },
+  { href: '/blog/',    label: 'Writing' },
   { href: '/about/',   label: 'About' },
   { href: '/contact/', label: 'Contact' },
+  { href: '/court-granville-cv.pdf', label: 'CV', external: true },
 ];
 const isCurrent = (href: string) => path === href || path.startsWith(href);
 ---
@@ -25,7 +26,12 @@ const isCurrent = (href: string) => path === href || path.startsWith(href);
   <a class="brand" href="#top" data-scroll-top>Court Granville</a>
   <div class="nav-links">
     {links.map((l) => (
-      <a class="nav-link" href={l.href} aria-current={isCurrent(l.href) ? 'page' : undefined}>{l.label}</a>
+      <a
+        class="nav-link"
+        href={l.href}
+        aria-current={!l.external && isCurrent(l.href) ? 'page' : undefined}
+        {...(l.external ? { target: '_blank', rel: 'noopener' } : {})}
+      >{l.label}</a>
     ))}
   </div>
 </nav>

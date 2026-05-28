@@ -22,13 +22,16 @@ function heroFor(slug: string, heroSlug: string) {
 }
 
 const PROJECTS = [
+  // No hero image yet (web/data project) — the preview field stays empty until a
+  // screenshot is added to the manifest. show(null) is a safe no-op.
+  { name: 'The Nuclear Question',    year: 2026, discipline: 'Data Visualisation / Web',  slug: 'the-nuclear-question', hero: null },
   { name: 'Mantis',                  year: 2026, discipline: 'Product Design',            slug: 'mantis',               hero: heroFor('mantis', '04-final-hero') },
   { name: 'Wave',                    year: 2026, discipline: 'Product Design',            slug: 'wave',                 hero: heroFor('wave', '03-final-hero') },
   { name: 'Gravity Wave Backgammon', year: 2024, discipline: 'Product Design',            slug: 'backgammon',           hero: heroFor('backgammon', '07-final-hero') },
-  { name: 'LUMI',                    year: 2023, discipline: 'Critical / Product Design', slug: 'lumi',                 hero: heroFor('lumi', '04-final-hero') },
+  { name: 'LUMI',                    year: 2023, discipline: 'Product / Critical Design', slug: 'lumi',                 hero: heroFor('lumi', '04-final-hero') },
   { name: 'YourPAL',                 year: 2023, discipline: 'App Design / UX·UI',        slug: 'yourpal',              hero: heroFor('yourpal', '04-final-hero') },
   { name: 'Spider-209',              year: 2022, discipline: 'Product Design',            slug: 'spider-209',           hero: heroFor('spider-209', '04-final') },
-  { name: 'Universal Phone Case',    year: 2022, discipline: 'Product Design',            slug: 'universal-phone-case', hero: heroFor('universal-phone-case', '07-final-hero') },
+  { name: 'Wabi Sabi',               year: 2022, discipline: 'Product Design',            slug: 'universal-phone-case', hero: heroFor('universal-phone-case', '07-final-hero') },
 ];
 
 const clientData = PROJECTS.map((p) => ({ name: p.name, year: p.year, discipline: p.discipline, hero: p.hero }));

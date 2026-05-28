@@ -2,7 +2,7 @@
   "name": "Gravity Wave Backgammon",
   "year": 2024,
   "discipline": "Product Design",
-  "framing": "A backgammon board CNC'd from a single 1m × 1m sheet of recycled plastic, with the playing grid hidden in the material itself.",
+  "framing": "A sheet of recycled plastic, turned into a backlit backgammon board.",
   "heroImage": "07-final-hero",
   "group": true,
   "spec": {
@@ -14,21 +14,21 @@
     { "type": "label", "text": "01 — The Brief" },
     {
       "type": "text",
-      "body": "A brief from Gravity Wave, the company that makes the recycled-plastic material. The instructions were short and a little provocative: take a 1m × 1m board of this material and increase its value in some way."
+      "body": "A brief set by Gravity Wave, the company that makes the recycled-plastic material: take a 1m × 1m board and increase its value."
     },
     { "type": "label", "text": "02 — Why Backgammon" },
     {
       "type": "text",
-      "body": "We chose to make a backgammon board for two reasons. The material had unusual visual characteristics — translucency, depth, an earthy tonal range — that belonged to an object you would want to look at for hours. And backgammon boards have a long tradition of craftsmanship and value: an object that takes well-made well."
+      "body": "We chose to make a backgammon board — drawn by the material's visual character, and by the craft and value of a good board: an object you would want to look at for hours."
     },
     { "type": "label", "text": "03 — The Key Decision" },
     {
       "type": "text",
-      "body": "The brief had a constraint that should have been a problem: nothing on the board could be made from anything but the material itself. No inlays, no paint, no second material to distinguish the dark and light triangles that define a backgammon field. We had to find a way to render the playing grid using only the single material."
+      "body": "The rules didn't allow any other materials, so we couldn't simply colour the black and white pieces. No inlays, no paint, no second material to distinguish the dark and light triangles that define a backgammon field — we had to render the playing grid using the single material alone."
     },
     {
       "type": "text",
-      "body": "We noticed that if we CNC'd the material down to a thickness between 1 and 3 millimetres, varying degrees of light could pass through it. From there: a 3D model of the board with indented sections corresponding to the dark and light triangles, alternating layer thickness so that backlighting would render the pattern on the surface — while the surface itself stayed entirely flat and smooth."
+      "body": "Instead we found that milling the material down to 1–3mm let varying amounts of light pass through it. By alternating layer thicknesses across the board, we used light to render the entire backgammon pattern — keeping the surface completely flat and smooth."
     },
     {
       "type": "imageGrid",
@@ -38,7 +38,7 @@
     { "type": "label", "text": "04 — Making" },
     {
       "type": "text",
-      "body": "Initial prototypes were 3D-modelled and CNC'd from wood — iterations to confirm the form and the playing-surface dimensions before committing to the single 1m × 1m sheet."
+      "body": "We prototyped in 3D and CNC'd early versions from wood — iterations to confirm the form and the playing-surface dimensions before committing to the single 1m × 1m sheet."
     },
     {
       "type": "imageGrid",

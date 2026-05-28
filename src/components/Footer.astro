@@ -10,14 +10,24 @@
     <div class="footer-contact reveal">
       <span class="label">Get in touch</span>
       <a class="footer-email" href="mailto:court@courtgranville.com">court@courtgranville.com</a>
+      <p class="footer-role">Court Granville &mdash; Multidisciplinary Designer</p>
     </div>
     <nav class="footer-links" aria-label="Footer">
       <a href="/work/">Work</a>
-      <a href="/blog/">Blog</a>
+      <a href="/blog/">Writing</a>
       <a href="/about/">About</a>
       <a href="/contact/">Contact</a>
+      <a href="/court-granville-cv.pdf" target="_blank" rel="noopener">CV</a>
     </nav>
-    <div class="footer-copyright">&copy; 2026 Court Granville</div>
+    <dl class="footer-locale">
+      <div><dt>London</dt><dd>51.5074&deg; N, 0.1278&deg; W</dd></div>
+      <div><dt>Madrid</dt><dd>40.4168&deg; N, 3.7038&deg; W</dd></div>
+      <div><dt>Status</dt><dd>Open to work</dd></div>
+    </dl>
+    <div class="footer-baseline">
+      <span class="footer-motto">Designed and built with curiosity in London &amp; Madrid.</span>
+      <span class="footer-copyright">&copy; 2026 Court Granville</span>
+    </div>
   </div>
 </footer>
 
@@ -32,12 +42,18 @@
     grid-template-columns: 1fr auto;
     grid-template-areas:
       'contact links'
-      'copyright copyright';
+      'locale  locale'
+      'baseline baseline';
     gap: 60px 40px;
     align-items: end;
   }
   .footer-contact { grid-area: contact; }
   .footer-contact .label { display: block; margin-bottom: 12px; }
+  .footer-role {
+    font-family: var(--serif); font-weight: 400;
+    font-size: var(--fs-body-s); line-height: var(--lh-body-s);
+    color: var(--text-quiet); margin: 14px 0 0;
+  }
 
   .footer-email {
     font-family: var(--serif);
@@ -66,11 +82,44 @@
   }
   .footer-links a:hover { color: var(--accent); }
 
-  .footer-copyright {
-    grid-area: copyright;
-    margin-top: 44px;
+  /* Locale — London / Madrid coordinates + status, on the .label system. */
+  .footer-locale {
+    grid-area: locale;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 44px;
+  }
+  .footer-locale div { display: flex; gap: 12px; align-items: baseline; }
+  .footer-locale dt,
+  .footer-locale dd {
+    margin: 0;
+    font-family: var(--sans);
+    font-weight: 500;
+    font-size: var(--fs-label);
+    line-height: var(--lh-label);
+    letter-spacing: var(--ls-label);
+    text-transform: uppercase;
+  }
+  .footer-locale dt { color: var(--text-quiet); }
+  .footer-locale dd { color: var(--text-faint); font-variant-numeric: tabular-nums; }
+
+  .footer-baseline {
+    grid-area: baseline;
+    margin-top: 24px;
     padding-top: 22px;
     border-top: 1px solid var(--rule);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px 32px;
+  }
+  .footer-motto {
+    font-family: var(--serif); font-weight: 400; font-style: italic;
+    font-size: var(--fs-body-s); line-height: var(--lh-body-s);
+    color: var(--text-quiet);
+  }
+  .footer-copyright {
     font-family: var(--sans);
     font-weight: 500;
     font-size: var(--fs-label);
@@ -82,7 +131,7 @@
   @media (max-width: 720px) {
     .footer-inner {
       grid-template-columns: 1fr;
-      grid-template-areas: 'contact' 'links' 'copyright';
+      grid-template-areas: 'contact' 'links' 'locale' 'baseline';
       gap: 36px;
     }
   }

@@ -1,20 +1,20 @@
 {
   "name": "LUMI",
   "year": 2023,
-  "discipline": "Product Design / Critical Design",
-  "framing": "A critical-design lamp, designed to support people managing screen-time, ADHD and anxiety — my first product modelled and 3D-printed end to end.",
+  "discipline": "Product Design · Critical Design",
+  "framing": "A lamp that pushes back on our relationship with our screens.",
   "heroImage": "04-final-hero",
   "group": false,
   "blocks": [
     { "type": "label", "text": "01 — The Brief" },
     {
       "type": "text",
-      "body": "The brief, as set: \"To design a product that encourages a responsible use of social media, raising questions about our addiction to them.\" My concept became a lamp that could benefit people managing any combination of three related issues — ADHD, anxiety, and social-media addiction."
+      "body": "My first fully 3D-modelled project, built entirely from 3D-printed parts and electronics. The brief — to design a product that encourages responsible social-media use and questions our addiction to it — became a lamp for people living with ADHD, anxiety, social-media addiction, or all three."
     },
     { "type": "label", "text": "02 — Making" },
     {
       "type": "text",
-      "body": "My first product designed entirely in 3D modelling. The primary fabrication techniques were 3D-printed threaded parts that screwed together, and internal components modelled to house LED lighting strips intended to be controlled by an app or custom software."
+      "body": "I 3D-printed threaded components that screwed together, and modelled the internal housing for LED lighting strips — designed to be controlled by an app or custom software."
     },
     {
       "type": "imageGrid",

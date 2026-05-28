@@ -120,8 +120,24 @@ Note: vanilla scripts use CDN `three@0.162`; React islands bundle npm `three@0.1
 - The 87 MB `docs/projects/spider-209/source/SPIDER-209-BRIEF.pdf` triggers GitHub's >50 MB warning (still under the 100 MB hard limit). Consider Git LFS for large source files if the repo needs slimming.
 - `.gitignore` excludes `node_modules`, `dist`, `.astro`, `.tmp-screenshots/`, `.claude/settings.local.json`, env files.
 
+## Deploy (Cloudflare Pages)
+
+Fully static build — no adapter needed. Connect the GitHub repo in the
+Cloudflare Pages dashboard with:
+- **Framework preset:** Astro
+- **Build command:** `npm run build`
+- **Build output directory:** `dist`
+- **Node version:** 20 (set env `NODE_VERSION=20`, or add a `.nvmrc`)
+- **Env vars:** none required.
+
+The hero/3D-canvas three.js loads from jsDelivr (CDN import map) and fonts from
+Google Fonts at runtime — both work in production. After the first deploy, add
+the custom domain `courtgranville.com` in Pages → Custom domains (Cloudflare
+manages the DNS). `astro.config.mjs` `site` is already set for canonical URLs +
+sitemap. (Connecting the repo + DNS is a dashboard action on Court's account.)
+
 ## Roadmap
 
-Phases: (1) research — done; (2) design system + hero prototype — done; (3) framework build (Astro) — done; (4) GitHub version control — done; (5) iterate in Claude Code with full-resolution assets — **current**; (6) deploy to Cloudflare Pages.
+Phases: (1) research — done; (2) design system + hero prototype — done; (3) framework build (Astro) — done; (4) GitHub version control — done; (5) iterate in Claude Code with full-resolution assets — **current**; (6) deploy to Cloudflare Pages — settings ready, awaiting dashboard connect.
 
 Open question, not in scope now: courtgranville.com also has a separate Cargo-hosted blog/thesis track; whether the two are reconciled into one site is undecided.

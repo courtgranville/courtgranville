@@ -172,6 +172,12 @@
     },
   };
 
+  // Lighten the particle count on small / low-power screens — 140k is tuned for
+  // desktop; phones hold 60fps far better at ~55k.
+  if (window.matchMedia('(max-width: 768px)').matches) {
+    CONFIG.particles.count = 55000;
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   // Helpers
   // ─────────────────────────────────────────────────────────────────────────

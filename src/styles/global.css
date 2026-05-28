@@ -134,6 +134,32 @@ h1, h2, h3, .display {
 }
 .field > img { object-fit: contain; }   /* images are never cropped */
 
+/* ── Spec table (§6.3/§6.4) — ONE factual key/value style site-wide ────────
+ * Used by project headers and About. Term in the label voice, value in Body-S. */
+.spec-table {
+  margin: 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px var(--gutter);
+  align-items: baseline;
+}
+.spec-table dt {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: var(--fs-label);
+  line-height: var(--lh-label);
+  letter-spacing: var(--ls-label);
+  text-transform: uppercase;
+  color: var(--text-quiet);
+  white-space: nowrap;
+}
+.spec-table dd {
+  margin: 0;
+  font-size: var(--fs-body-s);
+  line-height: var(--lh-body-s);
+  color: var(--text);
+}
+
 /* sr-only — for semantic headings that should not render visually. */
 .sr-only {
   position: absolute;

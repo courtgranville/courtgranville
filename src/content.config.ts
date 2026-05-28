@@ -27,7 +27,9 @@ const blockSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('image'),
     imageSlug: z.string(),
-    variant: z.enum(['narrow', 'wide', 'bleed']).default('wide'),
+    // field — single image placed in the 3:2 visual field (used by split sections);
+    // wide — Wide track at natural aspect (used inside galleries). (§6.3)
+    variant: z.enum(['field', 'wide']).default('wide'),
     alt: z.string(),
     caption: z.string().optional(),
   }),

@@ -6,12 +6,12 @@
   "heroImage": "04-final-hero",
   "group": true,
   "blocks": [
-    { "type": "label", "text": "01 / The Problem" },
+    { "type": "label", "text": "01 — The Problem" },
     {
       "type": "text",
       "body": "A study companion for students, built to address the three failure modes of the undergraduate week: procrastination, burnout, and timekeeping. The premise was an AI-assisted personal assistant that learns the user's work habits, identifies their peak productivity hours, and builds schedules around them — integrating assignment management with a broader sense of wellbeing."
     },
-    { "type": "label", "text": "02 / Approach" },
+    { "type": "label", "text": "02 — Approach" },
     {
       "type": "text",
       "body": "The project was our introduction to Figma and to UX/UI thinking, with a focus on the user journey — mapping how a student moves through the app over the course of a day, a week, a term."
@@ -21,16 +21,10 @@
       "imageSlugs": ["01-process-1", "02-process-2", "03-process-3"],
       "alt": "Iteration shots — flows and screen drafts"
     },
-    { "type": "label", "text": "03 / Resolved" },
+    { "type": "label", "text": "03 — Resolved" },
     {
       "type": "text",
       "body": "Wireframes, flows and a functional Figma mockup — the foundation for what an iterative build would refine."
-    },
-    {
-      "type": "image",
-      "imageSlug": "04-final-hero",
-      "variant": "bleed",
-      "alt": "Composite of the YourPAL screens"
     },
     {
       "type": "imageGrid",

@@ -11,17 +11,17 @@
     "Insight":    "1–3mm thickness allows light transmission"
   },
   "blocks": [
-    { "type": "label", "text": "01 / The Brief" },
+    { "type": "label", "text": "01 — The Brief" },
     {
       "type": "text",
       "body": "A brief from Gravity Wave, the company that makes the recycled-plastic material. The instructions were short and a little provocative: take a 1m × 1m board of this material and increase its value in some way."
     },
-    { "type": "label", "text": "02 / Why Backgammon" },
+    { "type": "label", "text": "02 — Why Backgammon" },
     {
       "type": "text",
       "body": "We chose to make a backgammon board for two reasons. The material had unusual visual characteristics — translucency, depth, an earthy tonal range — that belonged to an object you would want to look at for hours. And backgammon boards have a long tradition of craftsmanship and value: an object that takes well-made well."
     },
-    { "type": "label", "text": "03 / The Key Decision" },
+    { "type": "label", "text": "03 — The Key Decision" },
     {
       "type": "text",
       "body": "The brief had a constraint that should have been a problem: nothing on the board could be made from anything but the material itself. No inlays, no paint, no second material to distinguish the dark and light triangles that define a backgammon field. We had to find a way to render the playing grid using only the single material."
@@ -35,7 +35,7 @@
       "imageSlugs": ["01-cad-1", "02-cad-2", "03-cad-3"],
       "alt": "3D model — the alternating-thickness backgammon grid"
     },
-    { "type": "label", "text": "04 / Making" },
+    { "type": "label", "text": "04 — Making" },
     {
       "type": "text",
       "body": "Initial prototypes were 3D-modelled and CNC'd from wood — iterations to confirm the form and the playing-surface dimensions before committing to the single 1m × 1m sheet."
@@ -45,17 +45,11 @@
       "imageSlugs": ["04-prototype-1", "05-prototype-2", "06-prototype-3"],
       "alt": "Wood prototypes, before the final CNC pass"
     },
-    { "type": "label", "text": "05 / Resolved" },
-    {
-      "type": "image",
-      "imageSlug": "07-final-hero",
-      "variant": "bleed",
-      "alt": "The finished board, backlit"
-    },
+    { "type": "label", "text": "05 — Resolved" },
     {
       "type": "image",
       "imageSlug": "08-final-detail",
-      "variant": "wide",
+      "variant": "field",
       "alt": "Detail — light passing through the thinned material"
     }
   ]

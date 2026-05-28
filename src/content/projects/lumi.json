@@ -6,12 +6,12 @@
   "heroImage": "04-final-hero",
   "group": false,
   "blocks": [
-    { "type": "label", "text": "01 / The Brief" },
+    { "type": "label", "text": "01 — The Brief" },
     {
       "type": "text",
       "body": "The brief, as set: \"To design a product that encourages a responsible use of social media, raising questions about our addiction to them.\" My concept became a lamp that could benefit people managing any combination of three related issues — ADHD, anxiety, and social-media addiction."
     },
-    { "type": "label", "text": "02 / Making" },
+    { "type": "label", "text": "02 — Making" },
     {
       "type": "text",
       "body": "My first product designed entirely in 3D modelling. The primary fabrication techniques were 3D-printed threaded parts that screwed together, and internal components modelled to house LED lighting strips intended to be controlled by an app or custom software."
@@ -21,21 +21,15 @@
       "imageSlugs": ["01-cad-base", "02-cad-component", "03-cad-threaded"],
       "alt": "Threaded-part details from the 3D model"
     },
-    { "type": "label", "text": "03 / Resolved" },
+    { "type": "label", "text": "03 — Resolved" },
     {
       "type": "text",
       "body": "The artefact: a working lamp object, designed for the screen-time-responsive behaviour but not yet implementing it. The software side remains open — the next stage of the project rather than this one."
     },
     {
       "type": "image",
-      "imageSlug": "04-final-hero",
-      "variant": "bleed",
-      "alt": "The finished LUMI lamp"
-    },
-    {
-      "type": "image",
       "imageSlug": "05-final-detail",
-      "variant": "wide",
+      "variant": "field",
       "alt": "Detail of the threaded-part construction"
     }
   ]

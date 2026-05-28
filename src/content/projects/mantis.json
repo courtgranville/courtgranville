@@ -10,12 +10,12 @@
     "Meyrit Biennale, Madrid (2026)"
   ],
   "blocks": [
-    { "type": "label", "text": "01 / The Brief" },
+    { "type": "label", "text": "01 — The Brief" },
     {
       "type": "text",
       "body": "The brief was a transformation: take a found object — an artefact, a product — and turn it into something new. We took a wooden side table that needed repair."
     },
-    { "type": "label", "text": "02 / Making" },
+    { "type": "label", "text": "02 — Making" },
     {
       "type": "text",
       "body": "The table's surface became the lamp's base. Its legs, reconnected with 3D-printed joints, became its structure. The remaining components — bulb, fittings, lampshade — were purchased and assembled into the body of the new object."
@@ -25,16 +25,10 @@
       "imageSlugs": ["01-joint", "02-lampshade", "03-base"],
       "alt": "Detail — the joint, the lampshade, the base"
     },
-    { "type": "label", "text": "03 / Exhibited" },
+    { "type": "label", "text": "03 — Exhibited" },
     {
       "type": "text",
       "body": "Selected for IE University's School of Architecture and Design final exhibition, and for the Meyrit Biennale, Madrid."
-    },
-    {
-      "type": "image",
-      "imageSlug": "04-final-hero",
-      "variant": "bleed",
-      "alt": "The finished Mantis lamp"
     }
   ]
 }

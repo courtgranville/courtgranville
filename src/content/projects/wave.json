@@ -11,12 +11,12 @@
     "Source":      "a broken pair of Edifier desktop speakers"
   },
   "blocks": [
-    { "type": "label", "text": "01 / The Brief" },
+    { "type": "label", "text": "01 — The Brief" },
     {
       "type": "text",
       "body": "A group project with an unusual structure: deliver ten different things over ten consecutive weeks. The deliverables compounded — each week built on the last — until the final object became the culmination of a semester's range of work. Our group's interests sat across electronics, woodworking, audio design and product design, and we let the project move across all four."
     },
-    { "type": "label", "text": "02 / Process" },
+    { "type": "label", "text": "02 — Process" },
     {
       "type": "text",
       "body": "Many of those weeks were spent in materials — testing different woods, learning CNC machining, 3D-printing internal components — and in researching sound and speaker design. The build emerged from those weeks rather than being designed up front."
@@ -26,18 +26,12 @@
       "imageSlugs": ["01-process-1", "02-process-2"],
       "alt": "Materials and CNC tests from the early weeks"
     },
-    { "type": "label", "text": "03 / Key Decision" },
+    { "type": "label", "text": "03 — Key Decision" },
     {
       "type": "text",
       "body": "We started from a broken pair of Edifier desktop speakers. The drivers were salvageable; the housings weren't. We rebuilt them — drivers given a new custom enclosure, sized and tuned for them, CNC'd from solid wood, sanded and finished by hand. The internal mounting was 3D-printed and CNC'd to fit."
     },
-    { "type": "label", "text": "04 / Resolved" },
-    {
-      "type": "image",
-      "imageSlug": "03-final-hero",
-      "variant": "bleed",
-      "alt": "The finished speaker"
-    },
+    { "type": "label", "text": "04 — Resolved" },
     {
       "type": "image",
       "imageSlug": "04-final-side",

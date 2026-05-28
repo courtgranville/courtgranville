@@ -12,17 +12,17 @@
     "Material": "flexible 3D-printing filament"
   },
   "blocks": [
-    { "type": "label", "text": "01 / The Brief" },
+    { "type": "label", "text": "01 — The Brief" },
     {
       "type": "text",
       "body": "An early studio project — the first to introduce our class to 3D modelling. The brief was to design something MUJI could sell, in MUJI's \"this will do\" design language."
     },
-    { "type": "label", "text": "02 / Concept" },
+    { "type": "label", "text": "02 — Concept" },
     {
       "type": "text",
       "body": "We named the project Wabi Sabi — the Japanese principle of beauty in serenity, simplicity and imperfection — and worked toward an object that would be honest in form and useful in function: a universal phone case."
     },
-    { "type": "label", "text": "03 / Key Decisions" },
+    { "type": "label", "text": "03 — Key Decisions" },
     {
       "type": "text",
       "body": "Two decisions defined the project. The first was scope. We wanted a case that fit every phone; budget and time pulled that back to iPhones, and within iPhones, the range from the SE up to the 14 — the most recent model at the time. The second was material. We chose a flexible 3D-printing filament: its give meant the same case could expand and contract to fit different phone sizes, and as a second-order property, it absorbed impact better than the brittle standard filaments. That second property became a design feature on its own — padded corners, the only addition we allowed ourselves on top of the bare case form."
@@ -32,17 +32,7 @@
       "imageSlugs": ["01-process-1", "02-process-2", "03-process-3"],
       "alt": "Iteration shots from the print runs, November 2022"
     },
-    {
-      "type": "specList",
-      "entries": {
-        "Year":     "2022",
-        "Discipline": "Product Design",
-        "Brief":    "MUJI · universal phone case",
-        "Material": "Flexible 3D-printing filament",
-        "Range":    "iPhone SE — iPhone 14"
-      }
-    },
-    { "type": "label", "text": "04 / Resolved" },
+    { "type": "label", "text": "04 — Resolved" },
     {
       "type": "text",
       "body": "A working prototype that fits every iPhone from the SE to the 14, made from one material, with one functional addition."
@@ -51,12 +41,6 @@
       "type": "imageGrid",
       "imageSlugs": ["04-final-1", "05-final-2", "06-final-3"],
       "alt": "The finished case across the phone range"
-    },
-    {
-      "type": "image",
-      "imageSlug": "07-final-hero",
-      "variant": "bleed",
-      "alt": "Detail of the case on an iPhone"
     }
   ]
 }

@@ -1,29 +1,40 @@
-// hero-canvas.js — a reusable "3D image canvas": a project hero image wrapped
-// over a lit, cursor-parallax CARD (a real dimensional slab, not a flat plane).
-// Shared by the Work index and the homepage Selected-Work carousel.
+// hero-canvas.js — a reusable "3D image canvas": the project hero image on a
+// lit, cursor-parallax slab. The image fills the front/back faces; the four
+// sides take the image's EDGE pixels stretched down the depth — a true
+// gallery-wrap, so the photo appears to wrap the object's edges rather than
+// being repeated/squished onto the sides.
 //
 // Loaded by <script is:inline type="module"> so the page's CDN import map
 // (Layout.astro) resolves `three` without Vite bundling.
 //
 // mountHeroCanvas(canvasEl, opts) → { show(hero), preload(srcs), destroy() }
 //   hero = { src, aspect }  (from src/content/projects-images.json)
-//
-// The renderer is sized to the canvas element (no scissor) — the canvas *is*
-// the frame. The card fills it, preserving each image's true aspect.
 
 import * as THREE from 'three';
 
+// Box with edge-clamped side UVs: front/back = full image (0..1); each side
+// samples the adjacent image edge (u or v pinned to 0/1) → the photo wraps.
+// Vertex/face order is [px, nx, py, ny, pz, nz], 4 vertices each.
+function buildCardGeometry(depth) {
+  const geo = new THREE.BoxGeometry(1, 1, depth);
+  const uv = geo.attributes.uv;
+  for (let i = 0;  i < 4;  i++) uv.setX(i, 1);  // +x (right) → right edge column
+  for (let i = 4;  i < 8;  i++) uv.setX(i, 0);  // -x (left)  → left edge column
+  for (let i = 8;  i < 12; i++) uv.setY(i, 1);  // +y (top)   → top edge row
+  for (let i = 12; i < 16; i++) uv.setY(i, 0);  // -y (bottom)→ bottom edge row
+  uv.needsUpdate = true;
+  return geo;
+}
+
 export function mountHeroCanvas(canvas, opts = {}) {
   const camZ      = opts.camZ      ?? 7;
-  const fill      = opts.fill      ?? 0.9;    // fraction of the cell the card fills
-  const tiltX     = opts.tiltX     ?? 0.20;   // extra pitch (rad) from the cursor
-  const tiltY     = opts.tiltY     ?? 0.26;   // extra yaw   (rad) from the cursor
-  const anchorTop = opts.anchorTop ?? false;  // sit the card's top at the frame top
+  const fill      = opts.fill      ?? 0.82;
+  const swayY     = opts.swayY     ?? 0.18;
+  const swayX     = opts.swayX     ?? 0.06;
+  const paraY     = opts.paraY     ?? 0.45;
+  const paraX     = opts.paraX     ?? 0.32;
+  const anchorTop = opts.anchorTop ?? false;
   const reduced   = matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  // A constant 3/4 lean so the slab always reads as 3D, even at rest.
-  const BASE_Y = 0.16;
-  const BASE_X = -0.07;
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
@@ -33,21 +44,16 @@ export function mountHeroCanvas(canvas, opts = {}) {
   const scene  = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 100);
   camera.position.set(0, 0, camZ);
-  scene.add(new THREE.AmbientLight(0xffffff, 0.58));
+  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
   const key = new THREE.DirectionalLight(0xffffff, 0.95); key.position.set(-6, 7, 9); scene.add(key);
   const rim = new THREE.DirectionalLight(0xffffff, 0.45); rim.position.set(7, -3, 5); scene.add(rim);
 
-  // Dimensional card: image on the front/back faces, a neutral lit edge on the
-  // four sides. BoxGeometry material order: [px, nx, py, ny, pz(front), nz(back)].
-  const faceMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5,  metalness: 0.0 });
-  const edgeMat = new THREE.MeshStandardMaterial({ color: 0xE6E3DC, roughness: 0.72, metalness: 0.0 });
-  const DEPTH = 0.3;
-  const card = new THREE.Mesh(new THREE.BoxGeometry(1, 1, DEPTH),
-    [edgeMat, edgeMat, edgeMat, edgeMat, faceMat, faceMat]);
+  const mat  = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6, metalness: 0.04 });
+  const card = new THREE.Mesh(buildCardGeometry(0.42), mat);   // unit slab, scaled to fit
   scene.add(card);
 
   const loader = new THREE.TextureLoader();
-  const texCache = new Map();                 // src → THREE.Texture (load once, reuse → no flicker)
+  const texCache = new Map();
   const onAspect = opts.onAspect || null;
   const onShown  = opts.onShown  || null;
   let aspect = 1;
@@ -67,7 +73,7 @@ export function mountHeroCanvas(canvas, opts = {}) {
   function applyScale(a) {
     const { w, h, vH } = fit(a);
     card.scale.set(w, h, 1);
-    card.position.y = anchorTop ? (vH - h) / 2 : 0;   // top edge at frame top, or centred
+    card.position.y = anchorTop ? (vH - h) / 2 : 0;
   }
 
   function getTex(src) {
@@ -75,7 +81,9 @@ export function mountHeroCanvas(canvas, opts = {}) {
     if (cached) return Promise.resolve(cached);
     return new Promise((resolve) => {
       loader.load(src, (tex) => {
-        tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = maxAniso;
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = maxAniso;
+        tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;   // edge pixels for the wrap
         texCache.set(src, tex);
         resolve(tex);
       });
@@ -86,17 +94,15 @@ export function mountHeroCanvas(canvas, opts = {}) {
   function show(hero) {
     if (!hero) return;
     getTex(hero.src).then((tex) => {
-      // Real decoded dimensions — never a manifest value that may disagree.
       const iw = tex.image && tex.image.width, ih = tex.image && tex.image.height;
       aspect = (iw && ih) ? iw / ih : (hero.aspect || 1);
       if (onAspect) onAspect(aspect);
       applyScale(aspect);
-      faceMat.map = tex; faceMat.needsUpdate = true;   // cached textures aren't disposed here
+      mat.map = tex; mat.needsUpdate = true;
       if (onShown) onShown();
     });
   }
 
-  // cursor parallax — relative to the canvas, clamped
   const tgt = { x: 0, y: 0 }; let active = false;
   const clamp = (v) => Math.max(-1, Math.min(1, v));
   function onMove(e) {
@@ -117,10 +123,10 @@ export function mountHeroCanvas(canvas, opts = {}) {
   function tick(now) {
     raf = visible ? requestAnimationFrame(tick) : null;
     const dt = Math.min((now - last) / 1000, 1 / 30); last = now; t += dt;
-    const ay = (active && !reduced ? tgt.x * tiltY : 0) + (reduced ? 0 : Math.sin(t * 0.4) * 0.10);
-    const ax = (active && !reduced ? tgt.y * tiltX : 0) + (reduced ? 0 : Math.sin(t * 0.33) * 0.04);
-    card.rotation.y += ((BASE_Y + ay) - card.rotation.y) * 0.08;
-    card.rotation.x += ((BASE_X + ax) - card.rotation.x) * 0.08;
+    const ry = (active && !reduced ? tgt.x * paraY : 0) + (reduced ? 0 : Math.sin(t * 0.4) * swayY);
+    const rx = (active && !reduced ? tgt.y * paraX : 0) + (reduced ? 0 : Math.sin(t * 0.33) * swayX);
+    card.rotation.y += (ry - card.rotation.y) * 0.08;
+    card.rotation.x += (rx - card.rotation.x) * 0.08;
     renderer.render(scene, camera);
   }
   raf = requestAnimationFrame(tick);
@@ -140,7 +146,7 @@ export function mountHeroCanvas(canvas, opts = {}) {
       window.removeEventListener('pointerleave', onLeave);
       card.geometry.dispose();
       texCache.forEach((tx) => tx.dispose());
-      faceMat.dispose(); edgeMat.dispose(); renderer.dispose();
+      mat.dispose(); renderer.dispose();
     },
   };
 }

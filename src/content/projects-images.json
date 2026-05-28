@@ -6,8 +6,8 @@
         "role": "sketches",
         "src": "/assets/projects/spider-209/01-sketch-1-2400.webp",
         "srcset": "/assets/projects/spider-209/01-sketch-1-1200.webp 1200w, /assets/projects/spider-209/01-sketch-1-2400.webp 2400w",
-        "width": 3492,
-        "height": 2468,
+        "width": 2400,
+        "height": 1696,
         "aspect": 1.415
       },
       {
@@ -15,8 +15,8 @@
         "role": "sketches",
         "src": "/assets/projects/spider-209/02-sketch-2-2400.webp",
         "srcset": "/assets/projects/spider-209/02-sketch-2-1200.webp 1200w, /assets/projects/spider-209/02-sketch-2-2400.webp 2400w",
-        "width": 3660,
-        "height": 2578,
+        "width": 2400,
+        "height": 1690,
         "aspect": 1.42
       },
       {
@@ -55,8 +55,8 @@
         "role": "process",
         "src": "/assets/projects/universal-phone-case/01-process-1-2400.webp",
         "srcset": "/assets/projects/universal-phone-case/01-process-1-1200.webp 1200w, /assets/projects/universal-phone-case/01-process-1-2400.webp 2400w",
-        "width": 6000,
-        "height": 4000,
+        "width": 2400,
+        "height": 1600,
         "aspect": 1.5
       },
       {
@@ -64,17 +64,17 @@
         "role": "process",
         "src": "/assets/projects/universal-phone-case/02-process-2-2400.webp",
         "srcset": "/assets/projects/universal-phone-case/02-process-2-1200.webp 1200w, /assets/projects/universal-phone-case/02-process-2-2400.webp 2400w",
-        "width": 6000,
-        "height": 4000,
-        "aspect": 1.5
+        "width": 2400,
+        "height": 3600,
+        "aspect": 0.667
       },
       {
         "slug": "03-process-3",
         "role": "process",
         "src": "/assets/projects/universal-phone-case/03-process-3-2400.webp",
         "srcset": "/assets/projects/universal-phone-case/03-process-3-1200.webp 1200w, /assets/projects/universal-phone-case/03-process-3-2400.webp 2400w",
-        "width": 6000,
-        "height": 4000,
+        "width": 2400,
+        "height": 1600,
         "aspect": 1.5
       },
       {
@@ -82,8 +82,8 @@
         "role": "final",
         "src": "/assets/projects/universal-phone-case/04-final-1-2400.webp",
         "srcset": "/assets/projects/universal-phone-case/04-final-1-1200.webp 1200w, /assets/projects/universal-phone-case/04-final-1-2400.webp 2400w",
-        "width": 2875,
-        "height": 4074,
+        "width": 2400,
+        "height": 3401,
         "aspect": 0.706
       },
       {
@@ -91,8 +91,8 @@
         "role": "final",
         "src": "/assets/projects/universal-phone-case/05-final-2-2400.webp",
         "srcset": "/assets/projects/universal-phone-case/05-final-2-1200.webp 1200w, /assets/projects/universal-phone-case/05-final-2-2400.webp 2400w",
-        "width": 2473,
-        "height": 3498,
+        "width": 2400,
+        "height": 3395,
         "aspect": 0.707
       },
       {
@@ -100,8 +100,8 @@
         "role": "final",
         "src": "/assets/projects/universal-phone-case/06-final-3-2400.webp",
         "srcset": "/assets/projects/universal-phone-case/06-final-3-1200.webp 1200w, /assets/projects/universal-phone-case/06-final-3-2400.webp 2400w",
-        "width": 5482,
-        "height": 3869,
+        "width": 2400,
+        "height": 1694,
         "aspect": 1.417
       },
       {
@@ -109,8 +109,8 @@
         "role": "final",
         "src": "/assets/projects/universal-phone-case/07-final-hero-2400.webp",
         "srcset": "/assets/projects/universal-phone-case/07-final-hero-1200.webp 1200w, /assets/projects/universal-phone-case/07-final-hero-2400.webp 2400w",
-        "width": 6000,
-        "height": 4000,
+        "width": 2400,
+        "height": 1600,
         "aspect": 1.5
       }
     ]
@@ -149,17 +149,17 @@
         "role": "final",
         "src": "/assets/projects/lumi/04-final-hero-2400.webp",
         "srcset": "/assets/projects/lumi/04-final-hero-1200.webp 1200w, /assets/projects/lumi/04-final-hero-2400.webp 2400w",
-        "width": 7008,
-        "height": 4672,
-        "aspect": 1.5
+        "width": 2400,
+        "height": 3600,
+        "aspect": 0.667
       },
       {
         "slug": "05-final-detail",
         "role": "final",
         "src": "/assets/projects/lumi/05-final-detail-2400.webp",
         "srcset": "/assets/projects/lumi/05-final-detail-1200.webp 1200w, /assets/projects/lumi/05-final-detail-2400.webp 2400w",
-        "width": 7008,
-        "height": 4672,
+        "width": 2400,
+        "height": 1600,
         "aspect": 1.5
       }
     ]
@@ -171,9 +171,9 @@
         "role": "process",
         "src": "/assets/projects/yourpal/01-process-1-2400.webp",
         "srcset": "/assets/projects/yourpal/01-process-1-1200.webp 1200w, /assets/projects/yourpal/01-process-1-2400.webp 2400w",
-        "width": 3118,
-        "height": 1582,
-        "aspect": 1.971
+        "width": 2400,
+        "height": 1218,
+        "aspect": 1.97
       },
       {
         "slug": "02-process-2",
@@ -198,8 +198,8 @@
         "role": "final",
         "src": "/assets/projects/yourpal/04-final-hero-2400.webp",
         "srcset": "/assets/projects/yourpal/04-final-hero-1200.webp 1200w, /assets/projects/yourpal/04-final-hero-2400.webp 2400w",
-        "width": 2884,
-        "height": 1996,
+        "width": 2400,
+        "height": 1661,
         "aspect": 1.445
       },
       {
@@ -216,8 +216,8 @@
         "role": "final",
         "src": "/assets/projects/yourpal/06-final-2-2400.webp",
         "srcset": "/assets/projects/yourpal/06-final-2-1200.webp 1200w, /assets/projects/yourpal/06-final-2-2400.webp 2400w",
-        "width": 3130,
-        "height": 1736,
+        "width": 2400,
+        "height": 1331,
         "aspect": 1.803
       },
       {
@@ -225,8 +225,8 @@
         "role": "final",
         "src": "/assets/projects/yourpal/07-final-3-2400.webp",
         "srcset": "/assets/projects/yourpal/07-final-3-1200.webp 1200w, /assets/projects/yourpal/07-final-3-2400.webp 2400w",
-        "width": 3128,
-        "height": 2144,
+        "width": 2400,
+        "height": 1645,
         "aspect": 1.459
       }
     ]
@@ -265,17 +265,17 @@
         "role": "prototype",
         "src": "/assets/projects/backgammon/04-prototype-1-2400.webp",
         "srcset": "/assets/projects/backgammon/04-prototype-1-1200.webp 1200w, /assets/projects/backgammon/04-prototype-1-2400.webp 2400w",
-        "width": 4121,
-        "height": 3382,
-        "aspect": 1.219
+        "width": 2400,
+        "height": 1970,
+        "aspect": 1.218
       },
       {
         "slug": "05-prototype-2",
         "role": "prototype",
         "src": "/assets/projects/backgammon/05-prototype-2-2400.webp",
         "srcset": "/assets/projects/backgammon/05-prototype-2-1200.webp 1200w, /assets/projects/backgammon/05-prototype-2-2400.webp 2400w",
-        "width": 5184,
-        "height": 3456,
+        "width": 2400,
+        "height": 1600,
         "aspect": 1.5
       },
       {
@@ -283,8 +283,8 @@
         "role": "prototype",
         "src": "/assets/projects/backgammon/06-prototype-3-2400.webp",
         "srcset": "/assets/projects/backgammon/06-prototype-3-1200.webp 1200w, /assets/projects/backgammon/06-prototype-3-2400.webp 2400w",
-        "width": 5184,
-        "height": 3456,
+        "width": 2400,
+        "height": 1600,
         "aspect": 1.5
       },
       {
@@ -292,8 +292,8 @@
         "role": "final",
         "src": "/assets/projects/backgammon/07-final-hero-2400.webp",
         "srcset": "/assets/projects/backgammon/07-final-hero-1200.webp 1200w, /assets/projects/backgammon/07-final-hero-2400.webp 2400w",
-        "width": 4160,
-        "height": 2768,
+        "width": 2400,
+        "height": 1597,
         "aspect": 1.503
       },
       {
@@ -301,9 +301,9 @@
         "role": "final",
         "src": "/assets/projects/backgammon/08-final-detail-2400.webp",
         "srcset": "/assets/projects/backgammon/08-final-detail-1200.webp 1200w, /assets/projects/backgammon/08-final-detail-2400.webp 2400w",
-        "width": 4032,
-        "height": 3024,
-        "aspect": 1.333
+        "width": 2400,
+        "height": 3200,
+        "aspect": 0.75
       }
     ]
   },
@@ -341,18 +341,18 @@
         "role": "final",
         "src": "/assets/projects/wave/04-final-side-2400.webp",
         "srcset": "/assets/projects/wave/04-final-side-1200.webp 1200w, /assets/projects/wave/04-final-side-2400.webp 2400w",
-        "width": 2272,
-        "height": 1520,
-        "aspect": 1.495
+        "width": 1520,
+        "height": 2272,
+        "aspect": 0.669
       },
       {
         "slug": "05-final-paired",
         "role": "final",
         "src": "/assets/projects/wave/05-final-paired-2400.webp",
         "srcset": "/assets/projects/wave/05-final-paired-1200.webp 1200w, /assets/projects/wave/05-final-paired-2400.webp 2400w",
-        "width": 2272,
-        "height": 1520,
-        "aspect": 1.495
+        "width": 1520,
+        "height": 2272,
+        "aspect": 0.669
       }
     ]
   },
@@ -363,9 +363,9 @@
         "role": "final",
         "src": "/assets/projects/mantis/01-joint-2400.webp",
         "srcset": "/assets/projects/mantis/01-joint-1200.webp 1200w, /assets/projects/mantis/01-joint-2400.webp 2400w",
-        "width": 2272,
-        "height": 1520,
-        "aspect": 1.495
+        "width": 1520,
+        "height": 2272,
+        "aspect": 0.669
       },
       {
         "slug": "02-lampshade",
@@ -381,18 +381,18 @@
         "role": "final",
         "src": "/assets/projects/mantis/03-base-2400.webp",
         "srcset": "/assets/projects/mantis/03-base-1200.webp 1200w, /assets/projects/mantis/03-base-2400.webp 2400w",
-        "width": 2272,
-        "height": 1520,
-        "aspect": 1.495
+        "width": 1520,
+        "height": 2272,
+        "aspect": 0.669
       },
       {
         "slug": "04-final-hero",
         "role": "final",
         "src": "/assets/projects/mantis/04-final-hero-2400.webp",
         "srcset": "/assets/projects/mantis/04-final-hero-1200.webp 1200w, /assets/projects/mantis/04-final-hero-2400.webp 2400w",
-        "width": 2272,
-        "height": 1520,
-        "aspect": 1.495
+        "width": 1520,
+        "height": 2272,
+        "aspect": 0.669
       }
     ]
   }

@@ -110,6 +110,12 @@ async function processOne(srcAbs, outDir, slug, priority) {
   await fs.mkdir(outDir, { recursive: true });
   const base = sharp(srcAbs).rotate();
   const meta = await base.metadata();
+  // metadata() reports PRE-rotation dimensions. EXIF orientation 5–8 rotates
+  // the displayed image 90°, so swap to record the TRUE (post-rotation) aspect
+  // — otherwise a portrait shot stored landscape-with-flag yields a landscape
+  // aspect here while the emitted webp (which is rotated) is portrait.
+  let trueW = meta.width, trueH = meta.height;
+  if (meta.orientation && meta.orientation >= 5) { [trueW, trueH] = [trueH, trueW]; }
   const isHero = priority === 'hero';
   const q = isHero ? QUALITY_HERO : QUALITY_INLINE;
   const outputs = [];
@@ -126,7 +132,7 @@ async function processOne(srcAbs, outDir, slug, priority) {
     const stat = await fs.stat(file);
     outputs.push({ width: targetW, bytes: stat.size, path: file });
   }
-  return { width: meta.width, height: meta.height, outputs };
+  return { width: trueW, height: trueH, outputs };
 }
 
 async function main() {

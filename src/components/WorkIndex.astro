@@ -131,7 +131,10 @@ const clientData = PROJECTS.map((p) => ({ name: p.name, year: p.year, discipline
   let cellH = 0;
 
   const api = mountHeroCanvas(canvas, {
-    camZ: 7, fill: 0.86, paraY: 0, paraX: 0, swayY: 0.14, swayX: 0.05,
+    camZ: 7, fill: 0.82,
+    paraY: 0, paraX: 0,                 // no cursor parallax → no jitter on text hover
+    baseY: 0.22, baseX: -0.07,          // constant 3/4 lean so it always reads 3D
+    swayY: 0.07, swayX: 0.03,           // a little life on top of the lean
     onAspect: (a) => { curAspect = a; layout(); },
   });
   api.preload(data.map((d) => d.hero && d.hero.src));

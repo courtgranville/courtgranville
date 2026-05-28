@@ -29,10 +29,12 @@ function buildCardGeometry(depth) {
 export function mountHeroCanvas(canvas, opts = {}) {
   const camZ      = opts.camZ      ?? 7;
   const fill      = opts.fill      ?? 0.82;
-  const swayY     = opts.swayY     ?? 0.18;
-  const swayX     = opts.swayX     ?? 0.06;
-  const paraY     = opts.paraY     ?? 0.45;
-  const paraX     = opts.paraX     ?? 0.32;
+  const baseY     = opts.baseY     ?? 0.16;   // constant yaw — always reads 3D, even at rest
+  const baseX     = opts.baseX     ?? -0.06;  // constant pitch — shows the top edge
+  const swayY     = opts.swayY     ?? 0.12;
+  const swayX     = opts.swayX     ?? 0.05;
+  const paraY     = opts.paraY     ?? 0.4;
+  const paraX     = opts.paraX     ?? 0.3;
   const anchorTop = opts.anchorTop ?? false;
   const reduced   = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -123,8 +125,8 @@ export function mountHeroCanvas(canvas, opts = {}) {
   function tick(now) {
     raf = visible ? requestAnimationFrame(tick) : null;
     const dt = Math.min((now - last) / 1000, 1 / 30); last = now; t += dt;
-    const ry = (active && !reduced ? tgt.x * paraY : 0) + (reduced ? 0 : Math.sin(t * 0.4) * swayY);
-    const rx = (active && !reduced ? tgt.y * paraX : 0) + (reduced ? 0 : Math.sin(t * 0.33) * swayX);
+    const ry = baseY + (active && !reduced ? tgt.x * paraY : 0) + (reduced ? 0 : Math.sin(t * 0.4) * swayY);
+    const rx = baseX + (active && !reduced ? tgt.y * paraX : 0) + (reduced ? 0 : Math.sin(t * 0.33) * swayX);
     card.rotation.y += (ry - card.rotation.y) * 0.08;
     card.rotation.x += (rx - card.rotation.x) * 0.08;
     renderer.render(scene, camera);

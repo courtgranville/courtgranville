@@ -116,8 +116,18 @@ const visualTrack = side === 'left' ? 't-visual-l' : 't-visual-r';
   }
   rows.forEach((r) => {
     const i = Number(r.dataset.i);
-    r.querySelector('.wi-name').addEventListener('pointerenter', () => select(i));
-    r.querySelector('a').addEventListener('focusin', () => select(i));
+    r.querySelector('.wi-name').addEventListener('pointerenter', () => select(i));   // mouse
+    r.querySelector('a').addEventListener('focusin', () => select(i));               // keyboard
   });
   select(0);
+
+  // Touch / no-hover: drive the preview from whichever row is crossing the
+  // viewport's vertical centre, so the index works without a mouse. Tapping a
+  // row still navigates to the project (the <a> is untouched).
+  if (matchMedia('(hover: none), (pointer: coarse)').matches) {
+    const io = new IntersectionObserver((entries) => {
+      for (const e of entries) if (e.isIntersecting) select(Number(e.target.dataset.i));
+    }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+    rows.forEach((r) => io.observe(r));
+  }
 </script>

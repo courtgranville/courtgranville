@@ -1,0 +1,57 @@
+---
+// /lab/ — a scratch page proving the React + react-three-fiber + GSAP island
+// pattern inside Astro, on the canonical grid. Lives on the feat/react-islands
+// branch; not linked from nav. Delete or evolve into real 3D sections.
+
+import Layout from '../../components/Layout.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+import Grid from '../../components/Grid.astro';
+import SpinCard from '../../components/r3f/SpinCard.tsx';
+---
+<Layout title="Lab — React / R3F" description="React island sandbox.">
+  <Nav />
+  <main>
+    <Grid class="lab">
+      <div class="lab-text">
+        <span class="label">Lab — React island</span>
+        <h1 class="lab-h">react-three-fiber<br>+ GSAP</h1>
+        <p class="lab-p">A declarative R3F scene mounted as an Astro island with
+          <code>client:visible</code>. Editorial pages stay static; only this
+          stage hydrates. This is the pattern for future 3D interactions.</p>
+      </div>
+      <div class="lab-stage">
+        <SpinCard client:visible />
+      </div>
+    </Grid>
+  </main>
+  <Footer />
+</Layout>
+
+<style>
+  :global(.lab) {
+    padding-block: calc(var(--nav-h) + clamp(40px, 7vh, 96px)) clamp(64px, 12vh, 140px);
+    row-gap: clamp(32px, 5vh, 56px);
+    align-items: center;
+  }
+  .lab-text { grid-column: 1 / -1; }
+  .lab-h { font-family: var(--serif); font-weight: 400; font-size: var(--fs-display);
+    line-height: var(--lh-display); margin: 12px 0 18px; }
+  .lab-p { max-width: 30rem; color: var(--text-quiet); font-size: var(--fs-body-small);
+    line-height: var(--lh-body-small); }
+  .lab-p code { font-family: ui-monospace, monospace; color: var(--accent); }
+  .lab-stage { grid-column: 1 / -1; width: 100%; aspect-ratio: 4 / 5; }
+
+  @media (min-width: 768px) {
+    .lab-text  { grid-column: 1 / 4; }
+    .lab-stage { grid-column: 4 / 9; }
+  }
+  @media (min-width: 1200px) {
+    .lab-text  { grid-column: 1 / 5; }
+    .lab-stage { grid-column: 6 / 13; }
+  }
+</style>
+
+<style is:global>
+  main { position: relative; z-index: 2; }
+</style>

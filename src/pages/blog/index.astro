@@ -1,0 +1,80 @@
+---
+// Blog — "coming soon" until the first essay ships. The framework is live:
+// published (non-draft) posts list here automatically; drafts show in dev only.
+
+import { getCollection } from 'astro:content';
+import Layout from '../../components/Layout.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+import Grid from '../../components/Grid.astro';
+
+const posts = (await getCollection('blog', ({ data }) => import.meta.env.PROD ? !data.draft : true))
+  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+
+const fmt = (d: Date) => d.toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
+---
+<Layout title="Blog — Court Granville" description="Notes on design, contested technology, and the thesis. Coming soon.">
+  <Nav />
+  <main>
+    <Grid as="section" class="blog">
+      <span class="label blog-kicker reveal">Blog</span>
+      <h1 class="blog-lead reveal" data-stagger="1">Coming soon.</h1>
+      <p class="blog-sub reveal" data-stagger="2">
+        Notes on design, contested technology, and the thesis &mdash; the writing
+        track of this site. Arriving shortly.
+      </p>
+
+      {posts.length > 0 && (
+        <ul class="post-list reveal" data-stagger="3">
+          {posts.map((p) => (
+            <li class="post-row">
+              <a href={`/blog/${p.id.replace(/\.(md|mdx)$/, '')}/`}>
+                <span class="post-date label">{fmt(p.data.pubDate)}{p.data.draft ? ' · draft' : ''}</span>
+                <span class="post-title">{p.data.title}</span>
+                <span class="post-desc">{p.data.description}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Grid>
+  </main>
+  <Footer />
+</Layout>
+
+<style>
+  :global(.blog) {
+    padding-block: calc(var(--nav-h) + clamp(64px, 14vh, 180px)) clamp(80px, 16vh, 200px);
+    row-gap: clamp(20px, 3vh, 36px);
+  }
+  .blog-kicker { grid-column: 1 / -1; display: block; }
+  .blog-lead {
+    grid-column: 1 / -1; font-family: var(--serif); font-weight: 400;
+    font-size: clamp(40px, 7vw, 96px); line-height: 1; color: var(--text); margin: 0;
+  }
+  .blog-sub {
+    grid-column: 1 / -1; font-size: var(--fs-body); line-height: var(--lh-body);
+    color: var(--text-quiet); max-width: 46ch; margin-top: 8px;
+  }
+
+  .post-list { grid-column: 1 / -1; list-style: none; margin: clamp(32px,5vh,56px) 0 0; padding: 0; }
+  .post-row { border-top: 1px solid var(--rule); }
+  .post-row a { display: grid; gap: 6px; padding: clamp(18px,2.4vh,28px) 0; color: var(--text);
+    transition: padding-left var(--dur-hover) var(--ease-out); }
+  .post-row a:hover { padding-left: 10px; }
+  .post-date { display: block; color: var(--text-faint); }
+  .post-title { font-family: var(--serif); font-size: clamp(22px,2.4vw,30px); line-height: 1.15; }
+  .post-row a:hover .post-title { color: var(--accent); }
+  .post-desc { font-size: var(--fs-body-small); color: var(--text-quiet); max-width: 56ch; }
+
+  @media (min-width: 768px) {
+    .blog-kicker { grid-column: 1 / 3; }
+    .blog-lead   { grid-column: 3 / 10; }
+    .blog-sub    { grid-column: 3 / 8; }
+    .post-list   { grid-column: 3 / 11; }
+  }
+</style>
+
+<style is:global>
+  main { position: relative; z-index: 2; }
+</style>

@@ -1,0 +1,97 @@
+---
+// About — first person, to match the homepage Intro voice. Grounded in known
+// facts (IE University, brand-strategy background, contested-tech thesis).
+// Copy is a starting point for Court to refine.
+
+import Layout from '../../components/Layout.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+import Grid from '../../components/Grid.astro';
+
+const meta = [
+  ['Education',  'IE University, Madrid — Product Design'],
+  ['Background', 'Brand Strategy & Digital Marketing'],
+  ['Focus',      'Product · Interaction · Critical Design'],
+  ['Based',      'Madrid, Spain'],
+];
+---
+<Layout title="About — Court Granville" description="Court Granville — product designer working between the technical and the human, at IE University, Madrid.">
+  <Nav />
+  <main>
+    <Grid as="article" class="about">
+      <span class="label about-kicker reveal">About</span>
+      <h1 class="about-statement reveal" data-stagger="1">
+        I design for the technical, complex, and contested subjects that design too often leaves alone.
+      </h1>
+
+      <div class="about-body reveal" data-stagger="2">
+        <p>I&rsquo;m a product designer based in Madrid, studying at IE University. Before design I worked in brand strategy and digital marketing — a grounding in how ideas are positioned and communicated that still shapes how I approach a problem.</p>
+        <p>My work runs from industrial and product design to interaction and critical design. The thread through all of it is translation: turning technical complexity into something people can understand, trust, and act on.</p>
+        <p>My current thesis examines the public perception of contested technology — how design mediates what people come to believe about the systems shaping their lives. Alongside it, I build with code and AI as design materials, treating the medium as part of the craft.</p>
+      </div>
+
+      <dl class="about-meta reveal" data-stagger="3">
+        {meta.map(([k, v]) => (
+          <div class="about-meta-row">
+            <dt class="label">{k}</dt>
+            <dd>{v}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <div class="about-cta reveal" data-stagger="4">
+        <a class="textlink" href="mailto:court@courtgranville.com">Get in touch &rarr;</a>
+        <a class="textlink" href="/work/">See the work &rarr;</a>
+      </div>
+    </Grid>
+  </main>
+  <Footer />
+</Layout>
+
+<style>
+  :global(.about) {
+    padding-block: calc(var(--nav-h) + clamp(48px, 9vh, 120px)) clamp(80px, 14vh, 160px);
+    row-gap: clamp(28px, 4vh, 48px);
+  }
+  .about-kicker    { grid-column: 1 / -1; display: block; }
+  .about-statement {
+    grid-column: 1 / -1;
+    font-family: var(--serif); font-weight: 400;
+    font-size: clamp(30px, 4.4vw, 60px); line-height: 1.12; letter-spacing: -0.005em;
+    color: var(--text); margin: 0; max-width: 18ch;
+  }
+  .about-body { grid-column: 1 / -1; }
+  .about-body p {
+    font-size: var(--fs-body); line-height: var(--lh-body); color: var(--text);
+    max-width: 60ch; margin: 0 0 var(--baseline-3);
+  }
+  .about-body p:last-child { margin-bottom: 0; }
+
+  .about-meta { grid-column: 1 / -1; margin: 0; display: grid; gap: 0; }
+  .about-meta-row {
+    display: grid; grid-template-columns: 1fr; gap: 4px;
+    padding: 16px 0; border-bottom: 1px solid var(--rule);
+  }
+  .about-meta-row dt { margin: 0; }
+  .about-meta-row dd { margin: 0; font-size: var(--fs-body-small); color: var(--text); }
+
+  .about-cta { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 28px; margin-top: 8px; }
+
+  @media (min-width: 768px) {
+    .about-statement { grid-column: 1 / 8; }
+    .about-body      { grid-column: 1 / 7; }
+    .about-meta      { grid-column: 1 / 8; grid-template-columns: repeat(2, 1fr); column-gap: var(--gutter); }
+    .about-cta       { grid-column: 1 / 7; }
+  }
+  @media (min-width: 1200px) {
+    .about-kicker    { grid-column: 1 / 3; }
+    .about-statement { grid-column: 3 / 11; }
+    .about-body      { grid-column: 3 / 9; }
+    .about-meta      { grid-column: 3 / 11; }
+    .about-cta       { grid-column: 3 / 9; }
+  }
+</style>
+
+<style is:global>
+  main { position: relative; z-index: 2; }
+</style>

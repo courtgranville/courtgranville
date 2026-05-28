@@ -62,4 +62,19 @@ const projects = defineCollection({
   }),
 });
 
-export const collections = { projects };
+// Blog — markdown posts. `draft: true` keeps a post out of production builds
+// (the route + listing filter on import.meta.env.PROD) while staying visible
+// in dev so the template can be worked on before launch.
+const blog = defineCollection({
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/blog' }),
+  schema: z.object({
+    title: z.string(),
+    description: z.string(),
+    pubDate: z.coerce.date(),
+    updatedDate: z.coerce.date().optional(),
+    tags: z.array(z.string()).default([]),
+    draft: z.boolean().default(false),
+  }),
+});
+
+export const collections = { projects, blog };

@@ -12,7 +12,6 @@
 // the framed cell. The card fills the cell, preserving each image's aspect.
 
 import * as THREE from 'three';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 export function mountHeroCanvas(canvas, opts = {}) {
   const camZ  = opts.camZ  ?? 7;
@@ -34,11 +33,14 @@ export function mountHeroCanvas(canvas, opts = {}) {
   const rim = new THREE.DirectionalLight(0xffffff, 0.40); rim.position.set(6, -3, 4); scene.add(rim);
 
   const mat  = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, metalness: 0.0 });
-  const card = new THREE.Mesh(new RoundedBoxGeometry(1, 1, 0.14, 5, 0.045), mat);
+  // A unit card, scaled to fit — scaling (not geometry rebuild) keeps frame
+  // animation cheap, so the cell's aspect-ratio can transition smoothly.
+  const card = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 0.14), mat);
   scene.add(card);
 
   const loader = new THREE.TextureLoader();
   const onAspect = opts.onAspect || null;   // report the image's true aspect to the host
+  const onShown  = opts.onShown  || null;   // fired after a texture has loaded + applied
   let aspect = 1;
 
   function sizeRenderer() {
@@ -53,10 +55,9 @@ export function mountHeroCanvas(canvas, opts = {}) {
     const ch = Math.min(fill * vH, fill * vW / a);
     return { w: ch * a, h: ch };
   }
-  function applyGeom(a) {
+  function applyScale(a) {
     const { w, h } = fit(a);
-    card.geometry.dispose();
-    card.geometry = new RoundedBoxGeometry(w, h, 0.14, 5, 0.045);
+    card.scale.set(w, h, 1);
   }
   function show(hero) {
     if (!hero) return;
@@ -67,9 +68,10 @@ export function mountHeroCanvas(canvas, opts = {}) {
       const iw = tex.image && tex.image.width, ih = tex.image && tex.image.height;
       aspect = (iw && ih) ? iw / ih : (hero.aspect || 1);
       if (onAspect) onAspect(aspect);   // host reshapes the frame to match
-      applyGeom(aspect);
+      applyScale(aspect);
       const prev = mat.map; mat.map = tex; mat.needsUpdate = true;
       if (prev) prev.dispose();
+      if (onShown) onShown();
     });
   }
 
@@ -88,7 +90,7 @@ export function mountHeroCanvas(canvas, opts = {}) {
   window.addEventListener('pointerleave', onLeave);
 
   sizeRenderer();
-  const ro = new ResizeObserver(() => { sizeRenderer(); applyGeom(aspect); });
+  const ro = new ResizeObserver(() => { sizeRenderer(); applyScale(aspect); });
   ro.observe(canvas);
 
   let t = 0, raf = null, visible = true, last = performance.now();

@@ -101,6 +101,10 @@ const clientData = PROJECTS.map((p) => ({ name: p.name, year: p.year, discipline
     width: 100%;
     aspect-ratio: 4 / 5;
     border: 1px solid var(--text);
+    transition: aspect-ratio 0.55s var(--ease-out);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .wi-cell { transition: none; }
   }
   .wi-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .wi-tag {

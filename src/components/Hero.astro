@@ -823,7 +823,8 @@
   clock.getDelta();
 
   await buildSystem();
-  setupGUI();
+  // Tuning GUI is opt-in (append ?tune to the URL) — never shown in production.
+  if (new URLSearchParams(location.search).has('tune')) setupGUI();
 
   // ─── Hero render loop with visibility-gated rAF ────────────────────
   let heroVisible = true;

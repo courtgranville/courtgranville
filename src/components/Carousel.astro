@@ -91,8 +91,14 @@ const N = PROJECTS.length;
   .c-btn:hover { border-color: var(--accent); color: var(--accent); }
 
   .c-canvas-col { grid-column: 1 / -1; }
-  .c-cell { position: relative; width: 100%; aspect-ratio: 4 / 3; }
-  .c-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .c-cell { position: relative; width: 100%; aspect-ratio: 4 / 3; max-height: 78vh;
+    transition: aspect-ratio 0.55s var(--ease-out); }
+  .c-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+    opacity: 0; transition: opacity 0.45s var(--ease-out); }
+  @media (prefers-reduced-motion: reduce) {
+    .c-cell { transition: none; }
+    .c-canvas { transition: none; opacity: 1; }
+  }
 
   .c-foot { grid-column: 1 / -1; justify-self: start; font-family: var(--sans); font-weight: 500;
     font-size: 12px; letter-spacing: 0.20em; text-transform: uppercase; color: var(--text);
@@ -133,12 +139,14 @@ const N = PROJECTS.length;
   const api = mountHeroCanvas(canvas, {
     camZ: 6.4, fill: 0.92,
     onAspect: (a) => { cell.style.aspectRatio = String(a); },
+    onShown: () => { canvas.style.opacity = '1'; },   // fade in once loaded
   });
   let cur = 0;
 
   function go(i) {
     cur = (i + N) % N;
     const p = data[cur];
+    canvas.style.opacity = '0';   // crossfade: fade out, fade back in on load
     api.show(p.hero);
     nameEl.textContent = p.name;
     metaEl.innerHTML = `${p.year} &middot; ${p.discipline}`;

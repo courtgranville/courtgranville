@@ -230,7 +230,10 @@ const CONFIG = {
   // effect by hand). Section dispersals are LONGER than inter-model morphs. When the
   // wheel stops AND the momentum settles, it eases to the nearest stop (ease-out → no
   // bounce); the glide carries you to the right side first, so it's never stranded.
-  scroll: { sectionVh: 2.4, modelVh: 1.3, snapDuration: 0.6, snapStopMs: 90, snapSettle: 0.0012 },
+  // advanceThresh: how far INTO a gap (in the scroll direction) commits you to the
+  // next stop on release. Low → a modest forward scroll advances (you're trying to move
+  // on); you only fall back if you barely left the current stop.
+  scroll: { sectionVh: 2.4, modelVh: 1.3, snapDuration: 0.6, snapStopMs: 90, snapSettle: 0.0012, advanceThresh: 0.2 },
   modelBase: '/public/models/',   // python http.server from repo root → /public/models/…
 };
 
@@ -666,18 +669,23 @@ function readScroll(){
 // momentum has settled (timeline barely moving). Until then you scrub freely and see
 // the whole effect; the glide carries you to the nearest side, then it eases to that
 // stop (ease-out → no bounce). The snap loop lives in the render frame (below).
-let lastWheelT=-1e9, snapping=false, prevSnapP=0;
+let lastWheelT=-1e9, snapping=false, prevSnapP=0, scrollDir=1;
 function noteInput(){ lastWheelT = clock ? clock.elapsedTime*1000 : 0; snapping=false; }
 if(lenis){ ['wheel','touchstart','touchmove'].forEach(ev=> addEventListener(ev, noteInput, { passive:true })); }
 function maybeSnap(nowMs){
-  if(!lenis || drag.on || snapping) return;
-  const pv = Math.abs(state.p - prevSnapP); prevSnapP = state.p;
+  if(!lenis || drag.on || snapping){ prevSnapP = state.p; return; }
+  const sdp = state.p - prevSnapP; prevSnapP = state.p;
+  if(Math.abs(sdp) > 0.002) scrollDir = Math.sign(sdp);         // latch the travel direction
   if(nowMs - lastWheelT < CONFIG.scroll.snapStopMs) return;     // still actively scrolling
-  if(pv > CONFIG.scroll.snapSettle) return;                     // momentum still gliding
-  const nearest = Math.round(state.p);
-  if(Math.abs(state.p - nearest) < 0.004) return;               // already at a stop
+  if(Math.abs(sdp) > CONFIG.scroll.snapSettle) return;          // momentum still gliding
+  // DIRECTIONAL snap: scrolling forward commits to the next stop once you've left the
+  // current one by advanceThresh (you're trying to move on); only fall back if barely moved.
+  const fp = Math.floor(state.p), frac = state.p - fp, th = CONFIG.scroll.advanceThresh;
+  let target = scrollDir >= 0 ? (frac > th ? fp+1 : fp) : (frac < 1-th ? fp : fp+1);
+  target = clamp(target, 0, N-1);
+  if(Math.abs(state.p - target) < 0.004) return;                // already there
   snapping = true;
-  lenis.scrollTo(pToScrollY(nearest), { duration: CONFIG.scroll.snapDuration,
+  lenis.scrollTo(pToScrollY(target), { duration: CONFIG.scroll.snapDuration,
     easing:(x)=>1-Math.pow(1-x,3), onComplete:()=>{ snapping=false; } });
 }
 

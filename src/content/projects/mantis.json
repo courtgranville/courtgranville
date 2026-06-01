@@ -5,6 +5,11 @@
   "framing": "A side table in need of repair, reborn as a standing lamp.",
   "heroImage": "04-final-hero",
   "group": true,
+  "spec": {
+    "Brief":     "take a found object, transform it into a new product",
+    "Source":    "a wooden side table, in need of repair",
+    "Made with": "salvaged timber · 3D-printed joints · sourced components"
+  },
   "exhibitions": [
     "IE University, School of Architecture and Design — final exhibition (2026)",
     "Meyrit Biennale, Madrid (2026)"
@@ -13,22 +18,27 @@
     { "type": "label", "text": "01 — The Brief" },
     {
       "type": "text",
-      "body": "My most recent lamp. The brief was to take a found object and transform it into a new product; we took a wooden side table that needed repair and turned it into a standing lamp."
+      "body": "My most recent product project. The brief was simple and constraining in equal measure: take a found object and make it into something new. Rather than start from a clean sheet, we started from a problem — a wooden side table that no longer worked, its joints failing and a leg loose. The question wasn't what to design, but what this particular object could become."
     },
-    { "type": "label", "text": "02 — Making" },
+    { "type": "label", "text": "02 — The Idea" },
     {
       "type": "text",
-      "body": "The tabletop became the base, the legs were rejoined with 3D-printed joints, and the remaining components were sourced and assembled into the body of the new object."
+      "body": "A side table is horizontal, low and passive — something you put things on. A standing lamp is vertical, tall and active — something that changes a room. Mantis is the move between the two: the same timber, reconfigured into an object with a completely different posture and purpose. Nothing was bought in to replace what already worked. The design is in the reassembly, not the replacement."
+    },
+    { "type": "label", "text": "03 — Making" },
+    {
+      "type": "text",
+      "body": "The tabletop became the base — the heaviest, most stable part, repurposed as a foot. The original legs were salvaged and rejoined with 3D-printed connectors, designed to hold the timber at the angles the new form needed rather than the ones it was built for. The remaining parts — the shade, the fitting, the wiring — were sourced and assembled into the body, until a failing piece of furniture stood up as a working lamp."
     },
     {
       "type": "imageGrid",
       "imageSlugs": ["01-joint", "02-lampshade", "03-base"],
       "alt": "Detail — the joint, the lampshade, the base"
     },
-    { "type": "label", "text": "03 — Exhibited" },
+    { "type": "label", "text": "04 — Exhibited" },
     {
       "type": "text",
-      "body": "MANTIS was selected for IE University's exhibition of the School of Architecture and Design's best projects, and for an external exhibition at the Meyrit Biennale in Madrid."
+      "body": "Mantis was selected for IE University's exhibition of the School of Architecture and Design's best projects, and shown externally at the Meyrit Biennale in Madrid. It's the clearest statement of an idea that runs through much of my product work: the most interesting brief is usually a constraint, and the most sustainable material is the one that already exists."
     }
   ]
 }

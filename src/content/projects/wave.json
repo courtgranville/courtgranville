@@ -6,20 +6,21 @@
   "heroImage": "03-final-hero",
   "group": true,
   "spec": {
-    "Brief":       "10 deliverables over 10 weeks",
-    "Disciplines": "electronics, woodworking, audio, product design",
-    "Source":      "a broken pair of Edifier desktop speakers"
+    "Brief":       "ten deliverables a week, for ten weeks (group)",
+    "Disciplines": "electronics · woodworking · audio · product design",
+    "Source":      "a broken pair of Edifier desktop speakers",
+    "Made with":   "CNC'd solid wood, hand-finished · 3D-printed and machined internals"
   },
   "blocks": [
     { "type": "label", "text": "01 — The Brief" },
     {
       "type": "text",
-      "body": "Born from a group brief to ship ten different deliverables a week for ten weeks, the WAVE Speaker brought together our interests in electronics, woodworking, audio and product design. The deliverables compounded — each week built on the last — until the final object became the culmination of a semester's range of work."
+      "body": "Wave came out of an unusual group brief: ship ten different deliverables a week, for ten weeks. The deliverables compounded — each week built on the last — so the final object wasn't designed up front but accumulated, the culmination of a semester's range of work across electronics, woodworking, audio and product design."
     },
     { "type": "label", "text": "02 — Process" },
     {
       "type": "text",
-      "body": "We spent weeks in materials — testing wood samples, CNC-machining, 3D-printing internal components — and researching sound and speaker design. The build emerged from those weeks rather than being designed up front."
+      "body": "Most of the semester was spent in materials rather than on screen — testing wood samples, CNC-machining, 3D-printing internal components — alongside research into sound and speaker design. We were learning the acoustics and the fabrication at the same time, and the build emerged from those weeks rather than preceding them."
     },
     {
       "type": "imageGrid",
@@ -29,9 +30,13 @@
     { "type": "label", "text": "03 — Key Decision" },
     {
       "type": "text",
-      "body": "We started from a broken pair of Edifier desktop speakers. The drivers were salvageable; the housings weren't. We repaired them and rehoused the desktop drivers in a custom-built case — CNC'd from solid wood, sanded and finished by hand, with the internal components 3D-printed and machined to fit."
+      "body": "We started from a broken pair of Edifier desktop speakers. The drivers were salvageable; the housings weren't — so the project became one of repair and rehousing rather than building from nothing. We rebuilt the desktop drivers into a custom enclosure, CNC'd from solid wood and finished by hand, with the internal components 3D-printed and machined to fit. Wood was a deliberate choice as much as an aesthetic one: a rigid, solid cabinet limits the unwanted resonance a flimsy housing introduces, so it suits the driver as well as the eye."
     },
     { "type": "label", "text": "04 — Resolved" },
+    {
+      "type": "text",
+      "body": "The result is a working desktop speaker — salvaged drivers in a hand-finished wooden body — built to sit on the same desk as Mantis. Two objects from the same instinct: keep what works, rebuild the rest."
+    },
     {
       "type": "image",
       "imageSlug": "04-final-side",

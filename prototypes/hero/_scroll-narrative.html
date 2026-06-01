@@ -216,7 +216,8 @@ const CONFIG = {
     // shapeW (formed-ness of the nearest stop) drives the TEXTURE/text crossfade.
     formIn:  0.12,           // |delta| ≤ this → fully formed
     formOut: 0.38,           // |delta| ≥ this → fully off
-    texAt:   0.55,           // texture resolves only once the dust is well-formed
+    texAt:   0.62,           // texture resolves only once the dust has clearly built the
+                             // shape (formW > this) → you SEE the particles form it first
     dividerHeight: 2.4,      // world height of the particle divider text
   },
   // PLAY = the original hero's spring physics, applied to each particle's DISPLACEMENT
@@ -404,14 +405,14 @@ class Particles {
   }
 }
 
-// ONE pass: position = morphTarget(p) + playDisplacement. The morph target is read
-// DIRECTLY from the timeline (no follow-lag → as responsive & smooth as the scroll
-// itself); the displacement is governed by the original hero's spring physics
-// (spring back to 0 + pointer repel), so the dust still pushes and plays like the
-// live site. Resolving the frame's source/target arrays once (not per particle)
-// keeps this a single cheap loop — matching the hero's proven 140k @ 60fps cost.
-function stepParticles(dt, probe, p){
-  const pos=ps.geometry.attributes.position.array, vel=ps.vel, disp=ps.disp;
+// Resolve the timeline at p into the frame's morph: which two targets the dust is
+// blending, the eased blend e, AND `formW` — how fully the NEAREST stop's actual
+// geometry is built in the cloud right now (1 = fully formed that shape, 0 = fully
+// dispersed / a 50-50 blend). formW is the single truth that drives BOTH the dust
+// and the texture, so the texture can only skin on AS the particles build the model
+// — never floating over a half-dispersed cloud. Scratch object (no per-frame alloc).
+const M = { FROM:null, TO:null, e:0, formW:1 };
+function resolveMorph(p){
   let i=Math.floor(p); if(i<0)i=0; if(i>N-2)i=N-2;
   const frac=p-i, A=targets[i]||DISPERSE, B=targets[i+1]||DISPERSE;
   let FROM, TO, e;
@@ -419,8 +420,18 @@ function stepParticles(dt, probe, p){
     if(frac<0.5){ FROM=A; TO=DISPERSE; e=smootherstep(0,1,frac*2); }
     else        { FROM=DISPERSE; TO=B; e=smootherstep(0,1,(frac-0.5)*2); }
   } else { FROM=A; TO=B; e=smootherstep(0,1,frac); }
-  const ie=1-e;
+  M.FROM=FROM; M.TO=TO; M.e=e;
+  // weight of the nearest stop's shape in the blend: it's FROM when frac<0.5, TO otherwise.
+  M.formW = frac<0.5 ? (1-e) : e;
+}
 
+// ONE pass: position = morphTarget + playDisplacement. The morph target is read
+// DIRECTLY from the timeline (no follow-lag → as responsive & smooth as the scroll);
+// the displacement is the original hero's spring physics (spring→0 + pointer repel)
+// so the dust still pushes and plays like the live site. Single cheap loop.
+function stepParticles(dt, probe){
+  const pos=ps.geometry.attributes.position.array, vel=ps.vel, disp=ps.disp;
+  const FROM=M.FROM, TO=M.TO, e=M.e, ie=1-e;
   const P=CONFIG.play, k=P.springK, dmp=P.damping, maxD=P.maxDisp, maxD2=maxD*maxD;
   const on=probe.active, ox=probe.o.x,oy=probe.o.y,oz=probe.o.z, rx=probe.d.x,ry=probe.d.y,rz=probe.d.z;
   const pr=CONFIG.pointer.radius, pr2=pr*pr, str=CONFIG.pointer.strength;
@@ -571,30 +582,33 @@ function probeUpdate(){
   probe.d.copy(probe.ray.ray.direction).transformDirection(probe.inv);
 }
 
-let drag = { on:false, lastX:0, lastY:0, beat:-1 };
+let drag = { on:false, lastX:0, lastY:0 };
 canvas.style.pointerEvents = 'auto';
 
+// ONE global drag rotation, shared by the cloud AND the model so dragging turns the
+// particles and the texture together — they never disconnect.
+let dragSpin=0, dragSpinVel=0, dragTilt=0;
+
 function activeModelBeat(){ // beat index if a model is formed enough to grab, else -1
-  if (state.shapeW < 0.6) return -1;
+  if (state.shapeW < 0.85) return -1;
   const b = state.center;
   return BEATS[b] && BEATS[b].kind==='model' && models[b] ? b : -1;
 }
 
 addEventListener('pointermove', (e)=>{
   const x=(e.clientX/innerWidth)*2-1, y=-(e.clientY/innerHeight)*2+1;
-  if(drag.on && drag.beat>=0 && models[drag.beat]){
-    const m=models[drag.beat], S=CONFIG.spin;
+  if(drag.on){
+    const S=CONFIG.spin;
     // gentle: small per-pixel rate, velocity clamped so a flick can't whip it round
-    m.spinVel = clamp(m.spinVel + (e.clientX-drag.lastX)*S.speed, -S.maxVel, S.maxVel);
-    m.tiltX   = clamp(m.tiltX   + (e.clientY-drag.lastY)*S.speed*S.tilt, -S.tiltRange, S.tiltRange);
+    dragSpinVel = clamp(dragSpinVel + (e.clientX-drag.lastX)*S.speed, -S.maxVel, S.maxVel);
+    dragTilt    = clamp(dragTilt    + (e.clientY-drag.lastY)*S.speed*S.tilt, -S.tiltRange, S.tiltRange);
     drag.lastX=e.clientX; drag.lastY=e.clientY;
   } else {
     probeSet(x,y);
   }
 });
 canvas.addEventListener('pointerdown', (e)=>{
-  const b=activeModelBeat();
-  if(b>=0){ drag.on=true; drag.beat=b; drag.lastX=e.clientX; drag.lastY=e.clientY; canvas.classList.add('grabbing'); probe.active=false; }
+  if(activeModelBeat()>=0){ drag.on=true; drag.lastX=e.clientX; drag.lastY=e.clientY; canvas.classList.add('grabbing'); probe.active=false; }
 });
 addEventListener('pointerup', ()=>{ drag.on=false; canvas.classList.remove('grabbing'); });
 addEventListener('pointerleave', ()=>{ probe.active=false; drag.on=false; canvas.classList.remove('grabbing'); });
@@ -723,35 +737,40 @@ function frame(ts){
   const dt=Math.min(clock.getDelta(),1/30), time=clock.elapsedTime;
   readScroll();                      // …then read it — no cross-rAF aliasing.
 
-  // Nearest stop + its formed-ness (drives only the texture/text crossfade), inline
-  // to avoid a per-frame object allocation (GC spikes = jank).
-  let c, shapeW;
-  if(loadIn && !loadIn.done){ c=0; shapeW=1; }
-  else { c=Math.round(clamp(state.p,0,N-1)); shapeW=smootherstep(CONFIG.morph.formOut, CONFIG.morph.formIn, Math.abs(state.p-c)); }
-  state.center = c; state.shapeW = shapeW;
+  // Resolve the morph for this frame: nearest stop c, and formW = how fully c's
+  // ACTUAL geometry is built in the cloud (the single value driving dust↔texture↔text).
+  let c, formW;
+  if(loadIn && !loadIn.done){ c=0; formW=1; M.formW=1; }
+  else { c=Math.round(clamp(state.p,0,N-1)); resolveMorph(state.p); formW=M.formW; }
+  state.center = c; state.shapeW = formW;
   updateOverlay();
 
-  // Rotation: ONLY the CG stop auto-spins. Elsewhere ease to the nearest "front"
-  // angle (nearest TAU multiple → minimal unwind) so every shape settles front-on
-  // AND the textured model shares this exact base rotation → dust/texture register.
+  const activeModel = (BEATS[c]?.kind==='model' && models[c] && formW>0.85) ? c : -1;
+
+  // ── ONE rotation, shared by cloud + model so they can NEVER disconnect ──
+  // Base: the CG stop auto-spins; every other stop eases to front (nearest TAU
+  // multiple → minimal unwind). User drag adds dragSpin/dragTilt on top; when you're
+  // not on a grabbable model it eases back to front. Cloud and model both use rotY/rotX.
   if(c===0 && loadIn && loadIn.done){ accumY += CONFIG.rotation.speed*dt; }
   else { accumY += (Math.round(accumY/TAU)*TAU - accumY) * 0.08; }
-  cloudGroup.rotation.y = accumY;
+  dragSpin += dragSpinVel; dragSpinVel *= CONFIG.spin.damping;
+  if(activeModel<0){ dragSpin *= 0.94; dragTilt += (0-dragTilt)*CONFIG.spin.returnLerp; }
+  const rotY = accumY + dragSpin, rotX = dragTilt;
+  cloudGroup.rotation.set(rotX, rotY, 0);
   cloudGroup.updateMatrixWorld();
 
   probeUpdate();
   // Particles: direct morph (responsive) + spring-play displacement, single pass.
   if(loadIn && !loadIn.done) stepLoadIn(time);
-  else stepParticles(dt, probe, state.p);
+  else stepParticles(dt, probe);
 
-  // ── Symmetric handoff: the texture skins on as the dust forms the shape, and
-  //    dissolves back as it disperses — both driven by the SAME shapeW, so leaving
-  //    a product mirrors entering it (no lingering ghost on exit). ──
+  // ── Handoff driven by formW (actual formed-ness): the texture skins on only AS the
+  //    dust builds the model's real geometry, and dissolves back as it disperses —
+  //    so you never see the model floating over a half-formed cloud. ──
   let particleOpacity = 1;
-  const activeModel = (BEATS[c]?.kind==='model' && models[c] && shapeW>0.6) ? c : -1;
   for(let i=0;i<N;i++){
     const m=models[i]; if(!m) continue;
-    const vis = (i===c) ? smootherstep(CONFIG.morph.texAt, 1.0, shapeW) : 0;
+    const vis = (i===c) ? smootherstep(CONFIG.morph.texAt, 1.0, formW) : 0;
     m.group.visible = vis>0.001;
     // Solidity via depthWrite ONLY (a render-state flag — no shader recompile, so no
     // frame hitch at the stop). Once formed, depth-write on → overlapping faces sort
@@ -761,14 +780,10 @@ function frame(ts){
     if(wantSolid !== m.solid){ for(const mat of m.materials) mat.depthWrite = wantSolid; m.solid = wantSolid; }
     for(const mat of m.materials) mat.opacity = vis;
     if(i===c) particleOpacity = Math.min(particleOpacity, 1 - vis);
-    // gentle drag-spin: capped velocity + light inertia; tilt eases back when idle
-    m.spin += m.spinVel; m.spinVel *= CONFIG.spin.damping;
-    if(i!==activeModel) m.tiltX += (0 - m.tiltX)*CONFIG.spin.returnLerp;
-    m.group.rotation.set(m.tiltX, accumY + m.spin, 0);
-    m.group.updateMatrixWorld();
+    if(m.group.visible){ m.group.rotation.set(rotX, rotY, 0); m.group.updateMatrixWorld(); }  // SAME rotation as the cloud
   }
   // text divider resolves dust → crisp DOM type, on the same curve.
-  if (BEATS[c]?.kind === 'text') particleOpacity = Math.min(particleOpacity, 1 - smootherstep(CONFIG.morph.texAt, 1.0, shapeW));
+  if (BEATS[c]?.kind === 'text') particleOpacity = Math.min(particleOpacity, 1 - smootherstep(CONFIG.morph.texAt, 1.0, formW));
   ps.material.uniforms.uOpacity.value = particleOpacity;
 
   canvas.classList.toggle('grabbable', activeModel>=0 && !drag.on);
@@ -776,7 +791,7 @@ function frame(ts){
 
   // HUD only every 12th frame — building a string every frame is needless GC.
   if(hud && (++hudTick % 12 === 0)) hud.textContent =
-    `beat ${state.p.toFixed(2)}  stop ${c}  shapeW ${shapeW.toFixed(2)}\n`+
+    `beat ${state.p.toFixed(2)}  stop ${c}  formW ${formW.toFixed(2)}\n`+
     `models ${models.filter(Boolean).length}/${modelCount}  pcount ${COUNT.toLocaleString()}`;
 }
 let hudTick=0; const modelCount=BEATS.filter(b=>b.kind==='model').length;

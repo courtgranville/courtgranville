@@ -212,18 +212,19 @@ const CONFIG = {
   morph: {
     shapeRadius: 2.7,        // world radius every product/text shape fits into (bigger products)
     disperseRadius: 9.0,     // BIG — overflows the screen so the dispersal envelops the viewer
-    follow: 0.085,           // first-order approach: smooth, NEVER overshoots (Omma's model)
-    // ONE continuous "shape-formed-ness" curve drives everything. |delta| = beats
-    // from the nearest stop. formIn..formOut is the single blend ramp shape↔cloud.
-    formIn:  0.10,           // |delta| ≤ this → fully formed shape
-    formOut: 0.40,           // |delta| ≥ this → fully dispersed cloud (envelop band beyond)
-    texAt:   0.50,           // shape-formed-ness above this → texture skins onto the dust
+    follow: 0.16,            // tighter first-order approach → deliberate, not floaty/laggy
+    // shapeW (formed-ness of the nearest stop) drives the TEXTURE/text crossfade.
+    formIn:  0.12,           // |delta| ≤ this → fully formed
+    formOut: 0.38,           // |delta| ≥ this → fully off
+    texAt:   0.55,           // texture resolves only once the dust is well-formed
     dividerHeight: 2.4,      // world height of the particle divider text
   },
   // Drag-to-spin — gentle. Velocity is capped so a small flick can't whip it round.
   spin: { speed: 0.0013, maxVel: 0.020, damping: 0.88, returnLerp: 0.06, tilt: 0.5, tiltRange: 0.4 },
-  // Snap is a SUBTLE stick only when you're already near a stop — not magnetism.
-  scroll: { segmentVh: 1.25, snapWindow: 0.30, snapDuration: 0.75 },
+  // 'stick' warps the scroll→timeline mapping so each stop is gently magnetic — a
+  // subtle pull that makes it easy to land on a product, with NO programmatic
+  // scroll animation to fight Lenis (the old snap's jank source).
+  scroll: { segmentVh: 1.3, stick: 0.55 },
   modelBase: '/public/models/',   // python http.server from repo root → /public/models/…
 };
 
@@ -239,6 +240,14 @@ const BEATS = [
 ];
 const N = BEATS.length;
 const COUNT = CONFIG.particles.count;
+
+// Which gaps route through the big enveloping dispersal vs morph DIRECTLY shape→
+// shape. Per the brief: products ADJUST straight into the next product (no full
+// dispersal between them); the screen-filling dispersal belongs only at SECTION
+// boundaries — hero→work and work→approach. Heuristic: disperse only when the two
+// stops are different kinds (glyph→model, model→text); model→model morphs directly.
+const GAP_DISPERSE = [];
+for(let i=0;i<N-1;i++) GAP_DISPERSE[i] = BEATS[i].kind !== BEATS[i+1].kind;
 
 // ════════════════════════════════════════════════════════════════════
 //  SAMPLERS — every target is exactly COUNT points, index-aligned, so any
@@ -585,47 +594,57 @@ if(!reducedMotion){
 }
 
 const state = { p:0, center:0, shapeW:1 };  // p: beat-units · center: nearest stop · shapeW: how formed
+
+// Magnetic stops WITHOUT a programmatic scroll animation (so nothing fights Lenis
+// → no jank). We just WARP the scroll→timeline mapping: within each gap, remap the
+// linear fraction through a blended smootherstep. smootherstep has zero slope at 0
+// and 1, so the timeline moves slowly near a stop (it "sticks") and quicker through
+// the middle — a subtle pull that makes it easy to land on a product. `stick`
+// blends between linear (0) and full magnetic (1).
+function warpFrac(u){ const s=u*u*u*(u*(u*6-15)+10); return u + (s-u)*CONFIG.scroll.stick; }
 function readScroll(){
   const max = stage.scrollHeight - innerHeight;
   const y = (scrollY||pageYOffset);
-  const f = max>0 ? Math.min(1, Math.max(0, y/max)) : 0;
-  state.p = f * (N-1);
+  const f = max>0 ? clamp(y/max,0,1) : 0;
+  const lin = f*(N-1);
+  let i = Math.floor(lin); if(i>N-2) i=N-2; if(i<0) i=0;
+  state.p = i + warpFrac(lin - i);
   const cue = Math.max(0, 1 - y/90); scrollCue.style.opacity = String(cue*0.5);
 }
 if(lenis) lenis.on('scroll', readScroll); else addEventListener('scroll', readScroll, {passive:true});
 
-// Subtle stick: once scrolling settles, IF you're already near a stop, ease the
-// last little distance to it. Outside that window the dispersal scrolls freely —
-// no magnetism, no overshoot (it only ever nudges toward the nearest stop, once).
-let snapTimer=null;
-function scheduleSnap(){
-  if(reducedMotion || !lenis) return;
-  clearTimeout(snapTimer);
-  snapTimer = setTimeout(()=>{
-    const beat = Math.round(state.p);
-    if(Math.abs(state.p - beat) > CONFIG.scroll.snapWindow) return;  // mid-dispersal → leave free
-    const max = stage.scrollHeight - innerHeight;
-    const targetY = (beat/(N-1)) * max;
-    if(Math.abs(targetY - (scrollY||0)) > 6)
-      lenis.scrollTo(targetY, { duration:CONFIG.scroll.snapDuration, easing:(x)=>1-Math.pow(1-x,3) });
-  }, 220);
+// Dev-only: drive the timeline to an exact beat for testing (append ?dbg). Never ships.
+if(new URLSearchParams(location.search).has('dbg')){
+  window.__toP = (p)=>{ const max=stage.scrollHeight-innerHeight; const y=(clamp(p,0,N-1)/(N-1))*max;
+    if(lenis) lenis.scrollTo(y,{immediate:true}); else window.scrollTo(0,y); };
 }
-addEventListener('wheel', scheduleSnap, {passive:true});
-addEventListener('touchend', scheduleSnap, {passive:true});
 
 // ════════════════════════════════════════════════════════════════════
 //  MORPH — fill ps.home from the timeline each frame.
 // ════════════════════════════════════════════════════════════════════
-// ONE continuous timeline. For scroll position p (in beat-units), `c` is the
-// nearest stop and `shapeW` ∈ [0,1] is how formed that stop's shape is — 1 at the
-// stop, smoothly down to 0 in the dispersal band between stops. The particle home
-// is simply lerp(cloud → shape, shapeW). Because shapeW is one smooth function of
-// p (no segments), the whole scroll reads as a single continuous morph in/out of
-// dispersal, and entering a product is the exact mirror of leaving it.
-function shapeFormedness(p){
-  const c = Math.round(p);
-  const delta = Math.abs(p - c);
-  return { c, shapeW: smootherstep(CONFIG.morph.formOut, CONFIG.morph.formIn, delta) };
+// Build the particle home target for scroll position p (beat-units), in one pass.
+// Within a gap the particles flow CONTINUOUSLY between the two stops' shapes:
+//   · model→model gap  → morph the dust DIRECTLY shape→shape (it re-forms into the
+//     next product, the way it adjusts in Omma) — purposeful, never disconnected.
+//   · section-boundary gap (different kinds) → route through the enveloping cloud.
+// smootherstep on frac makes the in-between velocity zero at each stop → no kink,
+// so the whole scroll is one deliberate flow, not stitched movements.
+function buildHome(p, out){
+  let i = Math.floor(p); if(i<0) i=0; if(i>N-2){ out.set(targets[N-1]||DISPERSE); return; }
+  const frac = p - i;
+  const A = targets[i] || DISPERSE, B = targets[i+1] || DISPERSE;
+  if(GAP_DISPERSE[i]){
+    if(frac < 0.5){ const e=smootherstep(0,1,frac*2),   iw=1-e; for(let k=0;k<COUNT*3;k++) out[k]=A[k]*iw+DISPERSE[k]*e; }
+    else          { const e=smootherstep(0,1,(frac-0.5)*2), iw=1-e; for(let k=0;k<COUNT*3;k++) out[k]=DISPERSE[k]*iw+B[k]*e; }
+  } else {
+    const e=smootherstep(0,1,frac), iw=1-e; for(let k=0;k<COUNT*3;k++) out[k]=A[k]*iw+B[k]*e;
+  }
+}
+// Formed-ness of the nearest stop — drives only the texture/text crossfade (the
+// dust handles the actual morph). 1 at a stop, 0 mid-gap.
+function nearestStop(p){
+  const c = Math.round(clamp(p,0,N-1));
+  return { c, shapeW: smootherstep(CONFIG.morph.formOut, CONFIG.morph.formIn, Math.abs(p-c)) };
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -692,17 +711,14 @@ function frame(){
   const dt=Math.min(clock.getDelta(),1/30), time=clock.elapsedTime;
   readScroll();
 
-  // ── ONE continuous timeline value drives morph, texture and text together ──
-  const { c, shapeW } = (loadIn && !loadIn.done) ? { c:0, shapeW:1 } : shapeFormedness(state.p);
+  // ── One deliberate flow: the dust morphs directly between shapes (buildHome);
+  //    nearestStop only governs which texture/text is shown. ──
+  const { c, shapeW } = (loadIn && !loadIn.done) ? { c:0, shapeW:1 } : nearestStop(state.p);
   state.center = c; state.shapeW = shapeW;
   updateOverlay();
 
-  // particle home = lerp(enveloping cloud → this stop's shape, shapeW). Continuous.
   if(loadIn && !loadIn.done){ stepLoadIn(time); }
-  else {
-    const shape = targets[c] || DISPERSE, home = ps.home, w = shapeW, iw = 1-w;
-    for(let k=0;k<COUNT*3;k++) home[k] = DISPERSE[k]*iw + shape[k]*w;
-  }
+  else buildHome(state.p, ps.home);
 
   // Rotation: ONLY the CG stop auto-spins. Elsewhere ease to the nearest "front"
   // angle (nearest TAU multiple → minimal unwind) so every shape settles front-on

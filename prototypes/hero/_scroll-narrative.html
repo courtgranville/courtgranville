@@ -210,18 +210,20 @@ const CONFIG = {
   rotation:{ speed: reducedMotion ? 0 : 0.06 },          // gentle auto-spin of the cloud
   loadIn:  { duration: 1.6, stagger: 0.7, startVolume: 7 },
   morph: {
-    shapeRadius: 1.9,        // world radius every product/text shape fits into (≈ CG size)
+    shapeRadius: 2.7,        // world radius every product/text shape fits into (bigger products)
     disperseRadius: 9.0,     // BIG — overflows the screen so the dispersal envelops the viewer
     follow: 0.085,           // first-order approach: smooth, NEVER overshoots (Omma's model)
-    ease: (t)=> 1 - Math.pow(1 - Math.min(Math.max(t,0),1), 3),  // easeOutCubic
+    // ONE continuous "shape-formed-ness" curve drives everything. |delta| = beats
+    // from the nearest stop. formIn..formOut is the single blend ramp shape↔cloud.
+    formIn:  0.10,           // |delta| ≤ this → fully formed shape
+    formOut: 0.40,           // |delta| ≥ this → fully dispersed cloud (envelop band beyond)
+    texAt:   0.50,           // shape-formed-ness above this → texture skins onto the dust
+    dividerHeight: 2.4,      // world height of the particle divider text
   },
-  dwell: {
-    half: 0.42,              // within ±half (in segment-units) of a beat centre = "settled"
-    textCrossfade: 0.42,     // settledness at which the texture starts skinning over the dust
-    dividerHeight: 2.2,      // world height of the particle divider text
-  },
-  spin: { speed: 0.0065, damping: 0.92, returnLerp: 0.06 },  // drag-to-spin feel
-  scroll: { segmentVh: 1.25, snapDuration: 0.6 },            // each beat-gap is this many viewport-heights
+  // Drag-to-spin — gentle. Velocity is capped so a small flick can't whip it round.
+  spin: { speed: 0.0013, maxVel: 0.020, damping: 0.88, returnLerp: 0.06, tilt: 0.5, tiltRange: 0.4 },
+  // Snap is a SUBTLE stick only when you're already near a stop — not magnetism.
+  scroll: { segmentVh: 1.25, snapWindow: 0.30, snapDuration: 0.75 },
   modelBase: '/public/models/',   // python http.server from repo root → /public/models/…
 };
 
@@ -243,6 +245,10 @@ const COUNT = CONFIG.particles.count;
 //  two can be linearly interpolated (the morph). Returns Float32Array(COUNT*3).
 // ════════════════════════════════════════════════════════════════════
 function seededRNG(seed){ let s = seed>>>0; return ()=> (s = (Math.imul(1664525,s)+1013904223)>>>0)/4294967296; }
+// smootherstep — C2-continuous ramp (zero velocity AND acceleration at both ends),
+// so blends driven by it start and stop without any kink. Works descending (e0>e1).
+function smootherstep(e0,e1,x){ let t=(x-e0)/(e1-e0); t=t<0?0:t>1?1:t; return t*t*t*(t*(t*6-15)+10); }
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 
 // Render text (multi-line supported) to a canvas, pool the dark pixels, then
 // sample COUNT of them into a centred, scaled point set with a little z-depth.
@@ -459,7 +465,7 @@ function buildTextTargets(){
   for(let i=0;i<N;i++){
     const b=BEATS[i];
     if(b.kind==='glyph') targets[i]=sampleText(b.text, COUNT, { worldHeight:CONFIG.glyph.worldHeight, depth:CONFIG.glyph.depth, weight:700, seed:42 });
-    else if(b.kind==='text') targets[i]=sampleText(b.text, COUNT, { worldHeight:CONFIG.dwell.dividerHeight, depth:0.3, weight:700, seed:7 });
+    else if(b.kind==='text') targets[i]=sampleText(b.text, COUNT, { worldHeight:CONFIG.morph.dividerHeight, depth:0.3, weight:700, seed:7 });
   }
 }
 
@@ -540,18 +546,19 @@ function probeUpdate(){
 let drag = { on:false, lastX:0, lastY:0, beat:-1 };
 canvas.style.pointerEvents = 'auto';
 
-function activeModelBeat(){ // returns beat index if a model is currently settled, else -1
-  if (state.settled < CONFIG.dwell.textCrossfade) return -1;
-  const b = Math.round(state.center);
+function activeModelBeat(){ // beat index if a model is formed enough to grab, else -1
+  if (state.shapeW < 0.6) return -1;
+  const b = state.center;
   return BEATS[b] && BEATS[b].kind==='model' && models[b] ? b : -1;
 }
 
 addEventListener('pointermove', (e)=>{
   const x=(e.clientX/innerWidth)*2-1, y=-(e.clientY/innerHeight)*2+1;
   if(drag.on && drag.beat>=0 && models[drag.beat]){
-    const m=models[drag.beat];
-    m.spinVel += (e.clientX-drag.lastX) * CONFIG.spin.speed;
-    m.tiltX = Math.max(-0.6, Math.min(0.6, m.tiltX + (e.clientY-drag.lastY)*CONFIG.spin.speed*0.6));
+    const m=models[drag.beat], S=CONFIG.spin;
+    // gentle: small per-pixel rate, velocity clamped so a flick can't whip it round
+    m.spinVel = clamp(m.spinVel + (e.clientX-drag.lastX)*S.speed, -S.maxVel, S.maxVel);
+    m.tiltX   = clamp(m.tiltX   + (e.clientY-drag.lastY)*S.speed*S.tilt, -S.tiltRange, S.tiltRange);
     drag.lastX=e.clientX; drag.lastY=e.clientY;
   } else {
     probeSet(x,y);
@@ -577,7 +584,7 @@ if(!reducedMotion){
   const raf=(t)=>{ lenis.raf(t); requestAnimationFrame(raf); }; requestAnimationFrame(raf);
 }
 
-const state = { p:0, center:0, settled:0 };  // p:0..(N-1) beat-units, center:nearest beat, settled:0..1
+const state = { p:0, center:0, shapeW:1 };  // p: beat-units · center: nearest stop · shapeW: how formed
 function readScroll(){
   const max = stage.scrollHeight - innerHeight;
   const y = (scrollY||pageYOffset);
@@ -587,17 +594,21 @@ function readScroll(){
 }
 if(lenis) lenis.on('scroll', readScroll); else addEventListener('scroll', readScroll, {passive:true});
 
-// Snap: when scroll goes quiet near a beat, ease to its exact centre.
-let snapTimer=null, lastY=-1;
+// Subtle stick: once scrolling settles, IF you're already near a stop, ease the
+// last little distance to it. Outside that window the dispersal scrolls freely —
+// no magnetism, no overshoot (it only ever nudges toward the nearest stop, once).
+let snapTimer=null;
 function scheduleSnap(){
   if(reducedMotion || !lenis) return;
   clearTimeout(snapTimer);
   snapTimer = setTimeout(()=>{
-    const max = stage.scrollHeight - innerHeight;
     const beat = Math.round(state.p);
+    if(Math.abs(state.p - beat) > CONFIG.scroll.snapWindow) return;  // mid-dispersal → leave free
+    const max = stage.scrollHeight - innerHeight;
     const targetY = (beat/(N-1)) * max;
-    if(Math.abs(targetY - (scrollY||0)) > 4) lenis.scrollTo(targetY, { duration:CONFIG.scroll.snapDuration, easing:(x)=>1-Math.pow(1-x,3) });
-  }, 140);
+    if(Math.abs(targetY - (scrollY||0)) > 6)
+      lenis.scrollTo(targetY, { duration:CONFIG.scroll.snapDuration, easing:(x)=>1-Math.pow(1-x,3) });
+  }, 220);
 }
 addEventListener('wheel', scheduleSnap, {passive:true});
 addEventListener('touchend', scheduleSnap, {passive:true});
@@ -605,22 +616,16 @@ addEventListener('touchend', scheduleSnap, {passive:true});
 // ════════════════════════════════════════════════════════════════════
 //  MORPH — fill ps.home from the timeline each frame.
 // ════════════════════════════════════════════════════════════════════
-const lerpBuf = new Float32Array(COUNT*3);
-// Each beat-gap routes A → full DISPERSE cloud → B, with a HOLD at the cloud in
-// the middle (frac 0.40–0.60) so — even with the smooth follow-lag — the dust
-// genuinely expands to fill the screen and the viewer passes *through* it.
-const D0 = 0.40, D1 = 0.60;
-function morphTarget(p){
-  const i = Math.floor(p); const frac = p - i;
-  const A = targets[i] || DISPERSE;
-  const B = targets[Math.min(i+1,N-1)] || DISPERSE;
-  let from, to, u;
-  if(frac < D0){ from=A; to=DISPERSE; u=frac/D0; }
-  else if(frac < D1){ from=DISPERSE; to=DISPERSE; u=0; }       // hold the enveloping cloud
-  else { from=DISPERSE; to=B; u=(frac-D1)/(1-D1); }
-  const e = CONFIG.morph.ease(u), inv=1-e;
-  for(let k=0;k<COUNT*3;k++) lerpBuf[k] = from[k]*inv + to[k]*e;
-  return lerpBuf;
+// ONE continuous timeline. For scroll position p (in beat-units), `c` is the
+// nearest stop and `shapeW` ∈ [0,1] is how formed that stop's shape is — 1 at the
+// stop, smoothly down to 0 in the dispersal band between stops. The particle home
+// is simply lerp(cloud → shape, shapeW). Because shapeW is one smooth function of
+// p (no segments), the whole scroll reads as a single continuous morph in/out of
+// dispersal, and entering a product is the exact mirror of leaving it.
+function shapeFormedness(p){
+  const c = Math.round(p);
+  const delta = Math.abs(p - c);
+  return { c, shapeW: smootherstep(CONFIG.morph.formOut, CONFIG.morph.formIn, delta) };
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -647,19 +652,14 @@ for(let i=1;i<N-1;i++){ const dot=document.createElement('div'); dot.className='
 const dots=[...dotsWrap.children];
 
 function updateOverlay(){
-  const p=state.p; const center=Math.round(p); state.center=center;
-  const settled = Math.max(0, 1 - Math.abs(p-center)/CONFIG.dwell.half); // 1 at centre → 0 at ±half
-  state.settled = settled;
-  // beat 0 lead
-  ov.lead.style.opacity = (center===0) ? settled : 0;
-  // product chrome
+  const center=state.center, w=state.shapeW;
+  // each text block tracks its stop's formed-ness: in as the shape forms, out as it disperses.
+  ov.lead.style.opacity = (center===0) ? w : 0;
   const cb=BEATS[center];
-  if(cb && cb.kind==='model'){ setProductChrome(center); ov.product.style.opacity = settled; }
+  if(cb && cb.kind==='model'){ setProductChrome(center); ov.product.style.opacity = w; }
   else ov.product.style.opacity = 0;
-  // divider — crisp type ramps in over the latter half of the settle (dust fades under it)
-  const dv = Math.max(0,(settled-CONFIG.dwell.textCrossfade)/(1-CONFIG.dwell.textCrossfade));
-  ov.divider.style.opacity = (center===N-1) ? dv : 0;
-  // dots
+  // divider crisp type ramps in as the particle text fully forms (and the dust fades under it)
+  ov.divider.style.opacity = (center===N-1) ? smootherstep(CONFIG.morph.texAt, 1.0, w) : 0;
   dots.forEach((d,idx)=> d.classList.toggle('on', idx+1===center));
 }
 
@@ -690,59 +690,57 @@ function frame(){
   requestAnimationFrame(frame);
   if(!ready) return;
   const dt=Math.min(clock.getDelta(),1/30), time=clock.elapsedTime;
-  readScroll(); updateOverlay();
+  readScroll();
 
-  // particle home: load-in first, then scroll morph.
+  // ── ONE continuous timeline value drives morph, texture and text together ──
+  const { c, shapeW } = (loadIn && !loadIn.done) ? { c:0, shapeW:1 } : shapeFormedness(state.p);
+  state.center = c; state.shapeW = shapeW;
+  updateOverlay();
+
+  // particle home = lerp(enveloping cloud → this stop's shape, shapeW). Continuous.
   if(loadIn && !loadIn.done){ stepLoadIn(time); }
-  else { ps.home.set(morphTarget(state.p)); }
+  else {
+    const shape = targets[c] || DISPERSE, home = ps.home, w = shapeW, iw = 1-w;
+    for(let k=0;k<COUNT*3;k++) home[k] = DISPERSE[k]*iw + shape[k]*w;
+  }
 
-  // Rotation: ONLY the CG beat auto-spins. Everywhere else ease to the nearest
-  // "front" angle (nearest TAU multiple — minimal unwind) so every product/text
-  // shape settles front-facing AND the textured model can share this exact base
-  // rotation → dust and texture always register.
-  const modelBeatNow = (state.settled>CONFIG.dwell.textCrossfade && BEATS[state.center]?.kind==='model' && models[state.center]) ? state.center : -1;
-  if(state.center===0 && loadIn && loadIn.done){ accumY += CONFIG.rotation.speed*dt; }
+  // Rotation: ONLY the CG stop auto-spins. Elsewhere ease to the nearest "front"
+  // angle (nearest TAU multiple → minimal unwind) so every shape settles front-on
+  // AND the textured model shares this exact base rotation → dust/texture register.
+  if(c===0 && loadIn && loadIn.done){ accumY += CONFIG.rotation.speed*dt; }
   else { accumY += (Math.round(accumY/TAU)*TAU - accumY) * 0.08; }
   cloudGroup.rotation.y = accumY;
   cloudGroup.updateMatrixWorld();
 
   probeUpdate();
-  if(loadIn && !loadIn.done){} else stepMorph(ps, dt, probe);
+  if(!(loadIn && !loadIn.done)) stepMorph(ps, dt, probe);
 
-  // ── model handoff: crossfade dust↔texture; drag-spin the active model ──
+  // ── Symmetric handoff: the texture skins on as the dust forms the shape, and
+  //    dissolves back as it disperses — both driven by the SAME shapeW, so leaving
+  //    a product mirrors entering it (no lingering ghost on exit). ──
   let particleOpacity = 1;
+  const activeModel = (BEATS[c]?.kind==='model' && models[c] && shapeW>0.6) ? c : -1;
   for(let i=0;i<N;i++){
     const m=models[i]; if(!m) continue;
-    const isCenter = (state.center===i);
-    // settledness for THIS beat (0 away → 1 at its centre)
-    const s = isCenter ? Math.max(0, 1 - Math.abs(state.p-i)/CONFIG.dwell.half) : 0;
-    const vis = Math.max(0, (s - CONFIG.dwell.textCrossfade) / (1 - CONFIG.dwell.textCrossfade)); // 0..1 texture reveal
+    const vis = (i===c) ? smootherstep(CONFIG.morph.texAt, 1.0, shapeW) : 0;
     m.group.visible = vis>0.001;
     for(const mat of m.materials) mat.opacity = vis;
-    if(isCenter) particleOpacity = Math.min(particleOpacity, 1 - vis);
-    // spin physics
-    if(i===modelBeatNow){
-      m.spin += m.spinVel; m.spinVel *= CONFIG.spin.damping;
-    } else {
-      m.spinVel *= CONFIG.spin.damping; m.spin += m.spinVel;
-      m.tiltX += (0 - m.tiltX)*CONFIG.spin.returnLerp; // ease tilt back when released
-    }
-    m.group.rotation.set(m.tiltX, accumY + m.spin, 0);   // share the cloud's base rotation → registered
+    if(i===c) particleOpacity = Math.min(particleOpacity, 1 - vis);
+    // gentle drag-spin: capped velocity + light inertia; tilt eases back when idle
+    m.spin += m.spinVel; m.spinVel *= CONFIG.spin.damping;
+    if(i!==activeModel) m.tiltX += (0 - m.tiltX)*CONFIG.spin.returnLerp;
+    m.group.rotation.set(m.tiltX, accumY + m.spin, 0);
     m.group.updateMatrixWorld();
   }
-  // text divider: the dust resolves into crisp DOM type — fade particles as it forms.
-  if (BEATS[state.center]?.kind === 'text') {
-    const vis = Math.max(0, (state.settled - CONFIG.dwell.textCrossfade) / (1 - CONFIG.dwell.textCrossfade));
-    particleOpacity = Math.min(particleOpacity, 1 - vis);
-  }
+  // text divider resolves dust → crisp DOM type, on the same curve.
+  if (BEATS[c]?.kind === 'text') particleOpacity = Math.min(particleOpacity, 1 - smootherstep(CONFIG.morph.texAt, 1.0, shapeW));
   ps.material.uniforms.uOpacity.value = particleOpacity;
 
-  canvas.classList.toggle('grabbable', activeModelBeat()>=0 && !drag.on);
-
+  canvas.classList.toggle('grabbable', activeModel>=0 && !drag.on);
   renderer.render(scene, camera);
 
   if(hud){ hud.textContent =
-    `beat ${state.p.toFixed(2)}  centre ${state.center}  settled ${state.settled.toFixed(2)}\n`+
+    `beat ${state.p.toFixed(2)}  stop ${c}  shapeW ${shapeW.toFixed(2)}\n`+
     `models ${models.filter(Boolean).length}/${BEATS.filter(b=>b.kind==='model').length}  pcount ${COUNT.toLocaleString()}`; }
 }
 requestAnimationFrame(frame);

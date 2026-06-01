@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Court Granville — scroll narrative (prototype)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Raleway:wght@400;500&display=block" rel="stylesheet">
+
+<!-- Same CDN import map as the live site's Layout.astro — pinned three@0.162 +
+     addons + lenis. No build step; this is the no-build feel-tuning surface. -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/",
+    "lenis": "https://cdn.jsdelivr.net/npm/lenis@1.3.23/dist/lenis.mjs"
+  }
+}
+</script>
+
+<style>
+  :root {
+    --bg: #FFFFFF;
+    --text: #161616;
+    --text-quiet: rgba(22,22,22,0.55);
+    --text-faint: rgba(22,22,22,0.32);
+    --rule: rgba(22,22,22,0.10);
+    --accent: #8E1B0E;
+    --serif: 'Playfair Display', Georgia, serif;
+    --sans:  'Raleway', ui-sans-serif, system-ui, sans-serif;
+    --ease-out: cubic-bezier(0.16, 1, 0.30, 1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: auto; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+  ::selection { background: var(--text); color: var(--bg); }
+  a { color: inherit; text-decoration: none; }
+
+  /* ── The scroll stage: a tall driver with a sticky, full-viewport canvas. ── */
+  .scrollstage { position: relative; width: 100%; }
+  .sticky {
+    position: sticky; top: 0;
+    width: 100%; height: 100vh;
+    overflow: hidden;
+  }
+  #c { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
+
+  /* When a textured product is settled the canvas is grabbable. */
+  #c.grabbable { cursor: grab; }
+  #c.grabbing  { cursor: grabbing; }
+
+  /* ── Overlay text — phases in/out per beat, driven by JS. ── */
+  .overlay { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+  .ov-block {
+    position: absolute;
+    opacity: 0;
+    will-change: opacity, transform;
+  }
+  .ov-block a { pointer-events: auto; }
+
+  /* Hero lead — lower-left caption beside the CG glyph. */
+  .ov-lead {
+    left: clamp(20px, 4vw, 56px);
+    top: 50%; transform: translateY(-50%);
+    max-width: 38ch;
+  }
+  .ov-lead p {
+    font-family: var(--serif); font-weight: 400;
+    font-size: clamp(17px, 1.05vw, 19px); line-height: 1.5; color: var(--text);
+  }
+
+  /* Per-product chrome — left column. */
+  .ov-product {
+    left: clamp(20px, 4vw, 56px);
+    top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; align-items: flex-start;
+    max-width: 30ch;
+  }
+  .label {
+    font-family: var(--sans); font-weight: 500;
+    font-size: clamp(12px, 0.72vw, 14px); letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--text-quiet);
+  }
+  .ov-index { color: var(--text-faint); font-variant-numeric: tabular-nums; margin-bottom: 16px; }
+  .ov-name {
+    font-family: var(--serif); font-weight: 400;
+    font-size: clamp(26px, 3.2vw, 48px); line-height: 1.12; color: var(--text);
+    margin: 0 0 12px;
+  }
+  .ov-meta { color: var(--text-quiet); margin-bottom: 22px; }
+  .ov-link { font-family: var(--sans); font-weight: 500; font-size: 13px; color: var(--text); border-bottom: 1px solid var(--rule); padding-bottom: 2px; }
+  .ov-link:hover { color: var(--accent); border-color: var(--accent); }
+  .ov-hint { margin-top: 26px; color: var(--text-faint); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; }
+
+  /* Divider heading — centred display text (the particle text resolves under it). */
+  .ov-divider {
+    left: 0; right: 0; top: 50%; transform: translateY(-50%);
+    text-align: center;
+  }
+  .ov-divider .kk { display:block; margin-bottom: 14px; }
+  .ov-divider h2 {
+    font-family: var(--serif); font-weight: 400;
+    font-size: clamp(36px, 5vw, 80px); line-height: 1.04; color: var(--text);
+  }
+
+  /* Scroll cue — bottom centre, fades on first scroll. */
+  .scroll-cue {
+    position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+    z-index: 3; font-family: var(--sans); font-weight: 500; font-size: 10px;
+    letter-spacing: 0.34em; text-transform: uppercase; color: var(--text);
+    opacity: 0; text-align: center; transition: opacity 600ms var(--ease-out); pointer-events: none;
+  }
+  .scroll-cue.in { opacity: 0.5; }
+  .scroll-cue .arrow { display: block; margin-top: 8px; font-size: 12px; animation: bob 2.4s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0); opacity:.5 } 50% { transform: translateY(6px); opacity:.95 } }
+
+  /* Beat dots — right edge, shows progress through the sequence. */
+  .beats { position: absolute; right: 30px; top: 50%; transform: translateY(-50%); z-index: 3;
+    display: flex; flex-direction: column; gap: 11px; align-items: flex-end; pointer-events: none; }
+  .beats .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text);
+    opacity: 0.2; transition: opacity .35s ease, background .35s ease; }
+  .beats .dot.on { opacity: 1; background: var(--accent); }
+
+  /* The body that follows the stage — proves the canvas hands off to normal flow. */
+  .after { position: relative; z-index: 2; background: var(--bg); padding: 14vh clamp(20px,4vw,56px); }
+  .after p { font-family: var(--serif); font-size: clamp(20px,2.4vw,32px); line-height: 1.3; max-width: 22ch; }
+
+  /* Tiny readout for tuning. */
+  .hud { position: fixed; left: 10px; bottom: 10px; z-index: 9; font: 11px/1.4 var(--sans);
+    color: var(--text-faint); background: rgba(255,255,255,.7); padding: 6px 9px; border: 1px solid var(--rule);
+    border-radius: 4px; pointer-events: none; white-space: pre; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .scroll-cue .arrow { animation: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="scrollstage" id="stage">
+    <div class="sticky">
+      <canvas id="c" aria-hidden="true"></canvas>
+
+      <div class="overlay" id="overlay">
+        <!-- beat 0 — CG hero lead -->
+        <div class="ov-block ov-lead" data-beat="0">
+          <p>I&rsquo;m a multidisciplinary designer working across product, interaction, data and the web. My training is in product design, but a pull toward technology, AI and systems has taken me wider.</p>
+        </div>
+
+        <!-- product beats — one block, contents swapped by JS -->
+        <div class="ov-block ov-product" id="ovProduct">
+          <span class="label ov-index" id="ovIndex">01 / 04</span>
+          <h3 class="ov-name" id="ovName">Mantis</h3>
+          <div class="label ov-meta" id="ovMeta">2026 · Product Design</div>
+          <a class="ov-link" id="ovLink" href="#">View project &rarr;</a>
+          <span class="ov-hint">Drag to spin</span>
+        </div>
+
+        <!-- final divider — the dust resolves into this crisp type (same words) -->
+        <div class="ov-block ov-divider" data-beat="5">
+          <h2>Selected<br>Work</h2>
+        </div>
+      </div>
+
+      <div class="scroll-cue" id="scrollCue">Scroll<span class="arrow">&darr;</span></div>
+      <div class="beats" id="beatDots"></div>
+    </div>
+  </div>
+
+  <div class="after">
+    <p>Design is the translation layer between technical complexity and the people it&rsquo;s meant to serve.</p>
+  </div>
+
+  <div class="hud" id="hud"></div>
+
+<script type="module">
+/* eslint-disable */
+import * as THREE from 'three';
+import { GLTFLoader }     from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import Lenis from 'lenis';
+
+const TAU = Math.PI * 2;
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isMobile = window.matchMedia('(max-width: 768px)').matches;
+
+// ════════════════════════════════════════════════════════════════════
+//  CONFIG — all tunables in one place (mirrors the hero's discipline).
+// ════════════════════════════════════════════════════════════════════
+const CONFIG = {
+  scene:  { bg: '#FFFFFF', cameraDistance: 15, fov: 32 },
+  glyph:  { text: 'CG', worldHeight: 3.1, depth: 0.39, canvasWidth: 2400, fontWeight: 700, alphaThreshold: 80 },
+  particles: {
+    count: isMobile ? 55000 : 140000,
+    baseSize: 0.032, sizeVariance: 0.22,
+    inkColor: '#161616',
+  },
+  // Pointer repel — the ORIGINAL hero's model (force ⟂ to the cursor ray), so the
+  // dust pushes and plays exactly like the live site. Scaled up a touch for the
+  // larger shapes here.
+  pointer: { radius: 0.5, strength: 22, smoothing: 0.55 },
+  rotation:{ speed: reducedMotion ? 0 : 0.06 },          // gentle auto-spin of the cloud
+  loadIn:  { duration: 1.6, stagger: 0.7, startVolume: 7 },
+  morph: {
+    shapeRadius: 2.7,        // world radius every product/text shape fits into (bigger products)
+    disperseRadius: 9.0,     // BIG — overflows the screen so the dispersal envelops the viewer
+    // shapeW (formed-ness of the nearest stop) drives the TEXTURE/text crossfade.
+    formIn:  0.12,           // |delta| ≤ this → fully formed
+    formOut: 0.38,           // |delta| ≥ this → fully off
+    texAt:   0.62,           // texture resolves only once the dust has clearly built the
+                             // shape (formW > this) → you SEE the particles form it first
+    dividerHeight: 2.4,      // world height of the particle divider text
+  },
+  // PLAY = the original hero's spring physics, applied to each particle's DISPLACEMENT
+  // from its (moving) morph target — so the morph itself stays direct & responsive
+  // (no follow-lag) while the dust still pushes and springs back like the live site.
+  play: { springK: 16, damping: 0.985, maxDisp: 3.0 },
+  // Drag-to-spin — gentle. Velocity is capped so a small flick can't whip it round.
+  spin: { speed: 0.0013, maxVel: 0.020, damping: 0.88, returnLerp: 0.06, tilt: 0.5, tiltRange: 0.4 },
+  // Scroll is 1:1 with the timeline (fully attached → you scrub the whole particle
+  // effect by hand). Section dispersals are LONGER than inter-model morphs. When the
+  // wheel stops AND the momentum settles, it eases to the nearest stop (ease-out → no
+  // bounce); the glide carries you to the right side first, so it's never stranded.
+  // snapStopMs: quiet time after the last wheel/touch before it snaps — long enough to
+  // bridge the gap between discrete mouse-wheel notches, so continuous notch-scrolling
+  // is never interrupted (a fresh notch also cleanly takes over an in-flight snap).
+  // advanceThresh: how far into a gap (in the scroll direction) commits to the next stop.
+  // snapSettle: only snap once the glide has slowed to ~this (p/frame), so the snap
+  // starts from near-rest and (with smootherstep easing) has no velocity discontinuity
+  // — the jolt that read as "jumpy". The Lenis glide fills the wait with smooth motion.
+  scroll: { sectionVh: 2.4, modelVh: 1.3, snapDuration: 0.7, snapStopMs: 200, snapSettle: 0.0009, advanceThresh: 0.12 },
+  modelBase: '/public/models/',   // python http.server from repo root → /public/models/…
+};
+
+// ── The beats. kind 'glyph'/'text' → particle shape only; 'model' → particles
+//    that hand off to a textured GLB you can grab and spin. ───────────────────
+// viewRY / viewRX = the preferred resting orientation each product settles to (so the
+// work reads best at first glance). Yaw then pitch (group rotation order YXZ). Tuned
+// per Court's reference shots. Drag-spin is layered on top and eases back to this.
+const BEATS = [
+  { id:'cg',     kind:'glyph', text:'CG' },
+  { id:'mantis', kind:'model', name:'Mantis',                  year:2026, disc:'Product Design', slug:'mantis',     file:'mantis.glb',     fill:1.0,  viewRY:0.0,  viewRX:0.28 },
+  { id:'wave',   kind:'model', name:'Wave',                    year:2026, disc:'Product Design', slug:'wave',       file:'speaker.glb',    fill:0.92, viewRY:0.0,  viewRX:0.0  },
+  { id:'bg',     kind:'model', name:'Gravity Wave Backgammon', year:2024, disc:'Product Design', slug:'backgammon', file:'backgammon.glb', fill:0.92, viewRY:-0.7, viewRX:0.62 },
+  { id:'spider', kind:'model', name:'Spider-209',              year:2022, disc:'Product Design', slug:'spider-209', file:'spider.glb',     fill:0.92, viewRY:0.3,  viewRX:0.15 },
+  { id:'end',    kind:'text',  text:'Selected\nWork' },
+];
+const N = BEATS.length;
+const COUNT = CONFIG.particles.count;
+
+// Which gaps route through the big enveloping dispersal vs morph DIRECTLY shape→
+// shape. Per the brief: products ADJUST straight into the next product (no full
+// dispersal between them); the screen-filling dispersal belongs only at SECTION
+// boundaries — hero→work and work→approach. Heuristic: disperse only when the two
+// stops are different kinds (glyph→model, model→text); model→model morphs directly.
+const GAP_DISPERSE = [];
+for(let i=0;i<N-1;i++) GAP_DISPERSE[i] = BEATS[i].kind !== BEATS[i+1].kind;
+
+// Per-gap SCROLL LENGTH (viewport-heights): the big section dispersals get more
+// scroll distance than the inter-model morphs, so you spend longer in — and actually
+// SEE — the enveloping dispersal. STOP_F holds each stop's cumulative scroll fraction,
+// so scroll↔timeline is a non-uniform but exact mapping.
+const GAP_VH = [];
+for(let i=0;i<N-1;i++) GAP_VH[i] = GAP_DISPERSE[i] ? CONFIG.scroll.sectionVh : CONFIG.scroll.modelVh;
+const TOTAL_VH = GAP_VH.reduce((a,b)=>a+b,0);
+const STOP_F = [0];
+for(let i=0;i<N-1;i++) STOP_F[i+1] = STOP_F[i] + GAP_VH[i]/TOTAL_VH;
+
+// ════════════════════════════════════════════════════════════════════
+//  SAMPLERS — every target is exactly COUNT points, index-aligned, so any
+//  two can be linearly interpolated (the morph). Returns Float32Array(COUNT*3).
+// ════════════════════════════════════════════════════════════════════
+function seededRNG(seed){ let s = seed>>>0; return ()=> (s = (Math.imul(1664525,s)+1013904223)>>>0)/4294967296; }
+// smootherstep — C2-continuous ramp (zero velocity AND acceleration at both ends),
+// so blends driven by it start and stop without any kink. Works descending (e0>e1).
+function smootherstep(e0,e1,x){ let t=(x-e0)/(e1-e0); t=t<0?0:t>1?1:t; return t*t*t*(t*(t*6-15)+10); }
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+
+// Render text (multi-line supported) to a canvas, pool the dark pixels, then
+// sample COUNT of them into a centred, scaled point set with a little z-depth.
+function sampleText(text, count, { worldHeight, depth=0.4, weight=700, seed=11 }){
+  const lines = String(text).split('\n');
+  const W = 1600, H = Math.round(W * (lines.length>1 ? 0.62 : 0.5));
+  const cv = document.createElement('canvas'); cv.width=W; cv.height=H;
+  const ctx = cv.getContext('2d', { willReadFrequently:true });
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = '#000'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  let fs = Math.floor(H / (lines.length + 0.25));
+  ctx.font = `${weight} ${fs}px "Playfair Display", Georgia, serif`;
+  // shrink to fit width
+  let maxw = 0; for (const l of lines) maxw = Math.max(maxw, ctx.measureText(l).width);
+  if (maxw > W*0.92){ fs = Math.floor(fs * (W*0.92)/maxw); ctx.font = `${weight} ${fs}px "Playfair Display", Georgia, serif`; }
+  const lh = fs * 1.04;
+  const y0 = H/2 - lh*(lines.length-1)/2;
+  lines.forEach((l,i)=> ctx.fillText(l, W/2, y0 + i*lh));
+
+  const data = ctx.getImageData(0,0,W,H).data;
+  const pool = [];
+  let minX=W,minY=H,maxX=0,maxY=0;
+  for (let y=0;y<H;y++) for (let x=0;x<W;x++){
+    if (data[(y*W+x)*4] < 100){ pool.push(x,y); if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; }
+  }
+  const cx=(minX+maxX)/2, cy=(minY+maxY)/2, span=(maxY-minY)||1;
+  const scale = worldHeight / span;
+  const rng = seededRNG(seed), jr = seededRNG(seed*7+1);
+  const out = new Float32Array(count*3);
+  const M = pool.length/2;
+  for (let i=0;i<count;i++){
+    const k = (Math.floor(rng()*M))*2;
+    out[i*3]   =  (pool[k]   - cx) * scale + (jr()-0.5)*0.02;
+    out[i*3+1] = -(pool[k+1] - cy) * scale + (jr()-0.5)*0.02;
+    out[i*3+2] =  (jr()-0.5) * depth;
+  }
+  return out;
+}
+
+// Random volume cloud — the disperse target between beats.
+function sampleDisperse(count, radius, seed=99){
+  const rng = seededRNG(seed);
+  const out = new Float32Array(count*3);
+  for (let i=0;i<count;i++){
+    const u=rng(), v=rng(), w=rng();
+    // Hollow-ish shell (0.55..1 of radius) so the cloud reads as a big volume the
+    // viewer sits inside, not a dense dot. Full sphere in z too (enveloping).
+    const theta=Math.acos(1-2*u), phi=TAU*v, r=radius*(0.55+0.45*Math.cbrt(w));
+    out[i*3]   = r*Math.sin(theta)*Math.cos(phi);
+    out[i*3+1] = r*Math.sin(theta)*Math.sin(phi);
+    out[i*3+2] = r*Math.cos(theta);
+  }
+  return out;
+}
+
+// Compute the shared fit transform (centre + uniform scale) so a model's
+// bounding sphere fits CONFIG.morph.shapeRadius. The SAME transform is used to
+// (a) sample the surface into particles and (b) place the textured display
+// model — guaranteeing the texture materialises exactly where the dust settled.
+function computeFit(scene, fill=1){
+  scene.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(scene);
+  const sphere = box.getBoundingSphere(new THREE.Sphere());
+  const scale = (CONFIG.morph.shapeRadius * fill) / (sphere.radius || 1);
+  return { center: sphere.center.clone(), scale };
+}
+
+// Area-weighted surface sampling (Omma's approach) → COUNT points in the fitted
+// frame: world vertex v → (v − center) * scale.
+function sampleMesh(scene, count, fit, seed=17){
+  scene.updateMatrixWorld(true);
+  const tris=[], areas=[];
+  const tmp = new THREE.Triangle();
+  scene.traverse(o=>{
+    if(!o.isMesh) return;
+    const g=o.geometry, pos=g.attributes.position, idx=g.index, m=o.matrixWorld;
+    const V=(i)=> new THREE.Vector3().fromBufferAttribute(pos,i).applyMatrix4(m);
+    const push=(a,b,c)=>{ const A=V(a),B=V(b),C=V(c); tmp.set(A,B,C); const ar=tmp.getArea(); if(ar>1e-10){ tris.push([A,B,C]); areas.push(ar);} };
+    if(idx){ for(let i=0;i<idx.count-2;i+=3) push(idx.getX(i),idx.getX(i+1),idx.getX(i+2)); }
+    else   { for(let i=0;i<pos.count-2;i+=3) push(i,i+1,i+2); }
+  });
+  const out = new Float32Array(count*3);
+  if(!tris.length) return sampleDisperse(count, CONFIG.morph.shapeRadius, seed);
+  const total = areas.reduce((a,b)=>a+b,0);
+  const cdf=[]; let acc=0; for(const a of areas){ acc+=a/total; cdf.push(acc); }
+  const rng = seededRNG(seed);
+  const { center, scale } = fit;
+  for(let i=0;i<count;i++){
+    const r=rng(); let lo=0,hi=cdf.length-1; while(lo<hi){ const mid=(lo+hi)>>1; cdf[mid]<r?lo=mid+1:hi=mid; }
+    const [a,b,c]=tris[lo];
+    let u=rng(), v=rng(); if(u+v>1){ u=1-u; v=1-v; } const w=1-u-v;
+    out[i*3]   = ((a.x*w + b.x*u + c.x*v) - center.x) * scale;
+    out[i*3+1] = ((a.y*w + b.y*u + c.y*v) - center.y) * scale;
+    out[i*3+2] = ((a.z*w + b.z*u + c.z*v) - center.z) * scale;
+  }
+  return out;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  PARTICLE SYSTEM — the hero's shader, with a morph-friendly home buffer.
+// ════════════════════════════════════════════════════════════════════
+const VERT = `
+  attribute float aSizeMul;
+  uniform float uBaseSize; uniform float uSizeScale;
+  void main(){
+    vec4 mv = modelViewMatrix * vec4(position,1.0);
+    gl_PointSize = uBaseSize * aSizeMul * (uSizeScale / -mv.z);
+    gl_Position = projectionMatrix * mv;
+  }`;
+const FRAG = `
+  precision highp float;
+  uniform vec3 uInk; uniform float uOpacity;
+  void main(){
+    vec2 c = gl_PointCoord - 0.5; float r = length(c)*2.0;
+    if (r >= 1.0) discard;
+    float a = smoothstep(1.0, 0.25, r);
+    gl_FragColor = vec4(uInk, a * uOpacity);
+  }`;
+
+class Particles {
+  constructor(){
+    const positions = new Float32Array(COUNT*3);
+    const sizeMul   = new Float32Array(COUNT);
+    this.home = new Float32Array(COUNT*3);   // morph target (load-in only)
+    this.vel  = new Float32Array(COUNT*3);   // play velocity
+    this.disp = new Float32Array(COUNT*3);   // play displacement from the morph target
+    const sv = CONFIG.particles.sizeVariance;
+    for(let i=0;i<COUNT;i++) sizeMul[i] = 1 + (Math.random()-0.5)*sv;
+
+    this.geometry = new THREE.BufferGeometry();
+    this.geometry.setAttribute('position', new THREE.BufferAttribute(positions,3));
+    this.geometry.setAttribute('aSizeMul', new THREE.BufferAttribute(sizeMul,1));
+    this.material = new THREE.ShaderMaterial({
+      uniforms:{ uBaseSize:{value:CONFIG.particles.baseSize}, uSizeScale:{value:1},
+                 uInk:{value:new THREE.Color(CONFIG.particles.inkColor)}, uOpacity:{value:1} },
+      vertexShader:VERT, fragmentShader:FRAG,
+      transparent:true, depthWrite:false, depthTest:false, blending:THREE.NormalBlending,
+    });
+    this.points = new THREE.Points(this.geometry, this.material);
+    this.points.frustumCulled = false;
+  }
+}
+
+// Resolve the timeline at p into the frame's morph: which two targets the dust is
+// blending, the eased blend e, AND `formW` — how fully the NEAREST stop's actual
+// geometry is built in the cloud right now (1 = fully formed that shape, 0 = fully
+// dispersed / a 50-50 blend). formW is the single truth that drives BOTH the dust
+// and the texture, so the texture can only skin on AS the particles build the model
+// — never floating over a half-dispersed cloud. Scratch object (no per-frame alloc).
+const M = { FROM:null, TO:null, e:0, formW:1 };
+function resolveMorph(p){
+  let i=Math.floor(p); if(i<0)i=0; if(i>N-2)i=N-2;
+  const frac=p-i, A=targets[i]||DISPERSE, B=targets[i+1]||DISPERSE;
+  let FROM, TO, e;
+  if(GAP_DISPERSE[i]){
+    if(frac<0.5){ FROM=A; TO=DISPERSE; e=smootherstep(0,1,frac*2); }
+    else        { FROM=DISPERSE; TO=B; e=smootherstep(0,1,(frac-0.5)*2); }
+  } else { FROM=A; TO=B; e=smootherstep(0,1,frac); }
+  M.FROM=FROM; M.TO=TO; M.e=e;
+  // weight of the nearest stop's shape in the blend: it's FROM when frac<0.5, TO otherwise.
+  M.formW = frac<0.5 ? (1-e) : e;
+}
+
+// ONE pass: position = morphTarget + playDisplacement. The morph target is read
+// DIRECTLY from the timeline (no follow-lag → as responsive & smooth as the scroll);
+// the displacement is the original hero's spring physics (spring→0 + pointer repel)
+// so the dust still pushes and plays like the live site. Single cheap loop.
+function stepParticles(dt, probe){
+  const pos=ps.geometry.attributes.position.array, vel=ps.vel, disp=ps.disp;
+  const FROM=M.FROM, TO=M.TO, e=M.e, ie=1-e;
+  const P=CONFIG.play, k=P.springK, dmp=P.damping, maxD=P.maxDisp, maxD2=maxD*maxD;
+  const on=probe.active, ox=probe.o.x,oy=probe.o.y,oz=probe.o.z, rx=probe.d.x,ry=probe.d.y,rz=probe.d.z;
+  const pr=CONFIG.pointer.radius, pr2=pr*pr, str=CONFIG.pointer.strength;
+
+  for(let n=0;n<COUNT;n++){
+    const j=n*3;
+    const tx=FROM[j]*ie+TO[j]*e, ty=FROM[j+1]*ie+TO[j+1]*e, tz=FROM[j+2]*ie+TO[j+2]*e;
+    let dx=disp[j], dy=disp[j+1], dz=disp[j+2];
+    let fx=-k*dx, fy=-k*dy, fz=-k*dz;                       // spring the displacement → 0
+    if(on){                                                  // pointer repel ⟂ to cursor ray
+      const wx=tx+dx-ox, wy=ty+dy-oy, wz=tz+dz-oz;
+      const proj=wx*rx+wy*ry+wz*rz, ex=wx-proj*rx, ey=wy-proj*ry, ez=wz-proj*rz;
+      const d2=ex*ex+ey*ey+ez*ez;
+      if(d2<pr2){ const d=Math.sqrt(d2)||1e-4, u=1-d/pr, sm=u*u*(3-2*u), mag=str*sm/d; fx+=ex*mag; fy+=ey*mag; fz+=ez*mag; }
+    }
+    let vx=(vel[j]+fx*dt)*dmp, vy=(vel[j+1]+fy*dt)*dmp, vz=(vel[j+2]+fz*dt)*dmp;
+    vel[j]=vx; vel[j+1]=vy; vel[j+2]=vz;
+    dx+=vx*dt; dy+=vy*dt; dz+=vz*dt;
+    const dd2=dx*dx+dy*dy+dz*dz; if(dd2>maxD2){ const s=maxD/Math.sqrt(dd2); dx*=s; dy*=s; dz*=s; }
+    disp[j]=dx; disp[j+1]=dy; disp[j+2]=dz;
+    pos[j]=tx+dx; pos[j+1]=ty+dy; pos[j+2]=tz+dz;
+  }
+  ps.geometry.attributes.position.needsUpdate=true;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  THREE setup
+// ════════════════════════════════════════════════════════════════════
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+renderer.setSize(innerWidth, innerHeight, false);
+renderer.setClearColor(new THREE.Color(CONFIG.scene.bg));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(CONFIG.scene.bg);
+const camera = new THREE.PerspectiveCamera(CONFIG.scene.fov, innerWidth/innerHeight, 0.1, 100);
+camera.position.set(0,0,CONFIG.scene.cameraDistance);
+
+// Studio IBL (in-engine, no HDRI download) + key/fill — verbatim intent from ProjectViewer.
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+const key = new THREE.DirectionalLight(0xffffff, 1.1); key.position.set(2,3,2); scene.add(key);
+const fill= new THREE.DirectionalLight(0xffffff, 0.35); fill.position.set(-2,0.5,-1.5); scene.add(fill);
+
+// Two rotating groups: the particle cloud (auto-spins) and the model stage
+// (drag-spins). Both centred at the origin so particles ↔ texture register.
+const cloudGroup = new THREE.Group(); cloudGroup.rotation.order='YXZ'; scene.add(cloudGroup);
+const modelGroup = new THREE.Group(); scene.add(modelGroup);
+
+const ps = new Particles();
+cloudGroup.add(ps.points);
+
+function sizeScale(){ const t=new THREE.Vector2(); renderer.getDrawingBufferSize(t); ps.material.uniforms.uSizeScale.value = t.y*0.5; }
+sizeScale();
+
+// ════════════════════════════════════════════════════════════════════
+//  TARGETS — built up front for text/glyph/disperse; models load async.
+// ════════════════════════════════════════════════════════════════════
+const DISPERSE = sampleDisperse(COUNT, CONFIG.morph.disperseRadius);
+const targets = new Array(N).fill(null);    // Float32Array per beat
+const models  = new Array(N).fill(null);    // { group, materials[] } per model beat
+const gltfLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+
+async function fontReady(){ try{ await document.fonts.load('700 96px "Playfair Display"'); await document.fonts.ready; }catch(e){} }
+
+function buildTextTargets(){
+  for(let i=0;i<N;i++){
+    const b=BEATS[i];
+    if(b.kind==='glyph') targets[i]=sampleText(b.text, COUNT, { worldHeight:CONFIG.glyph.worldHeight, depth:CONFIG.glyph.depth, weight:700, seed:42 });
+    else if(b.kind==='text') targets[i]=sampleText(b.text, COUNT, { worldHeight:CONFIG.morph.dividerHeight, depth:0.3, weight:700, seed:7 });
+  }
+}
+
+function loadModel(i){
+  const b=BEATS[i]; if(b.kind!=='model') return Promise.resolve();
+  return new Promise((res)=>{
+    gltfLoader.load(CONFIG.modelBase+b.file, (gltf)=>{
+      const src = gltf.scene;
+      const fit = computeFit(src, b.fill||1);
+      // particle target
+      targets[i] = sampleMesh(src, COUNT, fit, 17+i);
+      // textured display model — clone, normalise (sRGB maps, anisotropy, normals),
+      // clone materials so we can fade opacity without touching the cache.
+      const maxAniso = renderer.capabilities.getMaxAnisotropy();
+      const obj = src.clone(true);
+      const mats=[];
+      obj.traverse(n=>{
+        if(!n.isMesh) return;
+        if(!n.geometry.attributes.normal) n.geometry.computeVertexNormals();
+        n.material = n.material.clone();
+        n.material.transparent = true; n.material.opacity = 0; n.material.depthWrite = false;
+        if(n.material.map){ n.material.map.colorSpace=THREE.SRGBColorSpace; n.material.map.anisotropy=maxAniso; }
+        mats.push(n.material);
+      });
+      const inner = new THREE.Group(); inner.position.copy(fit.center).multiplyScalar(-1); inner.add(obj);
+      const outer = new THREE.Group(); outer.scale.setScalar(fit.scale); outer.add(inner);
+      outer.visible = false;
+      outer.rotation.order = 'YXZ';            // match the cloud → shared rotation registers
+      scene.add(outer);                       // ← register in the scene graph (was missing)
+      models[i] = { group: outer, materials: mats, solid:null };
+      res();
+    }, undefined, (err)=>{ console.warn('model load failed', b.file, err); res(); });
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  LOAD-IN — the hero's intro: particles assemble into CG. Plays once.
+// ════════════════════════════════════════════════════════════════════
+let loadIn = null;
+function startLoadIn(){
+  const starts=new Float32Array(COUNT*3), delays=new Float32Array(COUNT);
+  const cg = targets[0]; const vol=CONFIG.loadIn.startVolume;
+  let minX=Infinity,maxX=-Infinity; for(let i=0;i<COUNT;i++){ const x=cg[i*3]; if(x<minX)minX=x; if(x>maxX)maxX=x; }
+  const xr=(maxX-minX)||1;
+  for(let i=0;i<COUNT;i++){ const i3=i*3;
+    starts[i3]=(Math.random()-0.5)*vol; starts[i3+1]=(Math.random()-0.5)*vol; starts[i3+2]=(Math.random()-0.5)*vol*0.5;
+    delays[i]=((cg[i3]-minX)/xr)*CONFIG.loadIn.stagger;
+  }
+  const pos=ps.geometry.attributes.position.array; pos.set(starts); ps.geometry.attributes.position.needsUpdate=true;
+  ps.vel.fill(0);
+  loadIn = { t0: clock.elapsedTime, starts, delays, done:false };
+}
+function stepLoadIn(time){
+  const dur=CONFIG.loadIn.duration, total=dur+CONFIG.loadIn.stagger, t=time-loadIn.t0;
+  const cg=targets[0], pos=ps.geometry.attributes.position.array, st=loadIn.starts, dl=loadIn.delays;
+  const ease=(x)=>1-Math.pow(1-x,3);
+  for(let i=0;i<COUNT;i++){ const i3=i*3; const lt=(t-dl[i])/dur; const u=lt<=0?0:lt>=1?1:ease(lt); const inv=1-u;
+    pos[i3]=st[i3]*inv+cg[i3]*u; pos[i3+1]=st[i3+1]*inv+cg[i3+1]*u; pos[i3+2]=st[i3+2]*inv+cg[i3+2]*u; }
+  ps.geometry.attributes.position.needsUpdate=true;
+  if(t>=total){ loadIn.done=true; loadIn.active=false; ps.home.set(cg); pos.set(cg); ps.vel.fill(0);
+    scrollCue.classList.add('in'); }
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  POINTER — repel probe (cloud) OR drag-spin (settled model).
+// ════════════════════════════════════════════════════════════════════
+const probe = { active:false, o:new THREE.Vector3(1e6,1e6,1e6), d:new THREE.Vector3(0,0,-1),
+  ndc:new THREE.Vector2(), sm:new THREE.Vector2(), snap:false, ray:new THREE.Raycaster(), inv:new THREE.Matrix4() };
+function probeSet(x,y){ probe.ndc.set(x,y); if(!probe.active){ probe.snap=true; } probe.active=true; }
+function probeUpdate(){
+  if(!probe.active) return;
+  if(probe.snap){ probe.sm.copy(probe.ndc); probe.snap=false; } else probe.sm.lerp(probe.ndc, CONFIG.pointer.smoothing);
+  probe.ray.setFromCamera(probe.sm, camera);
+  probe.inv.copy(cloudGroup.matrixWorld).invert();
+  probe.o.copy(probe.ray.ray.origin).applyMatrix4(probe.inv);
+  probe.d.copy(probe.ray.ray.direction).transformDirection(probe.inv);
+}
+
+let drag = { on:false, lastX:0, lastY:0 };
+canvas.style.pointerEvents = 'auto';
+
+// ONE global drag rotation, shared by the cloud AND the model so dragging turns the
+// particles and the texture together — they never disconnect.
+let dragSpin=0, dragSpinVel=0, dragTilt=0;
+
+function activeModelBeat(){ // beat index if a model is formed enough to grab, else -1
+  if (state.shapeW < 0.85) return -1;
+  const b = state.center;
+  return BEATS[b] && BEATS[b].kind==='model' && models[b] ? b : -1;
+}
+
+addEventListener('pointermove', (e)=>{
+  const x=(e.clientX/innerWidth)*2-1, y=-(e.clientY/innerHeight)*2+1;
+  if(drag.on){
+    const S=CONFIG.spin;
+    // gentle: small per-pixel rate, velocity clamped so a flick can't whip it round
+    dragSpinVel = clamp(dragSpinVel + (e.clientX-drag.lastX)*S.speed, -S.maxVel, S.maxVel);
+    dragTilt    = clamp(dragTilt    + (e.clientY-drag.lastY)*S.speed*S.tilt, -S.tiltRange, S.tiltRange);
+    drag.lastX=e.clientX; drag.lastY=e.clientY;
+  } else {
+    probeSet(x,y);
+  }
+});
+canvas.addEventListener('pointerdown', (e)=>{
+  if(activeModelBeat()>=0){ drag.on=true; drag.lastX=e.clientX; drag.lastY=e.clientY; canvas.classList.add('grabbing'); probe.active=false; }
+});
+addEventListener('pointerup', ()=>{ drag.on=false; canvas.classList.remove('grabbing'); });
+addEventListener('pointerleave', ()=>{ probe.active=false; drag.on=false; canvas.classList.remove('grabbing'); });
+
+// ════════════════════════════════════════════════════════════════════
+//  SCROLL — Lenis drives progress; gentle snap to each beat centre.
+// ════════════════════════════════════════════════════════════════════
+const stage = document.getElementById('stage');
+// Total scroll distance = TOTAL_VH viewport-heights (sum of the per-gap lengths);
+// +1 for the sticky viewport itself.
+stage.style.height = (TOTAL_VH + 1) * 100 + 'vh';
+
+// Lenis advanced INSIDE the render loop (one clock → no read aliasing). lerp a touch
+// snappier so the glide settles quickly after you stop (less wait before the snap).
+let lenis=null;
+if(!reducedMotion){
+  // lerp lower = smoother, more glide between notches (less snappy/janky for mouse users).
+  lenis = new Lenis({ lerp:0.1, smoothWheel:true, smoothTouch:false });
+}
+
+const state = { p:0, center:0, shapeW:1 };  // p: beat-units · center: nearest stop · shapeW: how formed
+
+// scroll fraction (0..1) → timeline p, via the per-gap STOP_F map (section gaps span
+// more scroll than model gaps). 1:1 and exact, so scrolling scrubs the morph directly.
+function scrollFracToP(f){
+  f = clamp(f,0,1);
+  let i=0; while(i<N-2 && STOP_F[i+1] <= f) i++;
+  const span = STOP_F[i+1]-STOP_F[i] || 1;
+  return i + clamp((f-STOP_F[i])/span, 0, 1);
+}
+function pToScrollY(p){ const max=stage.scrollHeight-innerHeight; return STOP_F[clamp(Math.round(p),0,N-1)]*max; }
+function readScroll(){
+  const max = stage.scrollHeight - innerHeight;
+  const y = (scrollY||pageYOffset);
+  state.p = scrollFracToP(max>0 ? y/max : 0);
+  const cue = Math.max(0, 1 - y/90); scrollCue.style.opacity = String(cue*0.5);
+}
+
+// Snap fires ONLY when the wheel has stopped (no input for snapStopMs) AND the
+// momentum has settled (timeline barely moving). Until then you scrub freely and see
+// the whole effect; the glide carries you to the nearest side, then it eases to that
+// stop (ease-out → no bounce). The snap loop lives in the render frame (below).
+let lastWheelT=-1e9, snapping=false, prevSnapP=0, scrollDir=1;
+function noteInput(){ lastWheelT = clock ? clock.elapsedTime*1000 : 0; snapping=false; }
+if(lenis){ ['wheel','touchstart','touchmove'].forEach(ev=> addEventListener(ev, noteInput, { passive:true })); }
+function maybeSnap(nowMs){
+  if(!lenis || drag.on || snapping){ prevSnapP = state.p; return; }
+  const sdp = state.p - prevSnapP; prevSnapP = state.p;
+  if(Math.abs(sdp) > 0.0015) scrollDir = Math.sign(sdp);        // latch the travel direction
+  // Fire only after the wheel has been QUIET for snapStopMs (bridges mouse-notch gaps)
+  // AND the glide has settled (velocity ~0) — so the snap starts from rest. The glide
+  // before then is smooth Lenis motion, not a dead pause.
+  if(nowMs - lastWheelT < CONFIG.scroll.snapStopMs) return;
+  if(Math.abs(sdp) > CONFIG.scroll.snapSettle) return;
+  // DIRECTIONAL: scrolling forward commits to the next stop once you've left the current
+  // one by advanceThresh (you're trying to move on); only fall back if you barely moved.
+  const fp = Math.floor(state.p), frac = state.p - fp, th = CONFIG.scroll.advanceThresh;
+  let target = scrollDir >= 0 ? (frac > th ? fp+1 : fp) : (frac < 1-th ? fp : fp+1);
+  target = clamp(target, 0, N-1);
+  if(Math.abs(state.p - target) < 0.004) return;                // already there
+  snapping = true;
+  // smootherstep easing: zero velocity at BOTH ends → no jolt starting or arriving.
+  lenis.scrollTo(pToScrollY(target), { duration: CONFIG.scroll.snapDuration,
+    easing:(x)=>smootherstep(0,1,x), onComplete:()=>{ snapping=false; } });
+}
+
+// Dev-only: drive the timeline to an exact beat for testing (append ?dbg). Never ships.
+if(new URLSearchParams(location.search).has('dbg')){
+  window.__toP = (p)=>{ if(lenis) lenis.scrollTo(pToScrollY(p),{immediate:true}); else window.scrollTo(0,pToScrollY(p)); };
+  window.__state = state;
+  window.__scrollTo = (p, opts)=>{ lenis && lenis.scrollTo(pToScrollY(p), opts||{}); };
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  MORPH — fill ps.home from the timeline each frame.
+// ════════════════════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════════════
+//  OVERLAY — phase text blocks by beat settledness.
+// ════════════════════════════════════════════════════════════════════
+const ov = {
+  lead: document.querySelector('.ov-lead'),
+  product: document.getElementById('ovProduct'),
+  divider: document.querySelector('.ov-divider'),
+  index: document.getElementById('ovIndex'), name: document.getElementById('ovName'),
+  meta: document.getElementById('ovMeta'), link: document.getElementById('ovLink'),
+};
+const scrollCue = document.getElementById('scrollCue');
+let curProductBeat=-1;
+function setProductChrome(b){
+  if(b===curProductBeat) return; curProductBeat=b; const d=BEATS[b];
+  ov.index.textContent = `${String(b).padStart(2,'0')} / ${String(N-2).padStart(2,'0')}`;
+  ov.name.textContent = d.name; ov.meta.textContent = `${d.year} · ${d.disc}`;
+  ov.link.setAttribute('href', `/work/${d.slug}/`);
+}
+// beat dots
+const dotsWrap=document.getElementById('beatDots');
+for(let i=1;i<N-1;i++){ const dot=document.createElement('div'); dot.className='dot'; dotsWrap.appendChild(dot); }
+const dots=[...dotsWrap.children];
+
+function updateOverlay(){
+  const center=state.center, w=state.shapeW;
+  // each text block tracks its stop's formed-ness: in as the shape forms, out as it disperses.
+  ov.lead.style.opacity = (center===0) ? w : 0;
+  const cb=BEATS[center];
+  if(cb && cb.kind==='model'){ setProductChrome(center); ov.product.style.opacity = w; }
+  else ov.product.style.opacity = 0;
+  // divider crisp type ramps in as the particle text fully forms (and the dust fades under it)
+  ov.divider.style.opacity = (center===N-1) ? smootherstep(CONFIG.morph.texAt, 1.0, w) : 0;
+  dots.forEach((d,idx)=> d.classList.toggle('on', idx+1===center));
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  RENDER LOOP
+// ════════════════════════════════════════════════════════════════════
+const clock = new THREE.Clock(); clock.getDelta();
+let accumY=0, accumX=0;
+const hud=document.getElementById('hud');
+
+let ready=false;
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+scrollTo(0,0);
+(async function init(){
+  await fontReady();
+  buildTextTargets();
+  ps.home.set(targets[0]);
+  startLoadIn();
+  ready=true;
+  // Load models after first paint (CG shows instantly), then PRE-WARM the GPU: the
+  // big 2048px WebP textures upload synchronously the FIRST time each model renders,
+  // which caused ~150–200ms hitches mid-scroll (the jank). Force the compile + upload
+  // up front by rendering every model once to a tiny offscreen target (no visible
+  // flash), so scrolling to a product is already warm.
+  Promise.all(BEATS.map((b,i)=> b.kind==='model' ? loadModel(i) : null)).then(()=>{
+    const rt = new THREE.WebGLRenderTarget(4,4);
+    models.forEach(m=>{ if(m) m.group.visible = true; });
+    renderer.setRenderTarget(rt);
+    renderer.render(scene, camera);     // forces shader compile + full texture upload
+    renderer.setRenderTarget(null);
+    models.forEach(m=>{ if(m) m.group.visible = false; });
+    rt.dispose();
+  });
+})();
+
+addEventListener('resize', ()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight,false); sizeScale(); });
+
+function frame(ts){
+  requestAnimationFrame(frame);
+  if(lenis) lenis.raf(ts);          // advance scroll FIRST, in this same tick…
+  if(!ready) return;
+  const dt=Math.min(clock.getDelta(),1/30), time=clock.elapsedTime;
+  readScroll();                      // …then read it — no cross-rAF aliasing.
+  if(loadIn && loadIn.done) maybeSnap(time*1000);   // snap once the wheel stops + settles
+
+  // Resolve the morph for this frame: nearest stop c, and formW = how fully c's
+  // ACTUAL geometry is built in the cloud (the single value driving dust↔texture↔text).
+  let c, formW;
+  if(loadIn && !loadIn.done){ c=0; formW=1; M.formW=1; }
+  else { c=Math.round(clamp(state.p,0,N-1)); resolveMorph(state.p); formW=M.formW; }
+  state.center = c; state.shapeW = formW;
+  updateOverlay();
+
+  const activeModel = (BEATS[c]?.kind==='model' && models[c] && formW>0.85) ? c : -1;
+
+  // ── ONE rotation, shared by cloud + model so they can NEVER disconnect ──
+  // Base eases to each stop's preferred view (viewRY/viewRX); the CG stop auto-spins.
+  // User drag adds dragSpin/dragTilt on top and eases back when you leave the model.
+  if(c===0 && loadIn && loadIn.done){ accumY += CONFIG.rotation.speed*dt; accumX += (0-accumX)*0.08; }
+  else {
+    const tgtRY = BEATS[c]?.viewRY || 0, tgtRX = BEATS[c]?.viewRX || 0;
+    // ease toward the nearest angle equivalent to tgtRY (mod TAU) → no long unwind
+    const aimY = Math.round((accumY - tgtRY)/TAU)*TAU + tgtRY;
+    accumY += (aimY - accumY) * 0.08;
+    accumX += (tgtRX - accumX) * 0.08;
+  }
+  dragSpin += dragSpinVel; dragSpinVel *= CONFIG.spin.damping;
+  if(activeModel<0){ dragSpin *= 0.94; dragTilt += (0-dragTilt)*CONFIG.spin.returnLerp; }
+  const rotY = accumY + dragSpin, rotX = accumX + dragTilt;
+  cloudGroup.rotation.set(rotX, rotY, 0);
+  cloudGroup.updateMatrixWorld();
+
+  probeUpdate();
+  // Particles: direct morph (responsive) + spring-play displacement, single pass.
+  if(loadIn && !loadIn.done) stepLoadIn(time);
+  else stepParticles(dt, probe);
+
+  // ── Handoff driven by formW (actual formed-ness): the texture skins on only AS the
+  //    dust builds the model's real geometry, and dissolves back as it disperses —
+  //    so you never see the model floating over a half-formed cloud. ──
+  let particleOpacity = 1;
+  for(let i=0;i<N;i++){
+    const m=models[i]; if(!m) continue;
+    const vis = (i===c) ? smootherstep(CONFIG.morph.texAt, 1.0, formW) : 0;
+    m.group.visible = vis>0.001;
+    // Solidity via depthWrite ONLY (a render-state flag — no shader recompile, so no
+    // frame hitch at the stop). Once formed, depth-write on → overlapping faces sort
+    // correctly instead of blending front-to-back (the see-through look). The
+    // material stays transparent so the fade still works; at opacity 1 it reads solid.
+    const wantSolid = vis >= 0.985;
+    if(wantSolid !== m.solid){ for(const mat of m.materials) mat.depthWrite = wantSolid; m.solid = wantSolid; }
+    for(const mat of m.materials) mat.opacity = vis;
+    if(i===c) particleOpacity = Math.min(particleOpacity, 1 - vis);
+    if(m.group.visible){ m.group.rotation.set(rotX, rotY, 0); m.group.updateMatrixWorld(); }  // SAME rotation as the cloud
+  }
+  // text divider resolves dust → crisp DOM type, on the same curve.
+  if (BEATS[c]?.kind === 'text') particleOpacity = Math.min(particleOpacity, 1 - smootherstep(CONFIG.morph.texAt, 1.0, formW));
+  ps.material.uniforms.uOpacity.value = particleOpacity;
+
+  canvas.classList.toggle('grabbable', activeModel>=0 && !drag.on);
+  renderer.render(scene, camera);
+
+  // HUD only every 12th frame — building a string every frame is needless GC.
+  if(hud && (++hudTick % 12 === 0)) hud.textContent =
+    `beat ${state.p.toFixed(2)}  stop ${c}  formW ${formW.toFixed(2)}\n`+
+    `models ${models.filter(Boolean).length}/${modelCount}  pcount ${COUNT.toLocaleString()}`;
+}
+let hudTick=0; const modelCount=BEATS.filter(b=>b.kind==='model').length;
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

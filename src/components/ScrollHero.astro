@@ -1,0 +1,681 @@
+---
+// ScrollHero — the homepage's scroll-driven particle narrative. One vanilla
+// three.js canvas (the proven engine from prototypes/hero/_scroll-narrative.html)
+// plays a single continuous story as you scroll:
+//
+//   CG glyph (the hero, kept) → enveloping dispersal → each product's particles
+//   build into the REAL textured GLB (grab-and-spin) → adjust directly into the
+//   next product → … → dispersal forms the "Selected Work" particle-text, which
+//   resolves into crisp DOM type and hands off to the editorial body below.
+//
+// Architecture (per CLAUDE.md): vanilla `<script is:inline type="module">` so the
+// three / three/addons / lenis specifiers resolve through Layout.astro's CDN import
+// map — no bundling, one three.js on the homepage. The models are the optimised
+// meshopt+WebP GLBs in public/models/ (no DRACO). It OWNS the page's Lenis instance
+// (exposed as window.__cgLenis) so Layout shares it instead of creating a second.
+//
+// This replaces Hero.astro + Carousel.astro on the homepage; the editorial body
+// (approach, writing, footer) follows in normal flow and occludes the sticky canvas.
+
+// The curated four-product sequence (a subset of the full /work index). Kept here
+// for the SSR/no-JS link list; the engine's BEAT config (with view angles + model
+// files) mirrors these in the inline script below — keep the two in sync.
+const PRODUCTS = [
+  { name: 'Mantis',                  year: 2026, discipline: 'Product Design', slug: 'mantis' },
+  { name: 'Wave',                    year: 2026, discipline: 'Product Design', slug: 'wave' },
+  { name: 'Gravity Wave Backgammon', year: 2024, discipline: 'Product Design', slug: 'backgammon' },
+  { name: 'Spider-209',              year: 2022, discipline: 'Product Design', slug: 'spider-209' },
+];
+---
+<div class="scroll-stage" id="cgStage">
+  <div class="cg-sticky">
+    <canvas id="c" aria-hidden="true"></canvas>
+
+    <!-- Overlay copy — phases in/out per beat, driven by the engine. -->
+    <div class="cg-overlay" aria-hidden="false">
+      <!-- Beat 0 — the CG hero lead (the multidisciplinary positioning paragraph). -->
+      <div class="ov-block ov-lead">
+        <p>I&rsquo;m a multidisciplinary designer working across product, interaction, data and the web. My training is in product design, but a pull toward technology, AI and systems has taken me wider &mdash; toward the industries where design is needed most, and the contested subjects in between.</p>
+      </div>
+
+      <!-- Product beats — one block, contents swapped by the engine per product. -->
+      <div class="ov-block ov-product" id="ovProduct">
+        <span class="ov-index" id="ovIndex">01 / 04</span>
+        <h2 class="ov-name" id="ovName">{PRODUCTS[0].name}</h2>
+        <div class="ov-meta" id="ovMeta">{PRODUCTS[0].year} &middot; {PRODUCTS[0].discipline}</div>
+        <a class="ov-link" id="ovLink" href={`/work/${PRODUCTS[0].slug}/`}>View project &rarr;</a>
+        <span class="ov-hint">Drag to spin</span>
+      </div>
+
+      <!-- Closing particle-text divider — the dust resolves into this crisp type. -->
+      <div class="ov-block ov-divider">
+        <h2>Selected<br />Work</h2>
+      </div>
+    </div>
+
+    <div class="cg-cue" id="scrollCue">Scroll<span class="cg-arrow">&darr;</span></div>
+    <div class="cg-beats" id="beatDots"></div>
+  </div>
+
+  <!-- Real, crawlable links to every featured project (work-first; present without JS). -->
+  <ul class="sr-only">
+    {PRODUCTS.map((p) => (
+      <li><a href={`/work/${p.slug}/`}>{p.name} — {p.year}, {p.discipline}</a></li>
+    ))}
+  </ul>
+</div>
+
+<style>
+  /* The scroll stage: a tall driver (its height is set by the engine) with a
+     sticky, full-viewport canvas pinned for the narrative's duration. */
+  .scroll-stage { position: relative; width: 100%; z-index: 1; }
+  .cg-sticky {
+    position: sticky; top: 0;
+    width: 100%; height: 100vh;
+    overflow: hidden;
+  }
+  #c { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
+  #c.grabbable { cursor: grab; }
+  #c.grabbing  { cursor: grabbing; }
+
+  /* Overlay — above the canvas, pointer-transparent except real links. */
+  .cg-overlay { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+  .ov-block { position: absolute; opacity: 0; will-change: opacity; }
+  .ov-block a { pointer-events: auto; }
+
+  /* Hero lead — left, vertically centred beside the centred glyph. */
+  .ov-lead {
+    left: var(--outer); top: 50%; transform: translateY(-50%);
+    max-width: 38ch;
+  }
+  .ov-lead p {
+    font-family: var(--serif); font-weight: 400;
+    font-size: var(--fs-body); line-height: 1.5; color: var(--text); margin: 0;
+  }
+
+  /* Per-product chrome — left column, mirroring the editorial carousel voice. */
+  .ov-product {
+    left: var(--outer); top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; align-items: flex-start; max-width: 30ch;
+  }
+  .ov-index {
+    font-family: var(--sans); font-weight: 500;
+    font-size: var(--fs-label); letter-spacing: var(--ls-label); text-transform: uppercase;
+    color: var(--text-faint); font-variant-numeric: tabular-nums; margin-bottom: 18px;
+  }
+  .ov-name {
+    font-family: var(--serif); font-weight: 400;
+    font-size: var(--fs-heading-m); line-height: var(--lh-heading-m);
+    color: var(--text); margin: 0 0 14px;
+  }
+  .ov-meta {
+    font-family: var(--sans); font-weight: 500;
+    font-size: var(--fs-label); letter-spacing: var(--ls-label); text-transform: uppercase;
+    color: var(--text-quiet); margin-bottom: 24px;
+  }
+  .ov-link {
+    font-family: var(--sans); font-weight: 500;
+    font-size: var(--fs-label); letter-spacing: var(--ls-label); text-transform: uppercase;
+    color: var(--text); padding-bottom: 2px; border-bottom: 1px solid var(--rule);
+    transition: color var(--dur-hover) var(--ease-out), border-color var(--dur-hover) var(--ease-out);
+  }
+  .ov-link:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .ov-hint {
+    margin-top: 28px; font-family: var(--sans); font-weight: 500;
+    font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-faint);
+  }
+
+  /* Closing divider heading — centred display type the dust resolves into. */
+  .ov-divider { left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; }
+  .ov-divider h2 {
+    font-family: var(--serif); font-weight: 400;
+    font-size: var(--fs-display-l); line-height: var(--lh-display-l); color: var(--text); margin: 0;
+  }
+
+  /* Scroll cue — bottom centre, fades on first scroll (engine-driven opacity). */
+  .cg-cue {
+    position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%); z-index: 3;
+    font-family: var(--sans); font-weight: 500; font-size: 10px; letter-spacing: 0.34em;
+    text-transform: uppercase; color: var(--text); opacity: 0; text-align: center;
+    transition: opacity 600ms var(--ease-out); pointer-events: none;
+  }
+  .cg-cue.in { opacity: 0.5; }
+  .cg-arrow { display: block; margin-top: 8px; font-size: 12px; animation: cg-bob 2.4s ease-in-out infinite; }
+  @keyframes cg-bob { 0%,100% { transform: translateY(0); opacity:.5 } 50% { transform: translateY(6px); opacity:.95 } }
+
+  /* Beat dots — right edge, progress through the sequence. */
+  .cg-beats {
+    position: absolute; right: 30px; top: 50%; transform: translateY(-50%); z-index: 3;
+    display: flex; flex-direction: column; gap: 11px; align-items: flex-end; pointer-events: none;
+  }
+  .cg-beats :global(.dot) {
+    width: 5px; height: 5px; border-radius: 50%; background: var(--text);
+    opacity: 0.2; transition: opacity .35s ease, background .35s ease;
+  }
+  .cg-beats :global(.dot.on) { opacity: 1; background: var(--accent); }
+
+  /* On narrow screens the left-column copy can crowd the glyph — give it room. */
+  @media (max-width: 600px) {
+    .ov-lead, .ov-product { max-width: min(80vw, 30ch); }
+    .cg-beats { right: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cg-arrow { animation: none; }
+  }
+</style>
+
+<script is:inline type="module">
+/* eslint-disable */
+// ── The scroll-narrative engine — transplanted verbatim from the proven prototype
+//    (prototypes/hero/_scroll-narrative.html). Resolves three/addons/lenis via the
+//    Layout import map. CONFIG holds every tunable (mirrors the hero's discipline). ──
+import * as THREE from 'three';
+import { GLTFLoader }     from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import Lenis from 'lenis';
+
+const TAU = Math.PI * 2;
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isMobile = window.matchMedia('(max-width: 768px)').matches;
+
+const CONFIG = {
+  scene:  { bg: '#FFFFFF', cameraDistance: 15, fov: 32 },
+  glyph:  { text: 'CG', worldHeight: 3.1, depth: 0.39, fontWeight: 700 },
+  particles: { count: isMobile ? 55000 : 140000, baseSize: 0.032, sizeVariance: 0.22, inkColor: '#161616' },
+  pointer: { radius: 0.5, strength: 22, smoothing: 0.55 },
+  rotation:{ speed: reducedMotion ? 0 : 0.06 },
+  loadIn:  { duration: 1.6, stagger: 0.7, startVolume: 7 },
+  morph: {
+    shapeRadius: 2.7, disperseRadius: 9.0,
+    formIn: 0.12, formOut: 0.38, texAt: 0.62, dividerHeight: 2.4,
+  },
+  play: { springK: 16, damping: 0.985, maxDisp: 3.0 },
+  spin: { speed: 0.0013, maxVel: 0.020, damping: 0.88, returnLerp: 0.06, tilt: 0.5, tiltRange: 0.4 },
+  // Scroll is 1:1 with the timeline; section dispersals are longer than inter-model
+  // morphs; the snap (directional, smootherstep, settle-gated) fires only once the
+  // wheel stops AND the glide settles → smooth, no jolt, no mid-notch interruption.
+  scroll: { sectionVh: 2.4, modelVh: 1.3, snapDuration: 0.7, snapStopMs: 200, snapSettle: 0.0009, advanceThresh: 0.12 },
+  modelBase: '/models/',
+};
+
+// kind 'glyph'/'text' → particle shape only; 'model' → particles that hand off to a
+// textured GLB you can grab and spin. viewRY/viewRX = preferred resting orientation.
+const BEATS = [
+  { id:'cg',     kind:'glyph', text:'CG' },
+  { id:'mantis', kind:'model', name:'Mantis',                  year:2026, disc:'Product Design', slug:'mantis',     file:'mantis.glb',     fill:1.0,  viewRY:0.0,  viewRX:0.28 },
+  { id:'wave',   kind:'model', name:'Wave',                    year:2026, disc:'Product Design', slug:'wave',       file:'speaker.glb',    fill:0.92, viewRY:0.0,  viewRX:0.0  },
+  { id:'bg',     kind:'model', name:'Gravity Wave Backgammon', year:2024, disc:'Product Design', slug:'backgammon', file:'backgammon.glb', fill:0.92, viewRY:-0.7, viewRX:0.62 },
+  { id:'spider', kind:'model', name:'Spider-209',              year:2022, disc:'Product Design', slug:'spider-209', file:'spider.glb',     fill:0.92, viewRY:0.3,  viewRX:0.15 },
+  { id:'end',    kind:'text',  text:'Selected\nWork' },
+];
+const N = BEATS.length;
+const COUNT = CONFIG.particles.count;
+
+// Disperse only across SECTION boundaries (different kinds); model→model morphs directly.
+const GAP_DISPERSE = [];
+for(let i=0;i<N-1;i++) GAP_DISPERSE[i] = BEATS[i].kind !== BEATS[i+1].kind;
+// Per-gap scroll length (vh): section dispersals span more scroll than model morphs.
+const GAP_VH = [];
+for(let i=0;i<N-1;i++) GAP_VH[i] = GAP_DISPERSE[i] ? CONFIG.scroll.sectionVh : CONFIG.scroll.modelVh;
+const TOTAL_VH = GAP_VH.reduce((a,b)=>a+b,0);
+const STOP_F = [0];
+for(let i=0;i<N-1;i++) STOP_F[i+1] = STOP_F[i] + GAP_VH[i]/TOTAL_VH;
+
+// ── Samplers — every target is exactly COUNT points, index-aligned (so any two lerp). ──
+function seededRNG(seed){ let s = seed>>>0; return ()=> (s = (Math.imul(1664525,s)+1013904223)>>>0)/4294967296; }
+function smootherstep(e0,e1,x){ let t=(x-e0)/(e1-e0); t=t<0?0:t>1?1:t; return t*t*t*(t*(t*6-15)+10); }
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+
+function sampleText(text, count, { worldHeight, depth=0.4, weight=700, seed=11 }){
+  const lines = String(text).split('\n');
+  const W = 1600, H = Math.round(W * (lines.length>1 ? 0.62 : 0.5));
+  const cv = document.createElement('canvas'); cv.width=W; cv.height=H;
+  const ctx = cv.getContext('2d', { willReadFrequently:true });
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = '#000'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  let fs = Math.floor(H / (lines.length + 0.25));
+  ctx.font = `${weight} ${fs}px "Playfair Display", Georgia, serif`;
+  let maxw = 0; for (const l of lines) maxw = Math.max(maxw, ctx.measureText(l).width);
+  if (maxw > W*0.92){ fs = Math.floor(fs * (W*0.92)/maxw); ctx.font = `${weight} ${fs}px "Playfair Display", Georgia, serif`; }
+  const lh = fs * 1.04;
+  const y0 = H/2 - lh*(lines.length-1)/2;
+  lines.forEach((l,i)=> ctx.fillText(l, W/2, y0 + i*lh));
+  const data = ctx.getImageData(0,0,W,H).data;
+  const pool = [];
+  let minX=W,minY=H,maxX=0,maxY=0;
+  for (let y=0;y<H;y++) for (let x=0;x<W;x++){
+    if (data[(y*W+x)*4] < 100){ pool.push(x,y); if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; }
+  }
+  const cx=(minX+maxX)/2, cy=(minY+maxY)/2, span=(maxY-minY)||1;
+  const scale = worldHeight / span;
+  const rng = seededRNG(seed), jr = seededRNG(seed*7+1);
+  const out = new Float32Array(count*3);
+  const M2 = pool.length/2;
+  for (let i=0;i<count;i++){
+    const k = (Math.floor(rng()*M2))*2;
+    out[i*3]   =  (pool[k]   - cx) * scale + (jr()-0.5)*0.02;
+    out[i*3+1] = -(pool[k+1] - cy) * scale + (jr()-0.5)*0.02;
+    out[i*3+2] =  (jr()-0.5) * depth;
+  }
+  return out;
+}
+function sampleDisperse(count, radius, seed=99){
+  const rng = seededRNG(seed);
+  const out = new Float32Array(count*3);
+  for (let i=0;i<count;i++){
+    const u=rng(), v=rng(), w=rng();
+    const theta=Math.acos(1-2*u), phi=TAU*v, r=radius*(0.55+0.45*Math.cbrt(w));
+    out[i*3]   = r*Math.sin(theta)*Math.cos(phi);
+    out[i*3+1] = r*Math.sin(theta)*Math.sin(phi);
+    out[i*3+2] = r*Math.cos(theta);
+  }
+  return out;
+}
+function computeFit(scene, fill=1){
+  scene.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(scene);
+  const sphere = box.getBoundingSphere(new THREE.Sphere());
+  const scale = (CONFIG.morph.shapeRadius * fill) / (sphere.radius || 1);
+  return { center: sphere.center.clone(), scale };
+}
+function sampleMesh(scene, count, fit, seed=17){
+  scene.updateMatrixWorld(true);
+  const tris=[], areas=[]; const tmp = new THREE.Triangle();
+  scene.traverse(o=>{
+    if(!o.isMesh) return;
+    const g=o.geometry, pos=g.attributes.position, idx=g.index, m=o.matrixWorld;
+    const V=(i)=> new THREE.Vector3().fromBufferAttribute(pos,i).applyMatrix4(m);
+    const push=(a,b,c)=>{ const A=V(a),B=V(b),C=V(c); tmp.set(A,B,C); const ar=tmp.getArea(); if(ar>1e-10){ tris.push([A,B,C]); areas.push(ar);} };
+    if(idx){ for(let i=0;i<idx.count-2;i+=3) push(idx.getX(i),idx.getX(i+1),idx.getX(i+2)); }
+    else   { for(let i=0;i<pos.count-2;i+=3) push(i,i+1,i+2); }
+  });
+  const out = new Float32Array(count*3);
+  if(!tris.length) return sampleDisperse(count, CONFIG.morph.shapeRadius, seed);
+  const total = areas.reduce((a,b)=>a+b,0);
+  const cdf=[]; let acc=0; for(const a of areas){ acc+=a/total; cdf.push(acc); }
+  const rng = seededRNG(seed); const { center, scale } = fit;
+  for(let i=0;i<count;i++){
+    const r=rng(); let lo=0,hi=cdf.length-1; while(lo<hi){ const mid=(lo+hi)>>1; cdf[mid]<r?lo=mid+1:hi=mid; }
+    const [a,b,c]=tris[lo];
+    let u=rng(), v=rng(); if(u+v>1){ u=1-u; v=1-v; } const w=1-u-v;
+    out[i*3]   = ((a.x*w + b.x*u + c.x*v) - center.x) * scale;
+    out[i*3+1] = ((a.y*w + b.y*u + c.y*v) - center.y) * scale;
+    out[i*3+2] = ((a.z*w + b.z*u + c.z*v) - center.z) * scale;
+  }
+  return out;
+}
+
+// ── Particle system — the hero's shader, morph-friendly buffers. ──
+const VERT = `
+  attribute float aSizeMul;
+  uniform float uBaseSize; uniform float uSizeScale;
+  void main(){
+    vec4 mv = modelViewMatrix * vec4(position,1.0);
+    gl_PointSize = uBaseSize * aSizeMul * (uSizeScale / -mv.z);
+    gl_Position = projectionMatrix * mv;
+  }`;
+const FRAG = `
+  precision highp float;
+  uniform vec3 uInk; uniform float uOpacity;
+  void main(){
+    vec2 c = gl_PointCoord - 0.5; float r = length(c)*2.0;
+    if (r >= 1.0) discard;
+    float a = smoothstep(1.0, 0.25, r);
+    gl_FragColor = vec4(uInk, a * uOpacity);
+  }`;
+class Particles {
+  constructor(){
+    const positions = new Float32Array(COUNT*3);
+    const sizeMul   = new Float32Array(COUNT);
+    this.home = new Float32Array(COUNT*3);
+    this.vel  = new Float32Array(COUNT*3);
+    this.disp = new Float32Array(COUNT*3);
+    const sv = CONFIG.particles.sizeVariance;
+    for(let i=0;i<COUNT;i++) sizeMul[i] = 1 + (Math.random()-0.5)*sv;
+    this.geometry = new THREE.BufferGeometry();
+    this.geometry.setAttribute('position', new THREE.BufferAttribute(positions,3));
+    this.geometry.setAttribute('aSizeMul', new THREE.BufferAttribute(sizeMul,1));
+    this.material = new THREE.ShaderMaterial({
+      uniforms:{ uBaseSize:{value:CONFIG.particles.baseSize}, uSizeScale:{value:1},
+                 uInk:{value:new THREE.Color(CONFIG.particles.inkColor)}, uOpacity:{value:1} },
+      vertexShader:VERT, fragmentShader:FRAG,
+      transparent:true, depthWrite:false, depthTest:false, blending:THREE.NormalBlending,
+    });
+    this.points = new THREE.Points(this.geometry, this.material);
+    this.points.frustumCulled = false;
+  }
+}
+
+// Resolve the timeline → which two targets blend, the eased blend e, and formW (how
+// fully the nearest stop's actual geometry is built). formW drives dust + texture.
+const M = { FROM:null, TO:null, e:0, formW:1 };
+function resolveMorph(p){
+  let i=Math.floor(p); if(i<0)i=0; if(i>N-2)i=N-2;
+  const frac=p-i, A=targets[i]||DISPERSE, B=targets[i+1]||DISPERSE;
+  let FROM, TO, e;
+  if(GAP_DISPERSE[i]){
+    if(frac<0.5){ FROM=A; TO=DISPERSE; e=smootherstep(0,1,frac*2); }
+    else        { FROM=DISPERSE; TO=B; e=smootherstep(0,1,(frac-0.5)*2); }
+  } else { FROM=A; TO=B; e=smootherstep(0,1,frac); }
+  M.FROM=FROM; M.TO=TO; M.e=e;
+  M.formW = frac<0.5 ? (1-e) : e;
+}
+
+// One pass: position = direct morph target + spring-play displacement (pointer repel).
+function stepParticles(dt, probe){
+  const pos=ps.geometry.attributes.position.array, vel=ps.vel, disp=ps.disp;
+  const FROM=M.FROM, TO=M.TO, e=M.e, ie=1-e;
+  const P=CONFIG.play, k=P.springK, dmp=P.damping, maxD=P.maxDisp, maxD2=maxD*maxD;
+  const on=probe.active, ox=probe.o.x,oy=probe.o.y,oz=probe.o.z, rx=probe.d.x,ry=probe.d.y,rz=probe.d.z;
+  const pr=CONFIG.pointer.radius, pr2=pr*pr, str=CONFIG.pointer.strength;
+  for(let n=0;n<COUNT;n++){
+    const j=n*3;
+    const tx=FROM[j]*ie+TO[j]*e, ty=FROM[j+1]*ie+TO[j+1]*e, tz=FROM[j+2]*ie+TO[j+2]*e;
+    let dx=disp[j], dy=disp[j+1], dz=disp[j+2];
+    let fx=-k*dx, fy=-k*dy, fz=-k*dz;
+    if(on){
+      const wx=tx+dx-ox, wy=ty+dy-oy, wz=tz+dz-oz;
+      const proj=wx*rx+wy*ry+wz*rz, ex=wx-proj*rx, ey=wy-proj*ry, ez=wz-proj*rz;
+      const d2=ex*ex+ey*ey+ez*ez;
+      if(d2<pr2){ const d=Math.sqrt(d2)||1e-4, u=1-d/pr, sm=u*u*(3-2*u), mag=str*sm/d; fx+=ex*mag; fy+=ey*mag; fz+=ez*mag; }
+    }
+    let vx=(vel[j]+fx*dt)*dmp, vy=(vel[j+1]+fy*dt)*dmp, vz=(vel[j+2]+fz*dt)*dmp;
+    vel[j]=vx; vel[j+1]=vy; vel[j+2]=vz;
+    dx+=vx*dt; dy+=vy*dt; dz+=vz*dt;
+    const dd2=dx*dx+dy*dy+dz*dz; if(dd2>maxD2){ const s=maxD/Math.sqrt(dd2); dx*=s; dy*=s; dz*=s; }
+    disp[j]=dx; disp[j+1]=dy; disp[j+2]=dz;
+    pos[j]=tx+dx; pos[j+1]=ty+dy; pos[j+2]=tz+dz;
+  }
+  ps.geometry.attributes.position.needsUpdate=true;
+}
+
+// ── THREE setup ──
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+renderer.setSize(innerWidth, innerHeight, false);
+renderer.setClearColor(new THREE.Color(CONFIG.scene.bg));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(CONFIG.scene.bg);
+const camera = new THREE.PerspectiveCamera(CONFIG.scene.fov, innerWidth/innerHeight, 0.1, 100);
+camera.position.set(0,0,CONFIG.scene.cameraDistance);
+
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+const key = new THREE.DirectionalLight(0xffffff, 1.1); key.position.set(2,3,2); scene.add(key);
+const fillL = new THREE.DirectionalLight(0xffffff, 0.35); fillL.position.set(-2,0.5,-1.5); scene.add(fillL);
+
+const cloudGroup = new THREE.Group(); cloudGroup.rotation.order='YXZ'; scene.add(cloudGroup);
+const ps = new Particles();
+cloudGroup.add(ps.points);
+
+function sizeScale(){ const t=new THREE.Vector2(); renderer.getDrawingBufferSize(t); ps.material.uniforms.uSizeScale.value = t.y*0.5; }
+sizeScale();
+
+// ── Targets: text/glyph/disperse up front; models async. ──
+const DISPERSE = sampleDisperse(COUNT, CONFIG.morph.disperseRadius);
+const targets = new Array(N).fill(null);
+const models  = new Array(N).fill(null);
+const gltfLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+
+async function fontReady(){ try{ await document.fonts.load('700 96px "Playfair Display"'); await document.fonts.ready; }catch(e){} }
+function buildTextTargets(){
+  for(let i=0;i<N;i++){
+    const b=BEATS[i];
+    if(b.kind==='glyph') targets[i]=sampleText(b.text, COUNT, { worldHeight:CONFIG.glyph.worldHeight, depth:CONFIG.glyph.depth, weight:700, seed:42 });
+    else if(b.kind==='text') targets[i]=sampleText(b.text, COUNT, { worldHeight:CONFIG.morph.dividerHeight, depth:0.3, weight:700, seed:7 });
+  }
+}
+function loadModel(i){
+  const b=BEATS[i]; if(b.kind!=='model') return Promise.resolve();
+  return new Promise((res)=>{
+    gltfLoader.load(CONFIG.modelBase+b.file, (gltf)=>{
+      const src = gltf.scene;
+      const fit = computeFit(src, b.fill||1);
+      targets[i] = sampleMesh(src, COUNT, fit, 17+i);
+      const maxAniso = renderer.capabilities.getMaxAnisotropy();
+      const obj = src.clone(true);
+      const mats=[];
+      obj.traverse(n=>{
+        if(!n.isMesh) return;
+        if(!n.geometry.attributes.normal) n.geometry.computeVertexNormals();
+        n.material = n.material.clone();
+        n.material.transparent = true; n.material.opacity = 0; n.material.depthWrite = false;
+        if(n.material.map){ n.material.map.colorSpace=THREE.SRGBColorSpace; n.material.map.anisotropy=maxAniso; }
+        mats.push(n.material);
+      });
+      const inner = new THREE.Group(); inner.position.copy(fit.center).multiplyScalar(-1); inner.add(obj);
+      const outer = new THREE.Group(); outer.scale.setScalar(fit.scale); outer.add(inner);
+      outer.visible = false; outer.rotation.order = 'YXZ';
+      scene.add(outer);
+      models[i] = { group: outer, materials: mats, solid:null };
+      res();
+    }, undefined, (err)=>{ console.warn('[ScrollHero] model load failed', b.file, err); res(); });
+  });
+}
+
+// ── Load-in: particles assemble into CG (plays once), then nav fades in. ──
+let loadIn = null;
+function startLoadIn(){
+  const starts=new Float32Array(COUNT*3), delays=new Float32Array(COUNT);
+  const cg = targets[0]; const vol=CONFIG.loadIn.startVolume;
+  let minX=Infinity,maxX=-Infinity; for(let i=0;i<COUNT;i++){ const x=cg[i*3]; if(x<minX)minX=x; if(x>maxX)maxX=x; }
+  const xr=(maxX-minX)||1;
+  for(let i=0;i<COUNT;i++){ const i3=i*3;
+    starts[i3]=(Math.random()-0.5)*vol; starts[i3+1]=(Math.random()-0.5)*vol; starts[i3+2]=(Math.random()-0.5)*vol*0.5;
+    delays[i]=((cg[i3]-minX)/xr)*CONFIG.loadIn.stagger;
+  }
+  const pos=ps.geometry.attributes.position.array; pos.set(starts); ps.geometry.attributes.position.needsUpdate=true;
+  ps.vel.fill(0);
+  loadIn = { t0: clock.elapsedTime, starts, delays, done:false };
+}
+function stepLoadIn(time){
+  const dur=CONFIG.loadIn.duration, total=dur+CONFIG.loadIn.stagger, t=time-loadIn.t0;
+  const cg=targets[0], pos=ps.geometry.attributes.position.array, st=loadIn.starts, dl=loadIn.delays;
+  const ease=(x)=>1-Math.pow(1-x,3);
+  for(let i=0;i<COUNT;i++){ const i3=i*3; const lt=(t-dl[i])/dur; const u=lt<=0?0:lt>=1?1:ease(lt); const inv=1-u;
+    pos[i3]=st[i3]*inv+cg[i3]*u; pos[i3+1]=st[i3+1]*inv+cg[i3+1]*u; pos[i3+2]=st[i3+2]*inv+cg[i3+2]*u; }
+  ps.geometry.attributes.position.needsUpdate=true;
+  if(t>=total){
+    loadIn.done=true; ps.home.set(cg); pos.set(cg); ps.vel.fill(0);
+    scrollCue.classList.add('in');
+    const navEl = document.querySelector('.site-nav'); if(navEl) navEl.classList.add('in');
+    window.dispatchEvent(new CustomEvent('hero:loaded'));
+  }
+}
+
+// ── Pointer: repel probe (cloud) OR drag-spin (settled model). ──
+const probe = { active:false, o:new THREE.Vector3(1e6,1e6,1e6), d:new THREE.Vector3(0,0,-1),
+  ndc:new THREE.Vector2(), sm:new THREE.Vector2(), snap:false, ray:new THREE.Raycaster(), inv:new THREE.Matrix4() };
+function probeSet(x,y){ probe.ndc.set(x,y); if(!probe.active){ probe.snap=true; } probe.active=true; }
+function probeUpdate(){
+  if(!probe.active) return;
+  if(probe.snap){ probe.sm.copy(probe.ndc); probe.snap=false; } else probe.sm.lerp(probe.ndc, CONFIG.pointer.smoothing);
+  probe.ray.setFromCamera(probe.sm, camera);
+  probe.inv.copy(cloudGroup.matrixWorld).invert();
+  probe.o.copy(probe.ray.ray.origin).applyMatrix4(probe.inv);
+  probe.d.copy(probe.ray.ray.direction).transformDirection(probe.inv);
+}
+let drag = { on:false, lastX:0, lastY:0 };
+canvas.style.pointerEvents = 'auto';
+let dragSpin=0, dragSpinVel=0, dragTilt=0;
+function activeModelBeat(){
+  if (state.shapeW < 0.85) return -1;
+  const b = state.center;
+  return BEATS[b] && BEATS[b].kind==='model' && models[b] ? b : -1;
+}
+addEventListener('pointermove', (e)=>{
+  const x=(e.clientX/innerWidth)*2-1, y=-(e.clientY/innerHeight)*2+1;
+  if(drag.on){
+    const S=CONFIG.spin;
+    dragSpinVel = clamp(dragSpinVel + (e.clientX-drag.lastX)*S.speed, -S.maxVel, S.maxVel);
+    dragTilt    = clamp(dragTilt    + (e.clientY-drag.lastY)*S.speed*S.tilt, -S.tiltRange, S.tiltRange);
+    drag.lastX=e.clientX; drag.lastY=e.clientY;
+  } else { probeSet(x,y); }
+});
+canvas.addEventListener('pointerdown', (e)=>{
+  if(activeModelBeat()>=0){ drag.on=true; drag.lastX=e.clientX; drag.lastY=e.clientY; canvas.classList.add('grabbing'); probe.active=false; }
+});
+addEventListener('pointerup', ()=>{ drag.on=false; canvas.classList.remove('grabbing'); });
+addEventListener('pointerleave', ()=>{ probe.active=false; drag.on=false; canvas.classList.remove('grabbing'); });
+
+// ── Scroll: ScrollHero OWNS Lenis (Layout shares it via window.__cgLenis). ──
+const stage = document.getElementById('cgStage');
+stage.style.height = (TOTAL_VH + 1) * 100 + 'vh';
+
+let lenis=null;
+if(!reducedMotion){
+  lenis = new Lenis({ lerp:0.1, smoothWheel:true, smoothTouch:false });
+  window.__cgLenis = lenis;   // Layout reads this and skips creating a second instance
+}
+
+const state = { p:0, center:0, shapeW:1 };
+function scrollFracToP(f){
+  f = clamp(f,0,1);
+  let i=0; while(i<N-2 && STOP_F[i+1] <= f) i++;
+  const span = STOP_F[i+1]-STOP_F[i] || 1;
+  return i + clamp((f-STOP_F[i])/span, 0, 1);
+}
+function pToScrollY(p){ const max=stage.scrollHeight-innerHeight; return STOP_F[clamp(Math.round(p),0,N-1)]*max; }
+function readScroll(){
+  const max = stage.scrollHeight - innerHeight;
+  const y = (scrollY||pageYOffset);
+  state.p = scrollFracToP(max>0 ? y/max : 0);
+  const cue = Math.max(0, 1 - y/90); scrollCue.style.opacity = String(cue*0.5);
+}
+let lastWheelT=-1e9, snapping=false, prevSnapP=0, scrollDir=1;
+function noteInput(){ lastWheelT = clock ? clock.elapsedTime*1000 : 0; snapping=false; }
+if(lenis){ ['wheel','touchstart','touchmove'].forEach(ev=> addEventListener(ev, noteInput, { passive:true })); }
+function maybeSnap(nowMs){
+  if(!lenis || drag.on || snapping){ prevSnapP = state.p; return; }
+  const sdp = state.p - prevSnapP; prevSnapP = state.p;
+  if(Math.abs(sdp) > 0.0015) scrollDir = Math.sign(sdp);
+  if(nowMs - lastWheelT < CONFIG.scroll.snapStopMs) return;
+  if(Math.abs(sdp) > CONFIG.scroll.snapSettle) return;
+  const fp = Math.floor(state.p), frac = state.p - fp, th = CONFIG.scroll.advanceThresh;
+  let target = scrollDir >= 0 ? (frac > th ? fp+1 : fp) : (frac < 1-th ? fp : fp+1);
+  target = clamp(target, 0, N-1);
+  if(Math.abs(state.p - target) < 0.004) return;
+  snapping = true;
+  lenis.scrollTo(pToScrollY(target), { duration: CONFIG.scroll.snapDuration,
+    easing:(x)=>smootherstep(0,1,x), onComplete:()=>{ snapping=false; } });
+}
+
+// ── Overlay — phase the copy blocks by beat formed-ness. ──
+const ov = {
+  lead: document.querySelector('.ov-lead'),
+  product: document.getElementById('ovProduct'),
+  divider: document.querySelector('.ov-divider'),
+  index: document.getElementById('ovIndex'), name: document.getElementById('ovName'),
+  meta: document.getElementById('ovMeta'), link: document.getElementById('ovLink'),
+};
+const scrollCue = document.getElementById('scrollCue');
+let curProductBeat=-1;
+function setProductChrome(b){
+  if(b===curProductBeat) return; curProductBeat=b; const d=BEATS[b];
+  ov.index.textContent = `${String(b).padStart(2,'0')} / ${String(N-2).padStart(2,'0')}`;
+  ov.name.textContent = d.name; ov.meta.textContent = `${d.year} · ${d.disc}`;
+  ov.link.setAttribute('href', `/work/${d.slug}/`);
+}
+const dotsWrap=document.getElementById('beatDots');
+for(let i=1;i<N-1;i++){ const dot=document.createElement('div'); dot.className='dot'; dotsWrap.appendChild(dot); }
+const dots=[...dotsWrap.children];
+function updateOverlay(){
+  const center=state.center, w=state.shapeW;
+  ov.lead.style.opacity = (center===0) ? w : 0;
+  const cb=BEATS[center];
+  if(cb && cb.kind==='model'){ setProductChrome(center); ov.product.style.opacity = w; }
+  else ov.product.style.opacity = 0;
+  ov.divider.style.opacity = (center===N-1) ? smootherstep(CONFIG.morph.texAt, 1.0, w) : 0;
+  dots.forEach((d,idx)=> d.classList.toggle('on', idx+1===center));
+}
+
+// ── Render loop ──
+const clock = new THREE.Clock(); clock.getDelta();
+let accumY=0, accumX=0;
+
+let ready=false;
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+scrollTo(0,0);
+(async function init(){
+  await fontReady();
+  buildTextTargets();
+  ps.home.set(targets[0]);
+  startLoadIn();
+  ready=true;
+  // Load models, then PRE-WARM the GPU (offscreen render) so the first scroll to each
+  // product doesn't hitch on a lazy texture upload.
+  Promise.all(BEATS.map((b,i)=> b.kind==='model' ? loadModel(i) : null)).then(()=>{
+    const rt = new THREE.WebGLRenderTarget(4,4);
+    models.forEach(m=>{ if(m) m.group.visible = true; });
+    renderer.setRenderTarget(rt);
+    renderer.render(scene, camera);
+    renderer.setRenderTarget(null);
+    models.forEach(m=>{ if(m) m.group.visible = false; });
+    rt.dispose();
+  });
+})();
+
+addEventListener('resize', ()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight,false); sizeScale(); });
+
+// Pause the render loop while the stage is fully off-screen (scrolled into the body).
+let visible = true;
+new IntersectionObserver(([e])=>{ visible = e.isIntersecting; }, { threshold: 0 }).observe(stage);
+
+function frame(ts){
+  requestAnimationFrame(frame);
+  if(lenis) lenis.raf(ts);
+  if(!ready || !visible) return;
+  const dt=Math.min(clock.getDelta(),1/30), time=clock.elapsedTime;
+  readScroll();
+  if(loadIn && loadIn.done) maybeSnap(time*1000);
+
+  let c, formW;
+  if(loadIn && !loadIn.done){ c=0; formW=1; M.formW=1; }
+  else { c=Math.round(clamp(state.p,0,N-1)); resolveMorph(state.p); formW=M.formW; }
+  state.center = c; state.shapeW = formW;
+  updateOverlay();
+
+  const activeModel = (BEATS[c]?.kind==='model' && models[c] && formW>0.85) ? c : -1;
+
+  if(c===0 && loadIn && loadIn.done){ accumY += CONFIG.rotation.speed*dt; accumX += (0-accumX)*0.08; }
+  else {
+    const tgtRY = BEATS[c]?.viewRY || 0, tgtRX = BEATS[c]?.viewRX || 0;
+    const aimY = Math.round((accumY - tgtRY)/TAU)*TAU + tgtRY;
+    accumY += (aimY - accumY) * 0.08;
+    accumX += (tgtRX - accumX) * 0.08;
+  }
+  dragSpin += dragSpinVel; dragSpinVel *= CONFIG.spin.damping;
+  if(activeModel<0){ dragSpin *= 0.94; dragTilt += (0-dragTilt)*CONFIG.spin.returnLerp; }
+  const rotY = accumY + dragSpin, rotX = accumX + dragTilt;
+  cloudGroup.rotation.set(rotX, rotY, 0);
+  cloudGroup.updateMatrixWorld();
+
+  probeUpdate();
+  if(loadIn && !loadIn.done) stepLoadIn(time);
+  else stepParticles(dt, probe);
+
+  let particleOpacity = 1;
+  for(let i=0;i<N;i++){
+    const m=models[i]; if(!m) continue;
+    const vis = (i===c) ? smootherstep(CONFIG.morph.texAt, 1.0, formW) : 0;
+    m.group.visible = vis>0.001;
+    const wantSolid = vis >= 0.985;
+    if(wantSolid !== m.solid){ for(const mat of m.materials) mat.depthWrite = wantSolid; m.solid = wantSolid; }
+    for(const mat of m.materials) mat.opacity = vis;
+    if(i===c) particleOpacity = Math.min(particleOpacity, 1 - vis);
+    if(m.group.visible){ m.group.rotation.set(rotX, rotY, 0); m.group.updateMatrixWorld(); }
+  }
+  if (BEATS[c]?.kind === 'text') particleOpacity = Math.min(particleOpacity, 1 - smootherstep(CONFIG.morph.texAt, 1.0, formW));
+  ps.material.uniforms.uOpacity.value = particleOpacity;
+
+  canvas.classList.toggle('grabbable', activeModel>=0 && !drag.on);
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(frame);
+</script>

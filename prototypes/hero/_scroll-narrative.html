@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Court Granville — scroll narrative (prototype)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Raleway:wght@400;500&display=block" rel="stylesheet">
+
+<!-- Same CDN import map as the live site's Layout.astro — pinned three@0.162 +
+     addons + lenis. No build step; this is the no-build feel-tuning surface. -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/",
+    "lenis": "https://cdn.jsdelivr.net/npm/lenis@1.3.23/dist/lenis.mjs"
+  }
+}
+</script>
+
+<style>
+  :root {
+    --bg: #FFFFFF;
+    --text: #161616;
+    --text-quiet: rgba(22,22,22,0.55);
+    --text-faint: rgba(22,22,22,0.32);
+    --rule: rgba(22,22,22,0.10);
+    --accent: #8E1B0E;
+    --serif: 'Playfair Display', Georgia, serif;
+    --sans:  'Raleway', ui-sans-serif, system-ui, sans-serif;
+    --ease-out: cubic-bezier(0.16, 1, 0.30, 1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: auto; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+  ::selection { background: var(--text); color: var(--bg); }
+  a { color: inherit; text-decoration: none; }
+
+  /* ── The scroll stage: a tall driver with a sticky, full-viewport canvas. ── */
+  .scrollstage { position: relative; width: 100%; }
+  .sticky {
+    position: sticky; top: 0;
+    width: 100%; height: 100vh;
+    overflow: hidden;
+  }
+  #c { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
+
+  /* When a textured product is settled the canvas is grabbable. */
+  #c.grabbable { cursor: grab; }
+  #c.grabbing  { cursor: grabbing; }
+
+  /* ── Overlay text — phases in/out per beat, driven by JS. ── */
+  .overlay { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+  .ov-block {
+    position: absolute;
+    opacity: 0;
+    will-change: opacity, transform;
+  }
+  .ov-block a { pointer-events: auto; }
+
+  /* Hero lead — lower-left caption beside the CG glyph. */
+  .ov-lead {
+    left: clamp(20px, 4vw, 56px);
+    top: 50%; transform: translateY(-50%);
+    max-width: 38ch;
+  }
+  .ov-lead p {
+    font-family: var(--serif); font-weight: 400;
+    font-size: clamp(17px, 1.05vw, 19px); line-height: 1.5; color: var(--text);
+  }
+
+  /* Per-product chrome — left column. */
+  .ov-product {
+    left: clamp(20px, 4vw, 56px);
+    top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; align-items: flex-start;
+    max-width: 30ch;
+  }
+  .label {
+    font-family: var(--sans); font-weight: 500;
+    font-size: clamp(12px, 0.72vw, 14px); letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--text-quiet);
+  }
+  .ov-index { color: var(--text-faint); font-variant-numeric: tabular-nums; margin-bottom: 16px; }
+  .ov-name {
+    font-family: var(--serif); font-weight: 400;
+    font-size: clamp(26px, 3.2vw, 48px); line-height: 1.12; color: var(--text);
+    margin: 0 0 12px;
+  }
+  .ov-meta { color: var(--text-quiet); margin-bottom: 22px; }
+  .ov-link { font-family: var(--sans); font-weight: 500; font-size: 13px; color: var(--text); border-bottom: 1px solid var(--rule); padding-bottom: 2px; }
+  .ov-link:hover { color: var(--accent); border-color: var(--accent); }
+  .ov-hint { margin-top: 26px; color: var(--text-faint); font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; }
+
+  /* Divider heading — centred display text (the particle text resolves under it). */
+  .ov-divider {
+    left: 0; right: 0; top: 50%; transform: translateY(-50%);
+    text-align: center;
+  }
+  .ov-divider .kk { display:block; margin-bottom: 14px; }
+  .ov-divider h2 {
+    font-family: var(--serif); font-weight: 400;
+    font-size: clamp(36px, 5vw, 80px); line-height: 1.04; color: var(--text);
+  }
+
+  /* Scroll cue — bottom centre, fades on first scroll. */
+  .scroll-cue {
+    position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+    z-index: 3; font-family: var(--sans); font-weight: 500; font-size: 10px;
+    letter-spacing: 0.34em; text-transform: uppercase; color: var(--text);
+    opacity: 0; text-align: center; transition: opacity 600ms var(--ease-out); pointer-events: none;
+  }
+  .scroll-cue.in { opacity: 0.5; }
+  .scroll-cue .arrow { display: block; margin-top: 8px; font-size: 12px; animation: bob 2.4s ease-in-out infinite; }
+  @keyframes bob { 0%,100% { transform: translateY(0); opacity:.5 } 50% { transform: translateY(6px); opacity:.95 } }
+
+  /* Beat dots — right edge, shows progress through the sequence. */
+  .beats { position: absolute; right: 30px; top: 50%; transform: translateY(-50%); z-index: 3;
+    display: flex; flex-direction: column; gap: 11px; align-items: flex-end; pointer-events: none; }
+  .beats .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text);
+    opacity: 0.2; transition: opacity .35s ease, background .35s ease; }
+  .beats .dot.on { opacity: 1; background: var(--accent); }
+
+  /* The body that follows the stage — proves the canvas hands off to normal flow. */
+  .after { position: relative; z-index: 2; background: var(--bg); padding: 14vh clamp(20px,4vw,56px); }
+  .after p { font-family: var(--serif); font-size: clamp(20px,2.4vw,32px); line-height: 1.3; max-width: 22ch; }
+
+  /* Tiny readout for tuning. */
+  .hud { position: fixed; left: 10px; bottom: 10px; z-index: 9; font: 11px/1.4 var(--sans);
+    color: var(--text-faint); background: rgba(255,255,255,.7); padding: 6px 9px; border: 1px solid var(--rule);
+    border-radius: 4px; pointer-events: none; white-space: pre; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .scroll-cue .arrow { animation: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="scrollstage" id="stage">
+    <div class="sticky">
+      <canvas id="c" aria-hidden="true"></canvas>
+
+      <div class="overlay" id="overlay">
+        <!-- beat 0 — CG hero lead -->
+        <div class="ov-block ov-lead" data-beat="0">
+          <p>I&rsquo;m a multidisciplinary designer working across product, interaction, data and the web. My training is in product design, but a pull toward technology, AI and systems has taken me wider.</p>
+        </div>
+
+        <!-- product beats — one block, contents swapped by JS -->
+        <div class="ov-block ov-product" id="ovProduct">
+          <span class="label ov-index" id="ovIndex">01 / 04</span>
+          <h3 class="ov-name" id="ovName">Mantis</h3>
+          <div class="label ov-meta" id="ovMeta">2026 · Product Design</div>
+          <a class="ov-link" id="ovLink" href="#">View project &rarr;</a>
+          <span class="ov-hint">Drag to spin</span>
+        </div>
+
+        <!-- final divider — the dust resolves into this crisp type (same words) -->
+        <div class="ov-block ov-divider" data-beat="5">
+          <h2>Selected<br>Work</h2>
+        </div>
+      </div>
+
+      <div class="scroll-cue" id="scrollCue">Scroll<span class="arrow">&darr;</span></div>
+      <div class="beats" id="beatDots"></div>
+    </div>
+  </div>
+
+  <div class="after">
+    <p>Design is the translation layer between technical complexity and the people it&rsquo;s meant to serve.</p>
+  </div>
+
+  <div class="hud" id="hud"></div>
+
+<script type="module">
+/* eslint-disable */
+import * as THREE from 'three';
+import { GLTFLoader }     from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import Lenis from 'lenis';
+
+const TAU = Math.PI * 2;
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isMobile = window.matchMedia('(max-width: 768px)').matches;
+
+// ════════════════════════════════════════════════════════════════════
+//  CONFIG — all tunables in one place (mirrors the hero's discipline).
+// ════════════════════════════════════════════════════════════════════
+const CONFIG = {
+  scene:  { bg: '#FFFFFF', cameraDistance: 15, fov: 32 },
+  glyph:  { text: 'CG', worldHeight: 3.1, depth: 0.39, canvasWidth: 2400, fontWeight: 700, alphaThreshold: 80 },
+  particles: {
+    count: isMobile ? 55000 : 140000,
+    baseSize: 0.032, sizeVariance: 0.22,
+    inkColor: '#161616',
+  },
+  // Spring sim — verbatim from the hero so the CG load-in/repel feel is unchanged.
+  physics: { springK: 15, damping: 0.99, maxVel: 12.1, maxDisplacement: 4 },
+  pointer: { radius: 0.27, strength: 25, smoothing: 0.59 },
+  rotation:{ speed: reducedMotion ? 0 : 0.06 },          // gentle auto-spin of the cloud
+  loadIn:  { duration: 1.6, stagger: 0.7, startVolume: 7 },
+  morph: {
+    shapeRadius: 1.9,        // world radius every product/text shape fits into (≈ CG size)
+    disperseRadius: 3.2,     // the cloud particles fly out to between beats
+    follow: 0.10,            // how fast the cloud chases its scroll-driven target (0..1)
+    ease: (t)=> 1 - Math.pow(1 - Math.min(Math.max(t,0),1), 3),  // easeOutCubic
+  },
+  dwell: {
+    half: 0.42,              // within ±half (in segment-units) of a beat centre = "settled"
+    textCrossfade: 0.55,     // settledness at which the model fully replaces the dust
+    dividerHeight: 2.2,      // world height of the particle divider text
+  },
+  spin: { speed: 0.0065, damping: 0.92, returnLerp: 0.06 },  // drag-to-spin feel
+  scroll: { segmentVh: 1.25, snapDuration: 0.6 },            // each beat-gap is this many viewport-heights
+  modelBase: '/public/models/',   // python http.server from repo root → /public/models/…
+};
+
+// ── The beats. kind 'glyph'/'text' → particle shape only; 'model' → particles
+//    that hand off to a textured GLB you can grab and spin. ───────────────────
+const BEATS = [
+  { id:'cg',     kind:'glyph', text:'CG' },
+  { id:'mantis', kind:'model', name:'Mantis',                  year:2026, disc:'Product Design', slug:'mantis',     file:'mantis.glb',     fill:1.0  },
+  { id:'wave',   kind:'model', name:'Wave',                    year:2026, disc:'Product Design', slug:'wave',       file:'speaker.glb',    fill:0.92 },
+  { id:'bg',     kind:'model', name:'Gravity Wave Backgammon', year:2024, disc:'Product Design', slug:'backgammon', file:'backgammon.glb', fill:0.92 },
+  { id:'spider', kind:'model', name:'Spider-209',              year:2022, disc:'Product Design', slug:'spider-209', file:'spider.glb',     fill:0.92 },
+  { id:'end',    kind:'text',  text:'Selected\nWork' },
+];
+const N = BEATS.length;
+const COUNT = CONFIG.particles.count;
+
+// ════════════════════════════════════════════════════════════════════
+//  SAMPLERS — every target is exactly COUNT points, index-aligned, so any
+//  two can be linearly interpolated (the morph). Returns Float32Array(COUNT*3).
+// ════════════════════════════════════════════════════════════════════
+function seededRNG(seed){ let s = seed>>>0; return ()=> (s = (Math.imul(1664525,s)+1013904223)>>>0)/4294967296; }
+
+// Render text (multi-line supported) to a canvas, pool the dark pixels, then
+// sample COUNT of them into a centred, scaled point set with a little z-depth.
+function sampleText(text, count, { worldHeight, depth=0.4, weight=700, seed=11 }){
+  const lines = String(text).split('\n');
+  const W = 1600, H = Math.round(W * (lines.length>1 ? 0.62 : 0.5));
+  const cv = document.createElement('canvas'); cv.width=W; cv.height=H;
+  const ctx = cv.getContext('2d', { willReadFrequently:true });
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = '#000'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  let fs = Math.floor(H / (lines.length + 0.25));
+  ctx.font = `${weight} ${fs}px "Playfair Display", Georgia, serif`;
+  // shrink to fit width
+  let maxw = 0; for (const l of lines) maxw = Math.max(maxw, ctx.measureText(l).width);
+  if (maxw > W*0.92){ fs = Math.floor(fs * (W*0.92)/maxw); ctx.font = `${weight} ${fs}px "Playfair Display", Georgia, serif`; }
+  const lh = fs * 1.04;
+  const y0 = H/2 - lh*(lines.length-1)/2;
+  lines.forEach((l,i)=> ctx.fillText(l, W/2, y0 + i*lh));
+
+  const data = ctx.getImageData(0,0,W,H).data;
+  const pool = [];
+  let minX=W,minY=H,maxX=0,maxY=0;
+  for (let y=0;y<H;y++) for (let x=0;x<W;x++){
+    if (data[(y*W+x)*4] < 100){ pool.push(x,y); if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; }
+  }
+  const cx=(minX+maxX)/2, cy=(minY+maxY)/2, span=(maxY-minY)||1;
+  const scale = worldHeight / span;
+  const rng = seededRNG(seed), jr = seededRNG(seed*7+1);
+  const out = new Float32Array(count*3);
+  const M = pool.length/2;
+  for (let i=0;i<count;i++){
+    const k = (Math.floor(rng()*M))*2;
+    out[i*3]   =  (pool[k]   - cx) * scale + (jr()-0.5)*0.02;
+    out[i*3+1] = -(pool[k+1] - cy) * scale + (jr()-0.5)*0.02;
+    out[i*3+2] =  (jr()-0.5) * depth;
+  }
+  return out;
+}
+
+// Random volume cloud — the disperse target between beats.
+function sampleDisperse(count, radius, seed=99){
+  const rng = seededRNG(seed);
+  const out = new Float32Array(count*3);
+  for (let i=0;i<count;i++){
+    const u=rng(), v=rng(), w=rng();
+    const theta=Math.acos(1-2*u), phi=TAU*v, r=radius*(0.35+0.65*Math.cbrt(w));
+    out[i*3]   = r*Math.sin(theta)*Math.cos(phi);
+    out[i*3+1] = r*Math.sin(theta)*Math.sin(phi);
+    out[i*3+2] = r*Math.cos(theta)*0.6;
+  }
+  return out;
+}
+
+// Compute the shared fit transform (centre + uniform scale) so a model's
+// bounding sphere fits CONFIG.morph.shapeRadius. The SAME transform is used to
+// (a) sample the surface into particles and (b) place the textured display
+// model — guaranteeing the texture materialises exactly where the dust settled.
+function computeFit(scene, fill=1){
+  scene.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(scene);
+  const sphere = box.getBoundingSphere(new THREE.Sphere());
+  const scale = (CONFIG.morph.shapeRadius * fill) / (sphere.radius || 1);
+  return { center: sphere.center.clone(), scale };
+}
+
+// Area-weighted surface sampling (Omma's approach) → COUNT points in the fitted
+// frame: world vertex v → (v − center) * scale.
+function sampleMesh(scene, count, fit, seed=17){
+  scene.updateMatrixWorld(true);
+  const tris=[], areas=[];
+  const tmp = new THREE.Triangle();
+  scene.traverse(o=>{
+    if(!o.isMesh) return;
+    const g=o.geometry, pos=g.attributes.position, idx=g.index, m=o.matrixWorld;
+    const V=(i)=> new THREE.Vector3().fromBufferAttribute(pos,i).applyMatrix4(m);
+    const push=(a,b,c)=>{ const A=V(a),B=V(b),C=V(c); tmp.set(A,B,C); const ar=tmp.getArea(); if(ar>1e-10){ tris.push([A,B,C]); areas.push(ar);} };
+    if(idx){ for(let i=0;i<idx.count-2;i+=3) push(idx.getX(i),idx.getX(i+1),idx.getX(i+2)); }
+    else   { for(let i=0;i<pos.count-2;i+=3) push(i,i+1,i+2); }
+  });
+  const out = new Float32Array(count*3);
+  if(!tris.length) return sampleDisperse(count, CONFIG.morph.shapeRadius, seed);
+  const total = areas.reduce((a,b)=>a+b,0);
+  const cdf=[]; let acc=0; for(const a of areas){ acc+=a/total; cdf.push(acc); }
+  const rng = seededRNG(seed);
+  const { center, scale } = fit;
+  for(let i=0;i<count;i++){
+    const r=rng(); let lo=0,hi=cdf.length-1; while(lo<hi){ const mid=(lo+hi)>>1; cdf[mid]<r?lo=mid+1:hi=mid; }
+    const [a,b,c]=tris[lo];
+    let u=rng(), v=rng(); if(u+v>1){ u=1-u; v=1-v; } const w=1-u-v;
+    out[i*3]   = ((a.x*w + b.x*u + c.x*v) - center.x) * scale;
+    out[i*3+1] = ((a.y*w + b.y*u + c.y*v) - center.y) * scale;
+    out[i*3+2] = ((a.z*w + b.z*u + c.z*v) - center.z) * scale;
+  }
+  return out;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  PARTICLE SYSTEM — the hero's shader, with a morph-friendly home buffer.
+// ════════════════════════════════════════════════════════════════════
+const VERT = `
+  attribute float aSizeMul;
+  uniform float uBaseSize; uniform float uSizeScale;
+  void main(){
+    vec4 mv = modelViewMatrix * vec4(position,1.0);
+    gl_PointSize = uBaseSize * aSizeMul * (uSizeScale / -mv.z);
+    gl_Position = projectionMatrix * mv;
+  }`;
+const FRAG = `
+  precision highp float;
+  uniform vec3 uInk; uniform float uOpacity;
+  void main(){
+    vec2 c = gl_PointCoord - 0.5; float r = length(c)*2.0;
+    if (r >= 1.0) discard;
+    float a = smoothstep(1.0, 0.25, r);
+    gl_FragColor = vec4(uInk, a * uOpacity);
+  }`;
+
+class Particles {
+  constructor(){
+    const positions = new Float32Array(COUNT*3);
+    const sizeMul   = new Float32Array(COUNT);
+    this.home = new Float32Array(COUNT*3);   // the per-frame morph target
+    this.vel  = new Float32Array(COUNT*3);
+    const sv = CONFIG.particles.sizeVariance;
+    for(let i=0;i<COUNT;i++) sizeMul[i] = 1 + (Math.random()-0.5)*sv;
+
+    this.geometry = new THREE.BufferGeometry();
+    this.geometry.setAttribute('position', new THREE.BufferAttribute(positions,3));
+    this.geometry.setAttribute('aSizeMul', new THREE.BufferAttribute(sizeMul,1));
+    this.material = new THREE.ShaderMaterial({
+      uniforms:{ uBaseSize:{value:CONFIG.particles.baseSize}, uSizeScale:{value:1},
+                 uInk:{value:new THREE.Color(CONFIG.particles.inkColor)}, uOpacity:{value:1} },
+      vertexShader:VERT, fragmentShader:FRAG,
+      transparent:true, depthWrite:false, depthTest:false, blending:THREE.NormalBlending,
+    });
+    this.points = new THREE.Points(this.geometry, this.material);
+    this.points.frustumCulled = false;
+  }
+}
+
+// Spring integrator + pointer repel — distilled from the hero's Simulator.
+function stepSim(ps, dt, probe){
+  const pos=ps.geometry.attributes.position.array, vel=ps.vel, home=ps.home;
+  const p=CONFIG.physics, k=p.springK, dmp=p.damping;
+  const maxV2=p.maxVel*p.maxVel, maxD=p.maxDisplacement, maxD2=maxD*maxD;
+  const on=probe.active, ox=probe.o.x,oy=probe.o.y,oz=probe.o.z, rx=probe.d.x,ry=probe.d.y,rz=probe.d.z;
+  const r=CONFIG.pointer.radius, r2=r*r, str=CONFIG.pointer.strength;
+  for(let i=0;i<COUNT;i++){
+    const i3=i*3;
+    let fx=-k*(pos[i3]-home[i3]), fy=-k*(pos[i3+1]-home[i3+1]), fz=-k*(pos[i3+2]-home[i3+2]);
+    if(on){
+      const vx=pos[i3]-ox, vy=pos[i3+1]-oy, vz=pos[i3+2]-oz;
+      const proj=vx*rx+vy*ry+vz*rz, px=vx-proj*rx, py=vy-proj*ry, pz=vz-proj*rz;
+      const pd2=px*px+py*py+pz*pz;
+      if(pd2<r2){ const pd=Math.sqrt(pd2)||1e-4, u=1-pd/r, sm=u*u*(3-2*u), mag=str*sm/pd; fx+=px*mag; fy+=py*mag; fz+=pz*mag; }
+    }
+    let vX=(vel[i3]+fx*dt)*dmp, vY=(vel[i3+1]+fy*dt)*dmp, vZ=(vel[i3+2]+fz*dt)*dmp;
+    const v2=vX*vX+vY*vY+vZ*vZ; if(v2>maxV2){ const s=p.maxVel/Math.sqrt(v2); vX*=s; vY*=s; vZ*=s; }
+    vel[i3]=vX; vel[i3+1]=vY; vel[i3+2]=vZ;
+    let nx=pos[i3]+vX*dt, ny=pos[i3+1]+vY*dt, nz=pos[i3+2]+vZ*dt;
+    const dx=nx-home[i3], dy=ny-home[i3+1], dz=nz-home[i3+2], d2=dx*dx+dy*dy+dz*dz;
+    if(d2>maxD2){ const s=maxD/Math.sqrt(d2); nx=home[i3]+dx*s; ny=home[i3+1]+dy*s; nz=home[i3+2]+dz*s; }
+    pos[i3]=nx; pos[i3+1]=ny; pos[i3+2]=nz;
+  }
+  ps.geometry.attributes.position.needsUpdate = true;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  THREE setup
+// ════════════════════════════════════════════════════════════════════
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+renderer.setSize(innerWidth, innerHeight, false);
+renderer.setClearColor(new THREE.Color(CONFIG.scene.bg));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(CONFIG.scene.bg);
+const camera = new THREE.PerspectiveCamera(CONFIG.scene.fov, innerWidth/innerHeight, 0.1, 100);
+camera.position.set(0,0,CONFIG.scene.cameraDistance);
+
+// Studio IBL (in-engine, no HDRI download) + key/fill — verbatim intent from ProjectViewer.
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+const key = new THREE.DirectionalLight(0xffffff, 1.1); key.position.set(2,3,2); scene.add(key);
+const fill= new THREE.DirectionalLight(0xffffff, 0.35); fill.position.set(-2,0.5,-1.5); scene.add(fill);
+
+// Two rotating groups: the particle cloud (auto-spins) and the model stage
+// (drag-spins). Both centred at the origin so particles ↔ texture register.
+const cloudGroup = new THREE.Group(); scene.add(cloudGroup);
+const modelGroup = new THREE.Group(); scene.add(modelGroup);
+
+const ps = new Particles();
+cloudGroup.add(ps.points);
+
+function sizeScale(){ const t=new THREE.Vector2(); renderer.getDrawingBufferSize(t); ps.material.uniforms.uSizeScale.value = t.y*0.5; }
+sizeScale();
+
+// ════════════════════════════════════════════════════════════════════
+//  TARGETS — built up front for text/glyph/disperse; models load async.
+// ════════════════════════════════════════════════════════════════════
+const DISPERSE = sampleDisperse(COUNT, CONFIG.morph.disperseRadius);
+const targets = new Array(N).fill(null);    // Float32Array per beat
+const models  = new Array(N).fill(null);    // { group, materials[] } per model beat
+const gltfLoader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+
+async function fontReady(){ try{ await document.fonts.load('700 96px "Playfair Display"'); await document.fonts.ready; }catch(e){} }
+
+function buildTextTargets(){
+  for(let i=0;i<N;i++){
+    const b=BEATS[i];
+    if(b.kind==='glyph') targets[i]=sampleText(b.text, COUNT, { worldHeight:CONFIG.glyph.worldHeight, depth:CONFIG.glyph.depth, weight:700, seed:42 });
+    else if(b.kind==='text') targets[i]=sampleText(b.text, COUNT, { worldHeight:CONFIG.dwell.dividerHeight, depth:0.3, weight:700, seed:7 });
+  }
+}
+
+function loadModel(i){
+  const b=BEATS[i]; if(b.kind!=='model') return Promise.resolve();
+  return new Promise((res)=>{
+    gltfLoader.load(CONFIG.modelBase+b.file, (gltf)=>{
+      const src = gltf.scene;
+      const fit = computeFit(src, b.fill||1);
+      // particle target
+      targets[i] = sampleMesh(src, COUNT, fit, 17+i);
+      // textured display model — clone, normalise (sRGB maps, anisotropy, normals),
+      // clone materials so we can fade opacity without touching the cache.
+      const maxAniso = renderer.capabilities.getMaxAnisotropy();
+      const obj = src.clone(true);
+      const mats=[];
+      obj.traverse(n=>{
+        if(!n.isMesh) return;
+        if(!n.geometry.attributes.normal) n.geometry.computeVertexNormals();
+        n.material = n.material.clone();
+        n.material.transparent = true; n.material.opacity = 0; n.material.depthWrite = false;
+        if(n.material.map){ n.material.map.colorSpace=THREE.SRGBColorSpace; n.material.map.anisotropy=maxAniso; }
+        mats.push(n.material);
+      });
+      const inner = new THREE.Group(); inner.position.copy(fit.center).multiplyScalar(-1); inner.add(obj);
+      const outer = new THREE.Group(); outer.scale.setScalar(fit.scale); outer.add(inner);
+      outer.visible = false;
+      scene.add(outer);                       // ← register in the scene graph (was missing)
+      models[i] = { group: outer, materials: mats, spin:0, spinVel:0, tiltX:0 };
+      res();
+    }, undefined, (err)=>{ console.warn('model load failed', b.file, err); res(); });
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  LOAD-IN — the hero's intro: particles assemble into CG. Plays once.
+// ════════════════════════════════════════════════════════════════════
+let loadIn = null;
+function startLoadIn(){
+  const starts=new Float32Array(COUNT*3), delays=new Float32Array(COUNT);
+  const cg = targets[0]; const vol=CONFIG.loadIn.startVolume;
+  let minX=Infinity,maxX=-Infinity; for(let i=0;i<COUNT;i++){ const x=cg[i*3]; if(x<minX)minX=x; if(x>maxX)maxX=x; }
+  const xr=(maxX-minX)||1;
+  for(let i=0;i<COUNT;i++){ const i3=i*3;
+    starts[i3]=(Math.random()-0.5)*vol; starts[i3+1]=(Math.random()-0.5)*vol; starts[i3+2]=(Math.random()-0.5)*vol*0.5;
+    delays[i]=((cg[i3]-minX)/xr)*CONFIG.loadIn.stagger;
+  }
+  const pos=ps.geometry.attributes.position.array; pos.set(starts); ps.geometry.attributes.position.needsUpdate=true;
+  ps.vel.fill(0);
+  loadIn = { t0: clock.elapsedTime, starts, delays, done:false };
+}
+function stepLoadIn(time){
+  const dur=CONFIG.loadIn.duration, total=dur+CONFIG.loadIn.stagger, t=time-loadIn.t0;
+  const cg=targets[0], pos=ps.geometry.attributes.position.array, st=loadIn.starts, dl=loadIn.delays;
+  const ease=(x)=>1-Math.pow(1-x,3);
+  for(let i=0;i<COUNT;i++){ const i3=i*3; const lt=(t-dl[i])/dur; const u=lt<=0?0:lt>=1?1:ease(lt); const inv=1-u;
+    pos[i3]=st[i3]*inv+cg[i3]*u; pos[i3+1]=st[i3+1]*inv+cg[i3+1]*u; pos[i3+2]=st[i3+2]*inv+cg[i3+2]*u; }
+  ps.geometry.attributes.position.needsUpdate=true;
+  if(t>=total){ loadIn.done=true; loadIn.active=false; ps.home.set(cg); pos.set(cg); ps.vel.fill(0);
+    scrollCue.classList.add('in'); }
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  POINTER — repel probe (cloud) OR drag-spin (settled model).
+// ════════════════════════════════════════════════════════════════════
+const probe = { active:false, o:new THREE.Vector3(1e6,1e6,1e6), d:new THREE.Vector3(0,0,-1),
+  ndc:new THREE.Vector2(), sm:new THREE.Vector2(), snap:false, ray:new THREE.Raycaster(), inv:new THREE.Matrix4() };
+function probeSet(x,y){ probe.ndc.set(x,y); if(!probe.active){ probe.snap=true; } probe.active=true; }
+function probeUpdate(){
+  if(!probe.active) return;
+  if(probe.snap){ probe.sm.copy(probe.ndc); probe.snap=false; } else probe.sm.lerp(probe.ndc, CONFIG.pointer.smoothing);
+  probe.ray.setFromCamera(probe.sm, camera);
+  probe.inv.copy(cloudGroup.matrixWorld).invert();
+  probe.o.copy(probe.ray.ray.origin).applyMatrix4(probe.inv);
+  probe.d.copy(probe.ray.ray.direction).transformDirection(probe.inv);
+}
+
+let drag = { on:false, lastX:0, lastY:0, beat:-1 };
+canvas.style.pointerEvents = 'auto';
+
+function activeModelBeat(){ // returns beat index if a model is currently settled, else -1
+  if (state.settled < CONFIG.dwell.textCrossfade) return -1;
+  const b = Math.round(state.center);
+  return BEATS[b] && BEATS[b].kind==='model' && models[b] ? b : -1;
+}
+
+addEventListener('pointermove', (e)=>{
+  const x=(e.clientX/innerWidth)*2-1, y=-(e.clientY/innerHeight)*2+1;
+  if(drag.on && drag.beat>=0 && models[drag.beat]){
+    const m=models[drag.beat];
+    m.spinVel += (e.clientX-drag.lastX) * CONFIG.spin.speed;
+    m.tiltX = Math.max(-0.6, Math.min(0.6, m.tiltX + (e.clientY-drag.lastY)*CONFIG.spin.speed*0.6));
+    drag.lastX=e.clientX; drag.lastY=e.clientY;
+  } else {
+    probeSet(x,y);
+  }
+});
+canvas.addEventListener('pointerdown', (e)=>{
+  const b=activeModelBeat();
+  if(b>=0){ drag.on=true; drag.beat=b; drag.lastX=e.clientX; drag.lastY=e.clientY; canvas.classList.add('grabbing'); probe.active=false; }
+});
+addEventListener('pointerup', ()=>{ drag.on=false; canvas.classList.remove('grabbing'); });
+addEventListener('pointerleave', ()=>{ probe.active=false; drag.on=false; canvas.classList.remove('grabbing'); });
+
+// ════════════════════════════════════════════════════════════════════
+//  SCROLL — Lenis drives progress; gentle snap to each beat centre.
+// ════════════════════════════════════════════════════════════════════
+const stage = document.getElementById('stage');
+// total scroll: each gap between beats = segmentVh viewport-heights.
+stage.style.height = ((N-1)*CONFIG.scroll.segmentVh + 1) * 100 + 'vh';
+
+let lenis=null;
+if(!reducedMotion){
+  lenis = new Lenis({ duration:0.8, easing:(x)=>Math.min(1,1.001-Math.pow(2,-10*x)), smoothWheel:true, smoothTouch:false });
+  const raf=(t)=>{ lenis.raf(t); requestAnimationFrame(raf); }; requestAnimationFrame(raf);
+}
+
+const state = { p:0, center:0, settled:0 };  // p:0..(N-1) beat-units, center:nearest beat, settled:0..1
+function readScroll(){
+  const max = stage.scrollHeight - innerHeight;
+  const y = (scrollY||pageYOffset);
+  const f = max>0 ? Math.min(1, Math.max(0, y/max)) : 0;
+  state.p = f * (N-1);
+  const cue = Math.max(0, 1 - y/90); scrollCue.style.opacity = String(cue*0.5);
+}
+if(lenis) lenis.on('scroll', readScroll); else addEventListener('scroll', readScroll, {passive:true});
+
+// Snap: when scroll goes quiet near a beat, ease to its exact centre.
+let snapTimer=null, lastY=-1;
+function scheduleSnap(){
+  if(reducedMotion || !lenis) return;
+  clearTimeout(snapTimer);
+  snapTimer = setTimeout(()=>{
+    const max = stage.scrollHeight - innerHeight;
+    const beat = Math.round(state.p);
+    const targetY = (beat/(N-1)) * max;
+    if(Math.abs(targetY - (scrollY||0)) > 4) lenis.scrollTo(targetY, { duration:CONFIG.scroll.snapDuration, easing:(x)=>1-Math.pow(1-x,3) });
+  }, 140);
+}
+addEventListener('wheel', scheduleSnap, {passive:true});
+addEventListener('touchend', scheduleSnap, {passive:true});
+
+// ════════════════════════════════════════════════════════════════════
+//  MORPH — fill ps.home from the timeline each frame.
+// ════════════════════════════════════════════════════════════════════
+const lerpBuf = new Float32Array(COUNT*3);
+function morphTarget(p){
+  const i = Math.floor(p); const frac = p - i;
+  const A = targets[i] || DISPERSE;
+  const B = targets[Math.min(i+1,N-1)] || DISPERSE;
+  // route through DISPERSE: first half A→cloud, second half cloud→B
+  let from, to, u;
+  if(frac < 0.5){ from=A; to=DISPERSE; u=frac/0.5; }
+  else          { from=DISPERSE; to=B; u=(frac-0.5)/0.5; }
+  const e = CONFIG.morph.ease(u), inv=1-e;
+  for(let k=0;k<COUNT*3;k++) lerpBuf[k] = from[k]*inv + to[k]*e;
+  return lerpBuf;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  OVERLAY — phase text blocks by beat settledness.
+// ════════════════════════════════════════════════════════════════════
+const ov = {
+  lead: document.querySelector('.ov-lead'),
+  product: document.getElementById('ovProduct'),
+  divider: document.querySelector('.ov-divider'),
+  index: document.getElementById('ovIndex'), name: document.getElementById('ovName'),
+  meta: document.getElementById('ovMeta'), link: document.getElementById('ovLink'),
+};
+const scrollCue = document.getElementById('scrollCue');
+let curProductBeat=-1;
+function setProductChrome(b){
+  if(b===curProductBeat) return; curProductBeat=b; const d=BEATS[b];
+  ov.index.textContent = `${String(b).padStart(2,'0')} / ${String(N-2).padStart(2,'0')}`;
+  ov.name.textContent = d.name; ov.meta.textContent = `${d.year} · ${d.disc}`;
+  ov.link.setAttribute('href', `/work/${d.slug}/`);
+}
+// beat dots
+const dotsWrap=document.getElementById('beatDots');
+for(let i=1;i<N-1;i++){ const dot=document.createElement('div'); dot.className='dot'; dotsWrap.appendChild(dot); }
+const dots=[...dotsWrap.children];
+
+function updateOverlay(){
+  const p=state.p; const center=Math.round(p); state.center=center;
+  const settled = Math.max(0, 1 - Math.abs(p-center)/CONFIG.dwell.half); // 1 at centre → 0 at ±half
+  state.settled = settled;
+  // beat 0 lead
+  ov.lead.style.opacity = (center===0) ? settled : 0;
+  // product chrome
+  const cb=BEATS[center];
+  if(cb && cb.kind==='model'){ setProductChrome(center); ov.product.style.opacity = settled; }
+  else ov.product.style.opacity = 0;
+  // divider — crisp type ramps in over the latter half of the settle (dust fades under it)
+  const dv = Math.max(0,(settled-CONFIG.dwell.textCrossfade)/(1-CONFIG.dwell.textCrossfade));
+  ov.divider.style.opacity = (center===N-1) ? dv : 0;
+  // dots
+  dots.forEach((d,idx)=> d.classList.toggle('on', idx+1===center));
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  RENDER LOOP
+// ════════════════════════════════════════════════════════════════════
+const clock = new THREE.Clock(); clock.getDelta();
+let accumY=0;
+const hud=document.getElementById('hud');
+
+let ready=false;
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+scrollTo(0,0);
+(async function init(){
+  await fontReady();
+  buildTextTargets();
+  ps.home.set(targets[0]);
+  startLoadIn();
+  ready=true;
+  // load models after first paint so CG shows instantly
+  for(let i=0;i<N;i++) if(BEATS[i].kind==='model') loadModel(i);
+})();
+
+addEventListener('resize', ()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight,false); sizeScale(); });
+
+function frame(){
+  requestAnimationFrame(frame);
+  if(!ready) return;
+  const dt=Math.min(clock.getDelta(),1/30), time=clock.elapsedTime;
+  readScroll(); updateOverlay();
+
+  // particle home: load-in first, then scroll morph.
+  if(loadIn && !loadIn.done){ stepLoadIn(time); }
+  else { ps.home.set(morphTarget(state.p)); }
+
+  // Rotation: ONLY the CG beat auto-spins. Everywhere else ease to the nearest
+  // "front" angle (nearest TAU multiple — minimal unwind) so every product/text
+  // shape settles front-facing AND the textured model can share this exact base
+  // rotation → dust and texture always register.
+  const modelBeatNow = (state.settled>CONFIG.dwell.textCrossfade && BEATS[state.center]?.kind==='model' && models[state.center]) ? state.center : -1;
+  if(state.center===0 && loadIn && loadIn.done){ accumY += CONFIG.rotation.speed*dt; }
+  else { accumY += (Math.round(accumY/TAU)*TAU - accumY) * 0.08; }
+  cloudGroup.rotation.y = accumY;
+  cloudGroup.updateMatrixWorld();
+
+  probeUpdate();
+  if(loadIn && !loadIn.done){} else stepSim(ps, dt, probe);
+
+  // ── model handoff: crossfade dust↔texture; drag-spin the active model ──
+  let particleOpacity = 1;
+  for(let i=0;i<N;i++){
+    const m=models[i]; if(!m) continue;
+    const isCenter = (state.center===i);
+    // settledness for THIS beat (0 away → 1 at its centre)
+    const s = isCenter ? Math.max(0, 1 - Math.abs(state.p-i)/CONFIG.dwell.half) : 0;
+    const vis = Math.max(0, (s - CONFIG.dwell.textCrossfade) / (1 - CONFIG.dwell.textCrossfade)); // 0..1 texture reveal
+    m.group.visible = vis>0.001;
+    for(const mat of m.materials) mat.opacity = vis;
+    if(isCenter) particleOpacity = Math.min(particleOpacity, 1 - vis);
+    // spin physics
+    if(i===modelBeatNow){
+      m.spin += m.spinVel; m.spinVel *= CONFIG.spin.damping;
+    } else {
+      m.spinVel *= CONFIG.spin.damping; m.spin += m.spinVel;
+      m.tiltX += (0 - m.tiltX)*CONFIG.spin.returnLerp; // ease tilt back when released
+    }
+    m.group.rotation.set(m.tiltX, accumY + m.spin, 0);   // share the cloud's base rotation → registered
+    m.group.updateMatrixWorld();
+  }
+  // text divider: the dust resolves into crisp DOM type — fade particles as it forms.
+  if (BEATS[state.center]?.kind === 'text') {
+    const vis = Math.max(0, (state.settled - CONFIG.dwell.textCrossfade) / (1 - CONFIG.dwell.textCrossfade));
+    particleOpacity = Math.min(particleOpacity, 1 - vis);
+  }
+  ps.material.uniforms.uOpacity.value = particleOpacity;
+
+  canvas.classList.toggle('grabbable', activeModelBeat()>=0 && !drag.on);
+
+  renderer.render(scene, camera);
+
+  if(hud){ hud.textContent =
+    `beat ${state.p.toFixed(2)}  centre ${state.center}  settled ${state.settled.toFixed(2)}\n`+
+    `models ${models.filter(Boolean).length}/${BEATS.filter(b=>b.kind==='model').length}  pcount ${COUNT.toLocaleString()}`; }
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

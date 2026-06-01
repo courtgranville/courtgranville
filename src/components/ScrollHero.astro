@@ -93,7 +93,7 @@ const PRODUCTS = [
      left and vertically centred beside the centred glyph. */
   .ov-lead {
     left: var(--outer); top: 50%; transform: translateY(-50%);
-    max-width: 38ch;
+    width: min(520px, 36vw);
   }
   /* The name in bold caps, JS-fitted so its width exactly equals the lead column
      (the paragraph) at every viewport. font-size is set by fitHeroName(). */
@@ -103,14 +103,14 @@ const PRODUCTS = [
     color: var(--text); margin: 0 0 clamp(18px, 1.6vw, 30px); white-space: nowrap;
   }
   .ov-lead-p {
-    font-family: var(--serif); font-weight: 400;
-    font-size: var(--fs-body); line-height: 1.5; color: var(--text); margin: 0;
+    font-family: var(--sans); font-weight: 400;
+    font-size: var(--fs-body); line-height: var(--lh-body); color: var(--text); margin: 0;
   }
 
   /* Per-product chrome — left column, mirroring the editorial carousel voice. */
   .ov-product {
     left: var(--outer); top: 50%; transform: translateY(-50%);
-    display: flex; flex-direction: column; align-items: flex-start; max-width: 30ch;
+    display: flex; flex-direction: column; align-items: flex-start; width: min(520px, 36vw);
   }
   .ov-kicker { display: block; color: var(--text-faint); margin-bottom: 14px; }
   .ov-index {
@@ -167,20 +167,15 @@ const PRODUCTS = [
   }
   .cg-beats :global(.dot.on) { opacity: 1; background: var(--accent); }
 
-  /* Stacked layout: below this width the copy can't sit beside the centred glyph
-     (its column would cross the screen centre), so the 3D content lifts into the
-     upper half (camera, see fitCamera) and the copy drops to the lower half —
-     full-width, left-aligned, no overlap. */
-  @media (max-width: 1200px) {
-    .ov-lead, .ov-product {
-      top: auto; bottom: clamp(56px, 13vh, 150px); transform: none;
-      left: var(--outer); right: var(--outer); max-width: min(86vw, 34ch);
-    }
+  /* Stacked layout — JS (fitCamera) adds `.stacked` and lifts the 3D content into
+     the upper half when there's no room for the copy beside the glyph; the copy
+     then drops to the lower half, full-width. */
+  .cg-overlay.stacked .ov-lead,
+  .cg-overlay.stacked .ov-product {
+    top: auto; bottom: clamp(48px, 12vh, 140px); transform: none;
+    left: var(--outer); right: var(--outer); width: auto; max-width: min(88vw, 36ch);
   }
-  @media (max-width: 600px) {
-    .ov-lead, .ov-product { max-width: min(86vw, 30ch); bottom: clamp(48px, 11vh, 110px); }
-    .cg-beats { right: 16px; }
-  }
+  @media (max-width: 600px) { .cg-beats { right: 16px; } }
   @media (prefers-reduced-motion: reduce) {
     .cg-arrow { animation: none; }
   }
@@ -442,16 +437,44 @@ camera.position.set(0,0,CONFIG.scene.cameraDistance);
 // growing into the left-hand copy. Reference is the wide layout the hero was tuned
 // at; clamped so it never zooms in past that (≥ref → 1), nor so far back the glyph
 // is lost. Pure projection change — the morph/snap/fit maths are all world-space.
-const CAM_REF_W = 1680, CAM_MIN_S = 0.56, STACK_BP = 1200, STACK_RISE = 0.22;
+// Lay the hero out so the copy stays on the LEFT and the glyph/models never
+// overlap it at ANY window shape. We frame the 3D content into the free region to
+// the RIGHT of the copy column: dolly so it fits that region (width AND height, so
+// a tall/near-square window can't make it spread sideways into the copy) and
+// offset the camera so it's centred there. When the viewport is too narrow for a
+// beside layout, STACK instead — content lifts into the upper half, the copy drops
+// below (CSS reacts to the `.stacked` class). Pure camera move/scale; the morph/
+// snap/fit maths are world-space and untouched. The copy-column width here mirrors
+// the CSS (`min(520px, 36vw)`) so the two always agree.
+const HW = CONFIG.morph.shapeRadius;   // worst-case content half-extent (a model's bounding sphere)
 function fitCamera(){
-  const s = Math.min(1, Math.max(CAM_MIN_S, innerWidth / CAM_REF_W));
-  camera.position.z = CONFIG.scene.cameraDistance / s;
-  // At/below STACK_BP the copy can no longer sit beside the centred glyph (its
-  // column crosses the screen centre), so the layout STACKS: CSS drops the copy
-  // into the lower half, and here we lift the 3D content into the upper half by
-  // dollying the camera DOWN (it looks straight ahead, so −y raises the content).
-  const visH = 2 * camera.position.z * Math.tan(THREE.MathUtils.degToRad(CONFIG.scene.fov) / 2);
-  camera.position.y = innerWidth <= STACK_BP ? -STACK_RISE * visH : 0;
+  const W = innerWidth, H = innerHeight;
+  const tanV = Math.tan(THREE.MathUtils.degToRad(CONFIG.scene.fov) / 2);
+  const outer  = Math.max(W <= 768 ? 24 : 36, 0.05 * W);
+  const copyW  = Math.min(520, 0.36 * W);
+  const gutter = Math.max(56, 0.04 * W);
+  const regionL = outer + copyW + gutter;          // left edge of the glyph's region
+  const regionR = W - Math.max(outer, 72);         // keep clear of the beat dots
+  const regionW = regionR - regionL;
+  const stacked = regionW < 360;                   // no room beside the copy → stack
+  let D, x, y;
+  if (!stacked) {
+    const fit = 0.86;
+    const Dw = HW * H / (tanV * fit * regionW);     // distance to fit content WIDTH into the region
+    const Dh = HW / (tanV * fit);                   // …and to fit its HEIGHT into the viewport
+    D = Math.max(CONFIG.scene.cameraDistance, Dw, Dh);
+    const visW = 2 * D * tanV * (W / H);
+    const cx = (regionL + regionR) / 2;
+    x = -((cx - W / 2) / W) * visW;                 // slide content to the region's centre
+    y = 0;
+  } else {
+    D = Math.max(CONFIG.scene.cameraDistance, HW * H / (tanV * 0.42 * W), HW / (tanV * 0.5));
+    x = 0;
+    y = -0.22 * (2 * D * tanV);                     // lift content into the upper half
+  }
+  camera.position.set(x, y, D);
+  const ovl = document.querySelector('.cg-overlay');
+  if (ovl) ovl.classList.toggle('stacked', stacked);
 }
 fitCamera();
 

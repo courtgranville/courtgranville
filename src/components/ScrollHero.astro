@@ -5,8 +5,11 @@
 //
 //   CG glyph (the hero, kept) → enveloping dispersal → each product's particles
 //   build into the REAL textured GLB (grab-and-spin) → adjust directly into the
-//   next product → … → dispersal forms the "Selected Work" particle-text, which
-//   resolves into crisp DOM type and hands off to the editorial body below.
+//   next product → … → the final product (Spider-209) rests at the bottom of the
+//   stage and scrolls straight up into the editorial body below (which opens with
+//   the About "In short." section). There is NO "Selected Work" particle-text
+//   divider — that interstitial was removed; "Selected Work" survives only as the
+//   kicker on each product's overlay copy.
 //
 // Architecture (per CLAUDE.md): vanilla `<script is:inline type="module">` so the
 // three / three/addons / lenis specifiers resolve through Layout.astro's CDN import
@@ -14,8 +17,11 @@
 // meshopt+WebP GLBs in public/models/ (no DRACO). It OWNS the page's Lenis instance
 // (exposed as window.__cgLenis) so Layout shares it instead of creating a second.
 //
-// This replaces Hero.astro + Carousel.astro on the homepage; the editorial body
-// (approach, writing, footer) follows in normal flow and occludes the sticky canvas.
+// This replaces Hero.astro + Carousel.astro on the homepage; the editorial body —
+// the single-page identity narrative (About → Disciplines → Approach → Beginnings
+// → Writing → Colophon → Contact) — follows in normal flow and occludes the sticky
+// canvas. It dispatches `hero:loaded` (see below) once the load-in completes; Nav
+// fades in on that event.
 
 // The curated four-product sequence (a subset of the full /work index). Kept here
 // for the SSR/no-JS link list; the engine's BEAT config (with view angles + model
@@ -228,8 +234,11 @@ for(let i=0;i<N-1;i++) GAP_DISPERSE[i] = BEATS[i].kind !== BEATS[i+1].kind;
 // Per-gap scroll length (vh): section dispersals span more scroll than model morphs.
 const GAP_VH = [];
 for(let i=0;i<N-1;i++) GAP_VH[i] = GAP_DISPERSE[i] ? CONFIG.scroll.sectionVh : CONFIG.scroll.modelVh;
-// The exit (last product → big dispersal → reform into "In short.") gets its own length
-// so the disperse-and-reform has room to read before the editorial body takes over.
+// Legacy exit-length override: only applied if the last beat were a `text`/`disperse`
+// divider. The current narrative ends on a `model` (Spider-209) that scrolls straight
+// into the editorial body, so this branch is dormant (kept in case a closing divider
+// beat is reintroduced; `CONFIG.scroll.exitVh` + `morph.dividerHeight` are likewise
+// vestigial until then).
 if(BEATS[N-1].kind === 'text' || BEATS[N-1].kind === 'disperse') GAP_VH[N-2] = CONFIG.scroll.exitVh;
 const TOTAL_VH = GAP_VH.reduce((a,b)=>a+b,0);
 const STOP_F = [0];

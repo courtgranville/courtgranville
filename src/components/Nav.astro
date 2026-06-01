@@ -3,11 +3,12 @@
 // — fade-in after hero load-in, scroll-backdrop transition, underline-wipe
 // hover, brand-as-home anchor — only the markup moves into a real component.
 //
-// Behaviours:
-//   - Fades in (`.in`) when the hero's load-in completes; the hero dispatches
-//     a `hero:loaded` event from Hero.astro for that handoff.
-//   - Adds `.scrolled` once we are past the hero (Phase 2 wires this from
-//     the homepage's Lenis scroll listener).
+// Behaviours (the in/scrolled logic itself lives in Layout.astro):
+//   - Fades in (`.in`) when the hero's load-in completes. On the homepage that
+//     handoff is the `hero:loaded` event dispatched by ScrollHero.astro; pages
+//     without a hero stage fade the nav in immediately (see Layout.astro).
+//   - Adds `.scrolled` once we are past the hero, from the homepage's Lenis
+//     scroll listener (Layout.astro).
 //   - Brand is the home link — clicking smooth-scrolls to top.
 //   - The link matching the current section carries aria-current="page"
 //     (§6.7) with a held underline, so the visitor always knows where they are.
@@ -49,7 +50,7 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
   .site-nav.in { opacity: 1; }
 
   /* Subtle blurred backdrop appears once the hero is scrolled past, so the
-   * text stays legible over carousel imagery. */
+   * text stays legible over the editorial content below. */
   .site-nav::before {
     content: '';
     position: absolute;

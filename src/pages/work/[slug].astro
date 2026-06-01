@@ -159,6 +159,13 @@ const nextName = nextProject?.data.name ?? '';
   <Nav />
   <main>
     <article>
+      <!-- Breadcrumb — a way back to the gallery from the top of the page. -->
+      <Grid class="proj-crumb">
+        <nav class="proj-crumb-inner" aria-label="Breadcrumb">
+          <a class="crumb label" href="/work/">&larr; All work</a>
+        </nav>
+      </Grid>
+
       <!-- 1. The interactive model — the first thing on every project that has one. -->
       {modelFraming && (
         <Grid class="proj-top">
@@ -277,6 +284,15 @@ const nextName = nextProject?.data.name ?? '';
 
 <style>
   article { padding-top: calc(var(--nav-h) + var(--space-page-top)); }
+
+  /* ── Breadcrumb — a quiet label-voice link back to the gallery, on the rail. ── */
+  :global(.proj-crumb) { margin-bottom: var(--space-block); }
+  .proj-crumb-inner { grid-column: 1 / -1; }
+  .crumb {
+    color: var(--text-quiet);
+    transition: color var(--dur-hover) var(--ease-out);
+  }
+  .crumb:hover { color: var(--accent); }
 
   /* ── 1. Model stage — full content width, a generous fixed height so the model
         reads large. Explicit height (not aspect-ratio) so the canvas drawing

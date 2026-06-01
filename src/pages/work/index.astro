@@ -12,23 +12,22 @@ import Nav from '../../components/Nav.astro';
 import Footer from '../../components/Footer.astro';
 import Grid from '../../components/Grid.astro';
 import WorkGallery from '../../components/r3f/WorkGallery.tsx';
+import { MODELS } from '../../data/models';
 
 // The Nuclear Question (web/data) is intentionally omitted for now — its model
-// is still in progress. Order follows the work index: most recent first.
-// `fill` = how much of the frame the model's bounding sphere fills. The sphere is
-// rotation-invariant, so a value ≤1 can NEVER clip at any spin angle — these stay
-// safely under that ceiling so nothing is ever cut off, with the taller stage box
-// (below) giving elongated objects (lamps, phones) the vertical room to read large
-// without crowding the edges. Boxier objects sit a touch higher.
+// is still in progress. Order follows the work index: most recent first. The
+// per-model framing (model path, fill, resting viewRY·viewRX) lives once in
+// src/data/models.ts and is shared with the project pages; this array only
+// carries the gallery's editorial labels.
 const PROJECTS = [
-  { name: 'Mantis',                  year: 2026, discipline: 'Product Design',          slug: 'mantis',               model: '/models/mantis.glb',     fill: 0.9,  viewRY: 0.0,  viewRX: 0.28 },
-  { name: 'Wave',                    year: 2026, discipline: 'Product Design',          slug: 'wave',                 model: '/models/speaker.glb',    fill: 0.94, viewRY: 0.0,  viewRX: 0.0  },
-  { name: 'Gravity Wave Backgammon', year: 2024, discipline: 'Product Design',          slug: 'backgammon',           model: '/models/backgammon.glb', fill: 0.96, viewRY: -0.7, viewRX: 0.62 },
-  { name: 'LUMI',                    year: 2023, discipline: 'Product · Critical Design', slug: 'lumi',                model: '/models/lumi.glb',       fill: 0.88, viewRY: 0.2,  viewRX: 0.12 },
-  { name: 'YourPAL',                 year: 2023, discipline: 'App Design · UX·UI',       slug: 'yourpal',              model: '/models/yourpal.glb',    fill: 0.86, viewRY: 0.25, viewRX: 0.1  },
-  { name: 'Spider-209',              year: 2022, discipline: 'Product Design',          slug: 'spider-209',           model: '/models/spider.glb',     fill: 0.88, viewRY: 0.3,  viewRX: 0.15 },
-  { name: 'Wabi Sabi',               year: 2022, discipline: 'Product Design',          slug: 'universal-phone-case', model: '/models/wabiSabi.glb',   fill: 0.86, viewRY: 0.3,  viewRX: 0.1  },
-];
+  { name: 'Mantis',                  year: 2026, discipline: 'Product Design',           slug: 'mantis' },
+  { name: 'Wave',                    year: 2026, discipline: 'Product Design',           slug: 'wave' },
+  { name: 'Gravity Wave Backgammon', year: 2024, discipline: 'Product Design',           slug: 'backgammon' },
+  { name: 'LUMI',                    year: 2023, discipline: 'Product · Critical Design', slug: 'lumi' },
+  { name: 'YourPAL',                 year: 2023, discipline: 'App Design · UX·UI',        slug: 'yourpal' },
+  { name: 'Spider-209',              year: 2022, discipline: 'Product Design',           slug: 'spider-209' },
+  { name: 'Wabi Sabi',               year: 2022, discipline: 'Product Design',           slug: 'universal-phone-case' },
+].map((p) => ({ ...p, ...MODELS[p.slug] }));
 ---
 <Layout title="Work — Court Granville" description="Selected projects by Court Granville — each presented as the product itself, in 3D.">
   <Nav />

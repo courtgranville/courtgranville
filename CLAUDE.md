@@ -79,7 +79,7 @@ Rules:
 - `src/components/Layout.astro` — document shell; loads tokens/fonts/global CSS; hosts the **CDN import map** (`three@0.162.0`, addons, `lil-gui@0.19.2`, `lenis@1.3.23`) for inline scripts; site-wide Lenis smooth-scroll + reveal observer + nav state.
 - `src/components/Nav.astro`, `Footer.astro` — site chrome. Nav links are **Work** (`/work/`) + **About** / **Contact** (homepage anchors `/#about`, `/#contact`); brand "CG" scrolls to top.
 - `src/components/ScrollHero.astro` — the homepage's scroll-driven particle narrative (see Current state). Vanilla three.js; owns the page Lenis.
-- `src/components/ContactForm.astro` — the inline contact form mounted in the homepage's Contact section.
+- `src/components/ContactForm.astro` — the inline contact form mounted in the homepage's Contact section. A label-voice **"Download CV ↓"** link sits beside it (and under the email on `/contact/`), pointing at `public/Court_Granville_CV.pdf` (served at `/Court_Granville_CV.pdf` — the CV lives in `public/`, not `docs/`, so it's downloadable; the public repo means it is publicly accessible by design).
 - `src/components/Hero.astro` — the WebGL particle CG hero (locked `CONFIG`; lil-gui tuning panel; dispatches `hero:loaded`). Vanilla three.js via `<script is:inline type="module">`.
 - `src/components/Grid.astro` — the column container (see grid section).
 - `src/components/WorkIndex.astro` — the old typographic `/work/` list + 3D-image-canvas hover-preview surface (uses `public/js/hero-canvas.js`). **Superseded by `WorkGallery.tsx`; no longer mounted by a live page** (kept in tree).

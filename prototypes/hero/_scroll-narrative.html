@@ -204,20 +204,20 @@ const CONFIG = {
     baseSize: 0.032, sizeVariance: 0.22,
     inkColor: '#161616',
   },
-  // Spring sim — verbatim from the hero so the CG load-in/repel feel is unchanged.
-  physics: { springK: 15, damping: 0.99, maxVel: 12.1, maxDisplacement: 4 },
-  pointer: { radius: 0.27, strength: 25, smoothing: 0.59 },
+  // Pointer "wind" — velocity impulses near the cursor (Omma-style), decaying.
+  // (No spring → no overshoot/bounce when the scroll target moves.)
+  pointer: { radius: 0.45, strength: 8, smoothing: 0.5, windDecay: 0.90 },
   rotation:{ speed: reducedMotion ? 0 : 0.06 },          // gentle auto-spin of the cloud
   loadIn:  { duration: 1.6, stagger: 0.7, startVolume: 7 },
   morph: {
     shapeRadius: 1.9,        // world radius every product/text shape fits into (≈ CG size)
-    disperseRadius: 3.2,     // the cloud particles fly out to between beats
-    follow: 0.10,            // how fast the cloud chases its scroll-driven target (0..1)
+    disperseRadius: 9.0,     // BIG — overflows the screen so the dispersal envelops the viewer
+    follow: 0.085,           // first-order approach: smooth, NEVER overshoots (Omma's model)
     ease: (t)=> 1 - Math.pow(1 - Math.min(Math.max(t,0),1), 3),  // easeOutCubic
   },
   dwell: {
     half: 0.42,              // within ±half (in segment-units) of a beat centre = "settled"
-    textCrossfade: 0.55,     // settledness at which the model fully replaces the dust
+    textCrossfade: 0.42,     // settledness at which the texture starts skinning over the dust
     dividerHeight: 2.2,      // world height of the particle divider text
   },
   spin: { speed: 0.0065, damping: 0.92, returnLerp: 0.06 },  // drag-to-spin feel
@@ -288,10 +288,12 @@ function sampleDisperse(count, radius, seed=99){
   const out = new Float32Array(count*3);
   for (let i=0;i<count;i++){
     const u=rng(), v=rng(), w=rng();
-    const theta=Math.acos(1-2*u), phi=TAU*v, r=radius*(0.35+0.65*Math.cbrt(w));
+    // Hollow-ish shell (0.55..1 of radius) so the cloud reads as a big volume the
+    // viewer sits inside, not a dense dot. Full sphere in z too (enveloping).
+    const theta=Math.acos(1-2*u), phi=TAU*v, r=radius*(0.55+0.45*Math.cbrt(w));
     out[i*3]   = r*Math.sin(theta)*Math.cos(phi);
     out[i*3+1] = r*Math.sin(theta)*Math.sin(phi);
-    out[i*3+2] = r*Math.cos(theta)*0.6;
+    out[i*3+2] = r*Math.cos(theta);
   }
   return out;
 }
@@ -383,29 +385,29 @@ class Particles {
   }
 }
 
-// Spring integrator + pointer repel — distilled from the hero's Simulator.
-function stepSim(ps, dt, probe){
+// Smooth morph integrator (Omma's model): each particle does a first-order
+// approach to its scroll-driven target — `cur += (target - cur) * follow` — which
+// eases in and NEVER overshoots, so scrubbing the scroll glides between shapes
+// instead of bouncing. Pointer proximity adds a decaying velocity impulse ("wind")
+// so the dust can still be disturbed, then drifts back. No spring, no oscillation.
+function stepMorph(ps, dt, probe){
   const pos=ps.geometry.attributes.position.array, vel=ps.vel, home=ps.home;
-  const p=CONFIG.physics, k=p.springK, dmp=p.damping;
-  const maxV2=p.maxVel*p.maxVel, maxD=p.maxDisplacement, maxD2=maxD*maxD;
+  const follow=CONFIG.morph.follow, decay=CONFIG.pointer.windDecay;
   const on=probe.active, ox=probe.o.x,oy=probe.o.y,oz=probe.o.z, rx=probe.d.x,ry=probe.d.y,rz=probe.d.z;
   const r=CONFIG.pointer.radius, r2=r*r, str=CONFIG.pointer.strength;
   for(let i=0;i<COUNT;i++){
     const i3=i*3;
-    let fx=-k*(pos[i3]-home[i3]), fy=-k*(pos[i3+1]-home[i3+1]), fz=-k*(pos[i3+2]-home[i3+2]);
     if(on){
       const vx=pos[i3]-ox, vy=pos[i3+1]-oy, vz=pos[i3+2]-oz;
       const proj=vx*rx+vy*ry+vz*rz, px=vx-proj*rx, py=vy-proj*ry, pz=vz-proj*rz;
       const pd2=px*px+py*py+pz*pz;
-      if(pd2<r2){ const pd=Math.sqrt(pd2)||1e-4, u=1-pd/r, sm=u*u*(3-2*u), mag=str*sm/pd; fx+=px*mag; fy+=py*mag; fz+=pz*mag; }
+      if(pd2<r2){ const pd=Math.sqrt(pd2)||1e-4, u=1-pd/r, sm=u*u*(3-2*u), f=str*sm*dt;
+        vel[i3]+=(px/pd)*f; vel[i3+1]+=(py/pd)*f; vel[i3+2]+=(pz/pd)*f; }
     }
-    let vX=(vel[i3]+fx*dt)*dmp, vY=(vel[i3+1]+fy*dt)*dmp, vZ=(vel[i3+2]+fz*dt)*dmp;
-    const v2=vX*vX+vY*vY+vZ*vZ; if(v2>maxV2){ const s=p.maxVel/Math.sqrt(v2); vX*=s; vY*=s; vZ*=s; }
-    vel[i3]=vX; vel[i3+1]=vY; vel[i3+2]=vZ;
-    let nx=pos[i3]+vX*dt, ny=pos[i3+1]+vY*dt, nz=pos[i3+2]+vZ*dt;
-    const dx=nx-home[i3], dy=ny-home[i3+1], dz=nz-home[i3+2], d2=dx*dx+dy*dy+dz*dz;
-    if(d2>maxD2){ const s=maxD/Math.sqrt(d2); nx=home[i3]+dx*s; ny=home[i3+1]+dy*s; nz=home[i3+2]+dz*s; }
-    pos[i3]=nx; pos[i3+1]=ny; pos[i3+2]=nz;
+    pos[i3]   += (home[i3]  -pos[i3])  *follow + vel[i3];
+    pos[i3+1] += (home[i3+1]-pos[i3+1])*follow + vel[i3+1];
+    pos[i3+2] += (home[i3+2]-pos[i3+2])*follow + vel[i3+2];
+    vel[i3]*=decay; vel[i3+1]*=decay; vel[i3+2]*=decay;
   }
   ps.geometry.attributes.position.needsUpdate = true;
 }
@@ -604,14 +606,18 @@ addEventListener('touchend', scheduleSnap, {passive:true});
 //  MORPH — fill ps.home from the timeline each frame.
 // ════════════════════════════════════════════════════════════════════
 const lerpBuf = new Float32Array(COUNT*3);
+// Each beat-gap routes A → full DISPERSE cloud → B, with a HOLD at the cloud in
+// the middle (frac 0.40–0.60) so — even with the smooth follow-lag — the dust
+// genuinely expands to fill the screen and the viewer passes *through* it.
+const D0 = 0.40, D1 = 0.60;
 function morphTarget(p){
   const i = Math.floor(p); const frac = p - i;
   const A = targets[i] || DISPERSE;
   const B = targets[Math.min(i+1,N-1)] || DISPERSE;
-  // route through DISPERSE: first half A→cloud, second half cloud→B
   let from, to, u;
-  if(frac < 0.5){ from=A; to=DISPERSE; u=frac/0.5; }
-  else          { from=DISPERSE; to=B; u=(frac-0.5)/0.5; }
+  if(frac < D0){ from=A; to=DISPERSE; u=frac/D0; }
+  else if(frac < D1){ from=DISPERSE; to=DISPERSE; u=0; }       // hold the enveloping cloud
+  else { from=DISPERSE; to=B; u=(frac-D1)/(1-D1); }
   const e = CONFIG.morph.ease(u), inv=1-e;
   for(let k=0;k<COUNT*3;k++) lerpBuf[k] = from[k]*inv + to[k]*e;
   return lerpBuf;
@@ -701,7 +707,7 @@ function frame(){
   cloudGroup.updateMatrixWorld();
 
   probeUpdate();
-  if(loadIn && !loadIn.done){} else stepSim(ps, dt, probe);
+  if(loadIn && !loadIn.done){} else stepMorph(ps, dt, probe);
 
   // ── model handoff: crossfade dust↔texture; drag-spin the active model ──
   let particleOpacity = 1;

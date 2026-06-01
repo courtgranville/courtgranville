@@ -13,25 +13,20 @@
 //     (§6.7) with a held underline, so the visitor always knows where they are.
 
 const path = Astro.url.pathname;
+// About & Contact are homepage sections (anchors); the brand + Work are page links.
 const links = [
   { href: '/work/',    label: 'Work' },
-  { href: '/blog/',    label: 'Writing' },
-  { href: '/about/',   label: 'About' },
-  { href: '/contact/', label: 'Contact' },
-  { href: '/court-granville-cv.pdf', label: 'CV', external: true },
+  { href: '/#about',   label: 'About' },
+  { href: '/#contact', label: 'Contact' },
 ];
-const isCurrent = (href: string) => path === href || path.startsWith(href);
+// Only real page links can be the "current" page; hash anchors never are.
+const isCurrent = (href: string) => !href.includes('#') && (path === href || path.startsWith(href));
 ---
 <nav class="site-nav" aria-label="Primary">
   <a class="brand" href="#top" data-scroll-top>Court Granville</a>
   <div class="nav-links">
     {links.map((l) => (
-      <a
-        class="nav-link"
-        href={l.href}
-        aria-current={!l.external && isCurrent(l.href) ? 'page' : undefined}
-        {...(l.external ? { target: '_blank', rel: 'noopener' } : {})}
-      >{l.label}</a>
+      <a class="nav-link" href={l.href} aria-current={isCurrent(l.href) ? 'page' : undefined}>{l.label}</a>
     ))}
   </div>
 </nav>

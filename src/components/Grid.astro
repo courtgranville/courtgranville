@@ -10,11 +10,14 @@
 export interface Props {
   as?: keyof HTMLElementTagNameMap;
   class?: string;
+  [key: string]: unknown;
 }
 
-const { as: Tag = 'div', class: className = '' } = Astro.props;
+// Forward any other attributes (id, aria-*, etc.) to the rendered element so a
+// <Grid> can be an anchor target or carry ARIA without a wrapper.
+const { as: Tag = 'div', class: className = '', ...rest } = Astro.props;
 ---
-<Tag class:list={['grid', className]}>
+<Tag class:list={['grid', className]} {...rest}>
   <slot />
 </Tag>
 

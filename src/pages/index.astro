@@ -9,8 +9,35 @@
 import Layout from '../components/Layout.astro';
 import Nav from '../components/Nav.astro';
 import ScrollHero from '../components/ScrollHero.astro';
+import ContactForm from '../components/ContactForm.astro';
 import Footer from '../components/Footer.astro';
 import Grid from '../components/Grid.astro';
+
+// Quick facts — the shared spec-table key/value pairs.
+const quickFacts: [string, string][] = [
+  ['Who',    'Court Granville'],
+  ['What',   'Multidisciplinary Designer'],
+  ['Where',  'London & Madrid'],
+  ['Focus',  'Technology-led design, across different design disciplines'],
+  ['Status', 'Graduated 2026 · Open to work'],
+];
+
+// What I do — disciplines in the deck's order (lead phrase + description each).
+const disciplines: [string, string][] = [
+  ['Data Visualisation & Information Design', 'Making complex data navigable for people who aren’t specialists. Turning dense datasets and technical literature into visual systems you can read, explore and trust — drawn in Illustrator, then built interactive in code.'],
+  ['Web Design & AI-assisted Development', 'Designing and building interactive sites end to end — HTML, CSS and JavaScript, with AI as a collaborator rather than a crutch. The approach behind both this site and thenuclearquestion.com.'],
+  ['UX / UI & Interaction Design', 'Apps and interfaces built around how people actually move through them. User journeys, flows, wireframes and prototyping in Figma — from a productivity app to interactive data tools.'],
+  ['Product & Industrial Design', 'Where I trained, and still how I think. Physical objects from lamps to speaker enclosures — modelled in Rhino and Blender, then made real with CNC machining, 3D printing and hands-on fabrication.'],
+  ['Brand & Communication Strategy', 'The professional thread: positioning, narrative, market research and paid media, from brand-strategy work at Big Fish and others. The same instinct — shaping how something is understood — from a different angle.'],
+];
+
+// Approach — four principles (term + line).
+const principles: [string, string][] = [
+  ['Research first', 'Understand the system before designing for it.'],
+  ['Build to learn', 'Prototype early with whatever the work needs — CNC, 3D printer, Figma, AI.'],
+  ['Translate, don’t decorate', 'Make the technical legible, not just pretty.'],
+  ['Add meaning, not clutter', 'Improve people’s lives rather than adding to them.'],
+];
 ---
 <Layout
   title="Court Granville — Multidisciplinary Designer"
@@ -26,30 +53,119 @@ import Grid from '../components/Grid.astro';
          copy in its overlay. -->
     <ScrollHero />
 
-    <!-- Below the narrative — opaque, occludes the sticky canvas as it scrolls up. -->
+    <!-- Below the narrative — opaque, occludes the sticky canvas as it scrolls up.
+         The identity unfolds across short, titled sections (kicker + title on the
+         rail, content on the body), closing with the contact form. -->
     <div class="hp-below">
-      <section class="hp-section" aria-label="More work">
-        <Grid>
-          <a class="textlink hp-allwork reveal" href="/work/">All work &rarr;</a>
-        </Grid>
-      </section>
+      <Grid class="hp-allwork-row">
+        <a class="textlink hp-allwork reveal" href="/work/">All work &rarr;</a>
+      </Grid>
 
-      <section class="hp-section hp-intro" aria-label="Approach">
-        <Grid>
-          <span class="label hp-intro-kicker reveal">Multidisciplinary Designer</span>
-          <p class="hp-intro-pos reveal" data-stagger="1">Design is the translation layer between technical complexity and the people it&rsquo;s meant to serve.</p>
-        </Grid>
-      </section>
+      <!-- Quick facts -->
+      <Grid as="section" class="hp-sec" aria-label="Quick facts">
+        <div class="hp-sec-head t-rail reveal">
+          <h2 class="hp-sec-title">Quick facts</h2>
+        </div>
+        <dl class="hp-sec-body t-body spec-table hp-facts reveal" data-stagger="1">
+          {quickFacts.map(([k, v]) => (<><dt>{k}</dt><dd>{v}</dd></>))}
+        </dl>
+      </Grid>
 
-      <section class="hp-section hp-writing" aria-label="Writing">
-        <Grid>
-          <div class="t-body hp-writing-inner reveal">
-            <span class="label">Writing</span>
-            <p class="hp-writing-p">I write about strategic communication and the public perception of contested technologies &mdash; what makes messaging credible, persuasive and honest. It began with my thesis on nuclear energy, and it&rsquo;s turning into something ongoing.</p>
-            <a class="textlink" href="/blog/">Read the writing &rarr;</a>
+      <!-- In short (About) -->
+      <Grid as="section" id="about" class="hp-sec" aria-label="About">
+        <div class="hp-sec-head t-rail reveal">
+          <span class="label hp-sec-kicker">About</span>
+          <h2 class="hp-sec-title">In short.</h2>
+        </div>
+        <div class="hp-sec-body t-body reveal" data-stagger="1">
+          <p class="hp-prose">Curiosity about how things and systems work drives most of what I do. My instinct is technological &mdash; I reach for whatever lets me build solutions, from a CNC machine and a 3D printer to Figma and code &mdash; and I&rsquo;m as comfortable in the workshop as in the browser. Across every discipline, the aim is the same: take something complicated and make it make sense, and make it well.</p>
+        </div>
+      </Grid>
+
+      <!-- What I do (Disciplines) -->
+      <Grid as="section" class="hp-sec" aria-label="What I do">
+        <div class="hp-sec-head t-rail reveal">
+          <span class="label hp-sec-kicker">Disciplines</span>
+          <h2 class="hp-sec-title">What I do.</h2>
+        </div>
+        <div class="hp-sec-body t-body reveal" data-stagger="1">
+          <p class="hp-lead">I work across disciplines rather than inside one. The common thread is a hands-on, technological approach &mdash; reaching for whatever tool builds the idea best.</p>
+          <div class="hp-disciplines">
+            {disciplines.map(([h, p]) => (
+              <div class="hp-disc">
+                <h3 class="hp-disc-h">{h}</h3>
+                <p class="hp-disc-p">{p}</p>
+              </div>
+            ))}
           </div>
-        </Grid>
-      </section>
+        </div>
+      </Grid>
+
+      <!-- Approach (Method) -->
+      <Grid as="section" class="hp-sec" aria-label="Approach">
+        <div class="hp-sec-head t-rail reveal">
+          <span class="label hp-sec-kicker">Method</span>
+          <h2 class="hp-sec-title">Approach.</h2>
+        </div>
+        <div class="hp-sec-body t-body reveal" data-stagger="1">
+          <p class="hp-lead">I start by understanding the thing itself &mdash; the system, the problem, how it works &mdash; before designing anything around it. Research first, opinions second. From there I dive in headfirst, reaching for whatever technology the problem demands: a CNC router, a 3D printer, Figma, an AI coding agent. I&rsquo;d rather build a rough prototype and learn from it than theorise, and a tool I&rsquo;ve never touched is a reason to start, not a reason to stop.</p>
+          <dl class="hp-principles">
+            {principles.map(([t, d]) => (
+              <div class="hp-principle">
+                <dt class="hp-principle-t">{t}</dt>
+                <dd class="hp-principle-d">{d}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </Grid>
+
+      <!-- Beginnings (Background) -->
+      <Grid as="section" class="hp-sec" aria-label="Beginnings">
+        <div class="hp-sec-head t-rail reveal">
+          <span class="label hp-sec-kicker">Background</span>
+          <h2 class="hp-sec-title">Beginnings.</h2>
+        </div>
+        <div class="hp-sec-body t-body reveal" data-stagger="1">
+          <p class="hp-prose">I didn&rsquo;t arrive at design the usual way. I studied History, Art History and Maths, spent a foundation year at the City &amp; Guilds of London Art School, and only then found product design at IE University in Madrid. That detour is the point: it taught me to see design as something that sits inside the world &mdash; history, systems, people &mdash; rather than floating above it. Somewhere along the way, an interest in technology and AI turned a product designer into a multidisciplinary one.</p>
+        </div>
+      </Grid>
+
+      <!-- Writing -->
+      <Grid as="section" class="hp-sec" aria-label="Writing">
+        <div class="hp-sec-head t-rail reveal">
+          <span class="label hp-sec-kicker">Thesis &amp; essays</span>
+          <h2 class="hp-sec-title">Writing.</h2>
+        </div>
+        <div class="hp-sec-body t-body reveal" data-stagger="1">
+          <p class="hp-prose">Alongside design, I write about technology, communication and how complex subjects reach a wider audience &mdash; what makes a message clear, credible and honest. It started with my thesis on nuclear energy and is turning into something ongoing.</p>
+          <a class="textlink hp-prose-link" href="/blog/">Read the writing &rarr;</a>
+        </div>
+      </Grid>
+
+      <!-- Colophon -->
+      <Grid as="section" class="hp-sec" aria-label="Colophon">
+        <div class="hp-sec-head t-rail reveal">
+          <span class="label hp-sec-kicker">Craft</span>
+          <h2 class="hp-sec-title">Colophon.</h2>
+        </div>
+        <div class="hp-sec-body t-body reveal" data-stagger="1">
+          <p class="hp-prose">This site was designed and built by me, with AI as a collaborator rather than a crutch. It&rsquo;s built with Astro &mdash; component by component, no template and no page builder &mdash; its WebGL hero and 3D work hand-written in three.js, the layout and interaction iterated through Claude, version-managed on GitHub and deployed on Cloudflare Pages. The images are my own work, served at full resolution.</p>
+          <p class="hp-prose">I built it this way on purpose. AI has lowered the barrier for designers working close to technology, and this site is one small proof of it: hand-built rather than dropped into a template, every decision still mine. That&rsquo;s exactly the point I&rsquo;d want a portfolio to make.</p>
+        </div>
+      </Grid>
+
+      <!-- Contact -->
+      <Grid as="section" id="contact" class="hp-sec hp-contact" aria-label="Contact">
+        <div class="hp-sec-head t-rail reveal">
+          <span class="label hp-sec-kicker">Reach</span>
+          <h2 class="hp-sec-title">Contact.</h2>
+        </div>
+        <div class="hp-sec-body t-body reveal" data-stagger="1">
+          <p class="hp-lead">Got a role, a project, or just want to talk about design? Drop me a line.</p>
+          <ContactForm />
+        </div>
+      </Grid>
     </div>
   </main>
   <Footer />
@@ -62,42 +178,70 @@ import Grid from '../components/Grid.astro';
     z-index: 2;
     background: var(--bg);
   }
-  .hp-section { padding-block: var(--space-section); }
 
-  /* Intro band — the positioning statement (display serif) over a supporting
-     sub-line, both on the shared grid. Mirrors the About statement/body ranges. */
-  :global(.hp-intro) { row-gap: clamp(20px, 3vh, 36px); align-items: start; }
-  .hp-intro-kicker { grid-column: 1 / -1; display: block; }
-  .hp-intro-pos {
-    grid-column: 1 / -1;
-    font-family: var(--serif); font-weight: 400;
-    font-size: var(--fs-display-l); line-height: var(--lh-display-l);
-    color: var(--text); margin: 0; max-width: 22ch;
+  /* "All work" — a quiet affordance straight after the Selected-Work narrative. */
+  :global(.hp-allwork-row) { padding-block: clamp(28px, 5vh, 56px); }
+  .hp-allwork { grid-column: 1 / -1; justify-self: start; }
+
+  /* ── Titled sections — kicker + title on t-rail, content on t-body, hairline-
+        separated. Mirrors the About page's .ab-sec rhythm. Grid roots render inside
+        <Grid> and miss this file's scope hash → :global for the section itself. ── */
+  :global(.hp-sec) {
+    padding-block: clamp(44px, 8vh, 96px);
+    border-top: 1px solid var(--rule);
+    row-gap: var(--space-block);
+    align-items: start;
+    scroll-margin-top: var(--nav-h);
   }
-  .hp-intro-lead {
-    grid-column: 1 / -1;
+  .hp-sec-head { align-self: start; }
+  .hp-sec-kicker { display: block; color: var(--text-quiet); margin-bottom: 12px; }
+  .hp-sec-title {
+    font-family: var(--serif); font-weight: 400;
+    font-size: var(--fs-heading-m); line-height: var(--lh-heading-m);
+    color: var(--text); margin: 0;
+  }
+
+  /* Shared body prose + lead. */
+  .hp-prose {
+    font-size: var(--fs-body); line-height: var(--lh-body);
+    color: var(--text-quiet); margin: 0; max-width: 60ch;
+  }
+  .hp-prose + .hp-prose { margin-top: 20px; }
+  .hp-prose-link { margin-top: var(--space-block); }
+  .hp-lead {
+    font-size: var(--fs-body); line-height: var(--lh-body);
+    color: var(--text-quiet); margin: 0 0 var(--space-block); max-width: 56ch;
+  }
+
+  .hp-facts { row-gap: 14px; }
+
+  /* Disciplines */
+  .hp-disciplines { display: flex; flex-direction: column; gap: clamp(24px, 4vh, 40px); }
+  .hp-disc-h {
+    font-family: var(--serif); font-weight: 400;
+    font-size: var(--fs-heading-s); line-height: var(--lh-heading-s);
+    color: var(--text); margin: 0 0 8px;
+  }
+  .hp-disc-p {
     font-size: var(--fs-body); line-height: var(--lh-body);
     color: var(--text-quiet); margin: 0; max-width: 58ch;
   }
-  @media (min-width: 768px) {
-    .hp-intro-kicker { grid-column: 1 / 3; }
-    .hp-intro-pos    { grid-column: 3 / 9; }
-    .hp-intro-lead   { grid-column: 3 / 8; }
+
+  /* Approach — four principles */
+  .hp-principles { margin: 0; display: flex; flex-direction: column; gap: 18px; }
+  .hp-principle { display: flex; flex-direction: column; gap: 4px; }
+  .hp-principle-t {
+    font-family: var(--sans); font-weight: 500;
+    font-size: var(--fs-label); line-height: var(--lh-label);
+    letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--text);
   }
-  @media (min-width: 1200px) {
-    .hp-intro-pos    { grid-column: 3 / 11; }
-    .hp-intro-lead   { grid-column: 3 / 9; }
+  .hp-principle-d {
+    margin: 0; font-size: var(--fs-body); line-height: var(--lh-body);
+    color: var(--text-quiet); max-width: 56ch;
   }
 
-  .hp-allwork { grid-column: 1 / -1; margin-top: var(--space-block); justify-self: start; }
-
-  .hp-writing { border-top: 1px solid var(--rule); }
-  .hp-writing-inner { display: flex; flex-direction: column; gap: 16px; align-items: flex-start; }
-  .hp-writing-inner .label { color: var(--text-quiet); }
-  .hp-writing-p {
-    font-size: var(--fs-body); line-height: var(--lh-body);
-    color: var(--text-quiet); max-width: 56ch; margin: 0;
-  }
+  /* Contact closes the page with a little more breathing room below the form. */
+  :global(.hp-contact) { padding-bottom: clamp(72px, 14vh, 160px); }
 </style>
 
 <style is:global>

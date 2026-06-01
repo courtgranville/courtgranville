@@ -214,12 +214,12 @@ const BEATS = [
   { id:'wave',   kind:'model', name:'Wave',                    year:2026, disc:'Product Design', slug:'wave',       desc:'A salvaged pair of speakers, rebuilt into a custom enclosure.',        file:'speaker.glb',    fill:0.92, viewRY:0.0,  viewRX:0.0  },
   { id:'bg',     kind:'model', name:'Gravity Wave Backgammon', year:2024, disc:'Product Design', slug:'backgammon', desc:'A sheet of recycled plastic turned into a backlit backgammon board.', file:'backgammon.glb', fill:0.92, viewRY:-0.7, viewRX:0.62 },
   { id:'spider', kind:'model', name:'Spider-209',              year:2022, disc:'Product Design', slug:'spider-209', desc:'A classic lamp, rebuilt from the streets of Madrid.',                 file:'spider.glb',     fill:0.92, viewRY:0.3,  viewRX:0.15 },
-  // Final beat: the last product does the big full-screen dispersal and the dust then
-  // fades out (see the render loop), so it hands STRAIGHT into the editorial grid below
-  // (which opens with the In short section) — no interstitial screen.
-  { id:'out',    kind:'disperse' },
+  // Spider is the final beat: it rests at the bottom of the stage, then scrolls straight
+  // up into the editorial grid below (which opens with the In short section) — no
+  // dispersal interstitial, no blank screen.
 ];
 const N = BEATS.length;
+const MODEL_COUNT = BEATS.filter(b=>b.kind==='model').length;
 const COUNT = CONFIG.particles.count;
 
 // Disperse only across SECTION boundaries (different kinds); model→model morphs directly.
@@ -590,13 +590,13 @@ const scrollCue = document.getElementById('scrollCue');
 let curProductBeat=-1;
 function setProductChrome(b){
   if(b===curProductBeat) return; curProductBeat=b; const d=BEATS[b];
-  ov.index.textContent = `${String(b).padStart(2,'0')} / ${String(N-2).padStart(2,'0')}`;
+  ov.index.textContent = `${String(b).padStart(2,'0')} / ${String(MODEL_COUNT).padStart(2,'0')}`;
   ov.name.textContent = d.name; ov.meta.textContent = `${d.year} · ${d.disc}`;
   ov.desc.textContent = d.desc || '';
   ov.link.setAttribute('href', `/work/${d.slug}/`);
 }
 const dotsWrap=document.getElementById('beatDots');
-for(let i=1;i<N-1;i++){ const dot=document.createElement('div'); dot.className='dot'; dotsWrap.appendChild(dot); }
+for(let i=0;i<MODEL_COUNT;i++){ const dot=document.createElement('div'); dot.className='dot'; dotsWrap.appendChild(dot); }
 const dots=[...dotsWrap.children];
 
 // Size the hero name so its width exactly equals the lead column (the paragraph) at
@@ -700,9 +700,6 @@ function frame(ts){
     if(i===c) particleOpacity = Math.min(particleOpacity, 1 - vis);
     if(m.group.visible){ m.group.rotation.set(rotX, rotY, 0); m.group.updateMatrixWorld(); }
   }
-  // closing dispersal: as it settles, the dust fades to nothing so the canvas is clear
-  // where the white editorial grid scrolls up — a seamless hand-off, no hard line.
-  if (BEATS[c]?.kind === 'disperse') particleOpacity = Math.min(particleOpacity, 1 - smootherstep(0.55, 1.0, formW));
   ps.material.uniforms.uOpacity.value = particleOpacity;
 
   canvas.classList.toggle('grabbable', activeModel>=0 && !drag.on);

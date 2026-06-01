@@ -204,31 +204,30 @@ const CONFIG = {
     baseSize: 0.032, sizeVariance: 0.22,
     inkColor: '#161616',
   },
-  // Pointer "wind" — velocity impulses near the cursor. Tuned toward the original
-  // hero's playful repel: a wider reach, a firmer push, and slow velocity decay
-  // (≈ the hero's damping 0.99) so disturbed particles drift and linger before
-  // easing home, rather than snapping straight back.
-  pointer: { radius: 0.6, strength: 12, smoothing: 0.5, windDecay: 0.945 },
+  // Pointer repel — the ORIGINAL hero's model (force ⟂ to the cursor ray), so the
+  // dust pushes and plays exactly like the live site. Scaled up a touch for the
+  // larger shapes here.
+  pointer: { radius: 0.5, strength: 22, smoothing: 0.55 },
   rotation:{ speed: reducedMotion ? 0 : 0.06 },          // gentle auto-spin of the cloud
   loadIn:  { duration: 1.6, stagger: 0.7, startVolume: 7 },
   morph: {
     shapeRadius: 2.7,        // world radius every product/text shape fits into (bigger products)
     disperseRadius: 9.0,     // BIG — overflows the screen so the dispersal envelops the viewer
-    follow: 0.105,           // softer home-return so pointer-disturbed particles can
-                             // be played with and drift back (not snap); still tracks scroll
-    settleFollow: 0.16,      // tighten the return WHILE actively scrolling so the morph stays deliberate
     // shapeW (formed-ness of the nearest stop) drives the TEXTURE/text crossfade.
     formIn:  0.12,           // |delta| ≤ this → fully formed
     formOut: 0.38,           // |delta| ≥ this → fully off
     texAt:   0.55,           // texture resolves only once the dust is well-formed
     dividerHeight: 2.4,      // world height of the particle divider text
   },
+  // PLAY = the original hero's spring physics, applied to each particle's DISPLACEMENT
+  // from its (moving) morph target — so the morph itself stays direct & responsive
+  // (no follow-lag) while the dust still pushes and springs back like the live site.
+  play: { springK: 16, damping: 0.985, maxDisp: 3.0 },
   // Drag-to-spin — gentle. Velocity is capped so a small flick can't whip it round.
   spin: { speed: 0.0013, maxVel: 0.020, damping: 0.88, returnLerp: 0.06, tilt: 0.5, tiltRange: 0.4 },
-  // 'stick' warps the scroll→timeline mapping so each stop is gently magnetic — a
-  // subtle pull that makes it easy to land on a product, with NO programmatic
-  // scroll animation to fight Lenis (the old snap's jank source).
-  scroll: { segmentVh: 1.3, stick: 0.78 },
+  // 'stick' warps scroll→timeline so each stop is magnetic. With the morph now direct
+  // (no lag), keep it moderate — too high reads as 'scroll does nothing then lurches'.
+  scroll: { segmentVh: 1.3, stick: 0.6 },
   modelBase: '/public/models/',   // python http.server from repo root → /public/models/…
 };
 
@@ -385,8 +384,9 @@ class Particles {
   constructor(){
     const positions = new Float32Array(COUNT*3);
     const sizeMul   = new Float32Array(COUNT);
-    this.home = new Float32Array(COUNT*3);   // the per-frame morph target
-    this.vel  = new Float32Array(COUNT*3);
+    this.home = new Float32Array(COUNT*3);   // morph target (load-in only)
+    this.vel  = new Float32Array(COUNT*3);   // play velocity
+    this.disp = new Float32Array(COUNT*3);   // play displacement from the morph target
     const sv = CONFIG.particles.sizeVariance;
     for(let i=0;i<COUNT;i++) sizeMul[i] = 1 + (Math.random()-0.5)*sv;
 
@@ -404,31 +404,46 @@ class Particles {
   }
 }
 
-// Smooth morph integrator (Omma's model): each particle does a first-order
-// approach to its scroll-driven target — `cur += (target - cur) * follow` — which
-// eases in and NEVER overshoots, so scrubbing the scroll glides between shapes
-// instead of bouncing. Pointer proximity adds a decaying velocity impulse ("wind")
-// so the dust can still be disturbed, then drifts back. No spring, no oscillation.
-function stepMorph(ps, dt, probe, follow){
-  const pos=ps.geometry.attributes.position.array, vel=ps.vel, home=ps.home;
-  const decay=CONFIG.pointer.windDecay;
+// ONE pass: position = morphTarget(p) + playDisplacement. The morph target is read
+// DIRECTLY from the timeline (no follow-lag → as responsive & smooth as the scroll
+// itself); the displacement is governed by the original hero's spring physics
+// (spring back to 0 + pointer repel), so the dust still pushes and plays like the
+// live site. Resolving the frame's source/target arrays once (not per particle)
+// keeps this a single cheap loop — matching the hero's proven 140k @ 60fps cost.
+function stepParticles(dt, probe, p){
+  const pos=ps.geometry.attributes.position.array, vel=ps.vel, disp=ps.disp;
+  let i=Math.floor(p); if(i<0)i=0; if(i>N-2)i=N-2;
+  const frac=p-i, A=targets[i]||DISPERSE, B=targets[i+1]||DISPERSE;
+  let FROM, TO, e;
+  if(GAP_DISPERSE[i]){
+    if(frac<0.5){ FROM=A; TO=DISPERSE; e=smootherstep(0,1,frac*2); }
+    else        { FROM=DISPERSE; TO=B; e=smootherstep(0,1,(frac-0.5)*2); }
+  } else { FROM=A; TO=B; e=smootherstep(0,1,frac); }
+  const ie=1-e;
+
+  const P=CONFIG.play, k=P.springK, dmp=P.damping, maxD=P.maxDisp, maxD2=maxD*maxD;
   const on=probe.active, ox=probe.o.x,oy=probe.o.y,oz=probe.o.z, rx=probe.d.x,ry=probe.d.y,rz=probe.d.z;
-  const r=CONFIG.pointer.radius, r2=r*r, str=CONFIG.pointer.strength;
-  for(let i=0;i<COUNT;i++){
-    const i3=i*3;
-    if(on){
-      const vx=pos[i3]-ox, vy=pos[i3+1]-oy, vz=pos[i3+2]-oz;
-      const proj=vx*rx+vy*ry+vz*rz, px=vx-proj*rx, py=vy-proj*ry, pz=vz-proj*rz;
-      const pd2=px*px+py*py+pz*pz;
-      if(pd2<r2){ const pd=Math.sqrt(pd2)||1e-4, u=1-pd/r, sm=u*u*(3-2*u), f=str*sm*dt;
-        vel[i3]+=(px/pd)*f; vel[i3+1]+=(py/pd)*f; vel[i3+2]+=(pz/pd)*f; }
+  const pr=CONFIG.pointer.radius, pr2=pr*pr, str=CONFIG.pointer.strength;
+
+  for(let n=0;n<COUNT;n++){
+    const j=n*3;
+    const tx=FROM[j]*ie+TO[j]*e, ty=FROM[j+1]*ie+TO[j+1]*e, tz=FROM[j+2]*ie+TO[j+2]*e;
+    let dx=disp[j], dy=disp[j+1], dz=disp[j+2];
+    let fx=-k*dx, fy=-k*dy, fz=-k*dz;                       // spring the displacement → 0
+    if(on){                                                  // pointer repel ⟂ to cursor ray
+      const wx=tx+dx-ox, wy=ty+dy-oy, wz=tz+dz-oz;
+      const proj=wx*rx+wy*ry+wz*rz, ex=wx-proj*rx, ey=wy-proj*ry, ez=wz-proj*rz;
+      const d2=ex*ex+ey*ey+ez*ez;
+      if(d2<pr2){ const d=Math.sqrt(d2)||1e-4, u=1-d/pr, sm=u*u*(3-2*u), mag=str*sm/d; fx+=ex*mag; fy+=ey*mag; fz+=ez*mag; }
     }
-    pos[i3]   += (home[i3]  -pos[i3])  *follow + vel[i3];
-    pos[i3+1] += (home[i3+1]-pos[i3+1])*follow + vel[i3+1];
-    pos[i3+2] += (home[i3+2]-pos[i3+2])*follow + vel[i3+2];
-    vel[i3]*=decay; vel[i3+1]*=decay; vel[i3+2]*=decay;
+    let vx=(vel[j]+fx*dt)*dmp, vy=(vel[j+1]+fy*dt)*dmp, vz=(vel[j+2]+fz*dt)*dmp;
+    vel[j]=vx; vel[j+1]=vy; vel[j+2]=vz;
+    dx+=vx*dt; dy+=vy*dt; dz+=vz*dt;
+    const dd2=dx*dx+dy*dy+dz*dz; if(dd2>maxD2){ const s=maxD/Math.sqrt(dd2); dx*=s; dy*=s; dz*=s; }
+    disp[j]=dx; disp[j+1]=dy; disp[j+2]=dz;
+    pos[j]=tx+dx; pos[j+1]=ty+dy; pos[j+2]=tz+dz;
   }
-  ps.geometry.attributes.position.needsUpdate = true;
+  ps.geometry.attributes.position.needsUpdate=true;
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -591,10 +606,12 @@ const stage = document.getElementById('stage');
 // total scroll: each gap between beats = segmentVh viewport-heights.
 stage.style.height = ((N-1)*CONFIG.scroll.segmentVh + 1) * 100 + 'vh';
 
+// Lenis is advanced INSIDE the render loop (below), not on its own rAF — one clock
+// drives both, so the particle read never aliases against a separate scroll tick
+// (a real jitter source). `lerp` (snappier than a long duration) keeps it responsive.
 let lenis=null;
 if(!reducedMotion){
-  lenis = new Lenis({ duration:0.8, easing:(x)=>Math.min(1,1.001-Math.pow(2,-10*x)), smoothWheel:true, smoothTouch:false });
-  const raf=(t)=>{ lenis.raf(t); requestAnimationFrame(raf); }; requestAnimationFrame(raf);
+  lenis = new Lenis({ lerp:0.12, smoothWheel:true, smoothTouch:false });
 }
 
 const state = { p:0, center:0, shapeW:1 };  // p: beat-units · center: nearest stop · shapeW: how formed
@@ -621,35 +638,13 @@ if(lenis) lenis.on('scroll', readScroll); else addEventListener('scroll', readSc
 if(new URLSearchParams(location.search).has('dbg')){
   window.__toP = (p)=>{ const max=stage.scrollHeight-innerHeight; const y=(clamp(p,0,N-1)/(N-1))*max;
     if(lenis) lenis.scrollTo(y,{immediate:true}); else window.scrollTo(0,y); };
+  window.__state = state;
+  window.__scrollTo = (p, opts)=>{ const max=stage.scrollHeight-innerHeight; lenis && lenis.scrollTo((clamp(p,0,N-1)/(N-1))*max, opts||{}); };
 }
 
 // ════════════════════════════════════════════════════════════════════
 //  MORPH — fill ps.home from the timeline each frame.
 // ════════════════════════════════════════════════════════════════════
-// Build the particle home target for scroll position p (beat-units), in one pass.
-// Within a gap the particles flow CONTINUOUSLY between the two stops' shapes:
-//   · model→model gap  → morph the dust DIRECTLY shape→shape (it re-forms into the
-//     next product, the way it adjusts in Omma) — purposeful, never disconnected.
-//   · section-boundary gap (different kinds) → route through the enveloping cloud.
-// smootherstep on frac makes the in-between velocity zero at each stop → no kink,
-// so the whole scroll is one deliberate flow, not stitched movements.
-function buildHome(p, out){
-  let i = Math.floor(p); if(i<0) i=0; if(i>N-2){ out.set(targets[N-1]||DISPERSE); return; }
-  const frac = p - i;
-  const A = targets[i] || DISPERSE, B = targets[i+1] || DISPERSE;
-  if(GAP_DISPERSE[i]){
-    if(frac < 0.5){ const e=smootherstep(0,1,frac*2),   iw=1-e; for(let k=0;k<COUNT*3;k++) out[k]=A[k]*iw+DISPERSE[k]*e; }
-    else          { const e=smootherstep(0,1,(frac-0.5)*2), iw=1-e; for(let k=0;k<COUNT*3;k++) out[k]=DISPERSE[k]*iw+B[k]*e; }
-  } else {
-    const e=smootherstep(0,1,frac), iw=1-e; for(let k=0;k<COUNT*3;k++) out[k]=A[k]*iw+B[k]*e;
-  }
-}
-// Formed-ness of the nearest stop — drives only the texture/text crossfade (the
-// dust handles the actual morph). 1 at a stop, 0 mid-gap.
-function nearestStop(p){
-  const c = Math.round(clamp(p,0,N-1));
-  return { c, shapeW: smootherstep(CONFIG.morph.formOut, CONFIG.morph.formIn, Math.abs(p-c)) };
-}
 
 // ════════════════════════════════════════════════════════════════════
 //  OVERLAY — phase text blocks by beat settledness.
@@ -690,7 +685,7 @@ function updateOverlay(){
 //  RENDER LOOP
 // ════════════════════════════════════════════════════════════════════
 const clock = new THREE.Clock(); clock.getDelta();
-let accumY=0, prevP=0;
+let accumY=0;
 const hud=document.getElementById('hud');
 
 let ready=false;
@@ -702,27 +697,39 @@ scrollTo(0,0);
   ps.home.set(targets[0]);
   startLoadIn();
   ready=true;
-  // load models after first paint so CG shows instantly
-  for(let i=0;i<N;i++) if(BEATS[i].kind==='model') loadModel(i);
+  // Load models after first paint (CG shows instantly), then PRE-WARM the GPU: the
+  // big 2048px WebP textures upload synchronously the FIRST time each model renders,
+  // which caused ~150–200ms hitches mid-scroll (the jank). Force the compile + upload
+  // up front by rendering every model once to a tiny offscreen target (no visible
+  // flash), so scrolling to a product is already warm.
+  Promise.all(BEATS.map((b,i)=> b.kind==='model' ? loadModel(i) : null)).then(()=>{
+    const rt = new THREE.WebGLRenderTarget(4,4);
+    models.forEach(m=>{ if(m) m.group.visible = true; });
+    renderer.setRenderTarget(rt);
+    renderer.render(scene, camera);     // forces shader compile + full texture upload
+    renderer.setRenderTarget(null);
+    models.forEach(m=>{ if(m) m.group.visible = false; });
+    rt.dispose();
+  });
 })();
 
 addEventListener('resize', ()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
   renderer.setSize(innerWidth,innerHeight,false); sizeScale(); });
 
-function frame(){
+function frame(ts){
   requestAnimationFrame(frame);
+  if(lenis) lenis.raf(ts);          // advance scroll FIRST, in this same tick…
   if(!ready) return;
   const dt=Math.min(clock.getDelta(),1/30), time=clock.elapsedTime;
-  readScroll();
+  readScroll();                      // …then read it — no cross-rAF aliasing.
 
-  // ── One deliberate flow: the dust morphs directly between shapes (buildHome);
-  //    nearestStop only governs which texture/text is shown. ──
-  const { c, shapeW } = (loadIn && !loadIn.done) ? { c:0, shapeW:1 } : nearestStop(state.p);
+  // Nearest stop + its formed-ness (drives only the texture/text crossfade), inline
+  // to avoid a per-frame object allocation (GC spikes = jank).
+  let c, shapeW;
+  if(loadIn && !loadIn.done){ c=0; shapeW=1; }
+  else { c=Math.round(clamp(state.p,0,N-1)); shapeW=smootherstep(CONFIG.morph.formOut, CONFIG.morph.formIn, Math.abs(state.p-c)); }
   state.center = c; state.shapeW = shapeW;
   updateOverlay();
-
-  if(loadIn && !loadIn.done){ stepLoadIn(time); }
-  else buildHome(state.p, ps.home);
 
   // Rotation: ONLY the CG stop auto-spins. Elsewhere ease to the nearest "front"
   // angle (nearest TAU multiple → minimal unwind) so every shape settles front-on
@@ -733,10 +740,9 @@ function frame(){
   cloudGroup.updateMatrixWorld();
 
   probeUpdate();
-  // Tight return while actively scrolling (deliberate morph); loose at rest so the
-  // pointer can play with the dust and it drifts home rather than snapping.
-  const moving = Math.abs(state.p - prevP) > 0.0006; prevP = state.p;
-  if(!(loadIn && !loadIn.done)) stepMorph(ps, dt, probe, moving ? CONFIG.morph.settleFollow : CONFIG.morph.follow);
+  // Particles: direct morph (responsive) + spring-play displacement, single pass.
+  if(loadIn && !loadIn.done) stepLoadIn(time);
+  else stepParticles(dt, probe, state.p);
 
   // ── Symmetric handoff: the texture skins on as the dust forms the shape, and
   //    dissolves back as it disperses — both driven by the SAME shapeW, so leaving
@@ -747,16 +753,13 @@ function frame(){
     const m=models[i]; if(!m) continue;
     const vis = (i===c) ? smootherstep(CONFIG.morph.texAt, 1.0, shapeW) : 0;
     m.group.visible = vis>0.001;
+    // Solidity via depthWrite ONLY (a render-state flag — no shader recompile, so no
+    // frame hitch at the stop). Once formed, depth-write on → overlapping faces sort
+    // correctly instead of blending front-to-back (the see-through look). The
+    // material stays transparent so the fade still works; at opacity 1 it reads solid.
+    const wantSolid = vis >= 0.985;
+    if(wantSolid !== m.solid){ for(const mat of m.materials) mat.depthWrite = wantSolid; m.solid = wantSolid; }
     for(const mat of m.materials) mat.opacity = vis;
-    // Render solid once fully formed: depth-write on + opaque pass, so overlapping
-    // faces sort correctly (a transparent material with no depth-write blends front
-    // and back faces → the see-through look). Only flip on state change (avoids a
-    // per-frame shader recompile). During the fade it stays transparent/no-depth.
-    const wantSolid = vis >= 0.999;
-    if(wantSolid !== m.solid){
-      for(const mat of m.materials){ mat.transparent=!wantSolid; mat.depthWrite=wantSolid; mat.needsUpdate=true; }
-      m.solid = wantSolid;
-    }
     if(i===c) particleOpacity = Math.min(particleOpacity, 1 - vis);
     // gentle drag-spin: capped velocity + light inertia; tilt eases back when idle
     m.spin += m.spinVel; m.spinVel *= CONFIG.spin.damping;
@@ -771,10 +774,12 @@ function frame(){
   canvas.classList.toggle('grabbable', activeModel>=0 && !drag.on);
   renderer.render(scene, camera);
 
-  if(hud){ hud.textContent =
+  // HUD only every 12th frame — building a string every frame is needless GC.
+  if(hud && (++hudTick % 12 === 0)) hud.textContent =
     `beat ${state.p.toFixed(2)}  stop ${c}  shapeW ${shapeW.toFixed(2)}\n`+
-    `models ${models.filter(Boolean).length}/${BEATS.filter(b=>b.kind==='model').length}  pcount ${COUNT.toLocaleString()}`; }
+    `models ${models.filter(Boolean).length}/${modelCount}  pcount ${COUNT.toLocaleString()}`;
 }
+let hudTick=0; const modelCount=BEATS.filter(b=>b.kind==='model').length;
 requestAnimationFrame(frame);
 </script>
 </body>

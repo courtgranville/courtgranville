@@ -85,7 +85,9 @@ const ogImage = new URL('/og.jpg', Astro.site);
 
       const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const navEl   = document.querySelector('.site-nav');
-      const heroEl  = document.querySelector('.hero-section');
+      // A "hero" is either the legacy CG hero or the homepage scroll-narrative stage;
+      // both dispatch `hero:loaded` and fade the nav in after their load-in.
+      const heroEl  = document.querySelector('.hero-section') || document.querySelector('.scroll-stage');
 
       // On pages without a hero, the nav comes in immediately with the
       // backdrop on — there is no load-in moment to wait for.
@@ -101,9 +103,12 @@ const ogImage = new URL('/og.jpg', Astro.site);
         if (a && a.getAttribute('href') === '#') e.preventDefault();
       });
 
-      // Smooth-scroll target for the brand-as-home anchor.
-      let lenis = null;
-      if (!reducedMotion) {
+      // Smooth-scroll. The homepage's ScrollHero owns a tuned Lenis (it runs the
+      // scroll narrative) and exposes it as window.__cgLenis; on the homepage we share
+      // that single instance rather than starting a second (two would fight). Its own
+      // render loop already advances it, so we don't start a raf here in that case.
+      let lenis = window.__cgLenis || null;
+      if (!lenis && !reducedMotion) {
         lenis = new Lenis({
           duration: 0.8,
           easing:   (x) => Math.min(1, 1.001 - Math.pow(2, -10 * x)),

@@ -95,12 +95,24 @@ const ogImage = new URL('/og.jpg', Astro.site);
         navEl.classList.add('in', 'scrolled');
       }
 
-      // Inert placeholder links — `href="#"` would otherwise jolt the page to
-      // the top. The brand uses `#top` (real anchor) and `mailto:` keeps
-      // working because neither matches `#` exactly.
+      // Link handling:
+      //  - `href="#"` placeholders are inert (would otherwise jolt to the top).
+      //  - Same-page hash links (`/#about`, `#contact`) smooth-scroll to the section
+      //    WHEN it exists on this page (the homepage); off the homepage they fall
+      //    through to a normal navigation to `/#id`, and the browser jumps on load.
       document.addEventListener('click', (e) => {
         const a = e.target.closest('a');
-        if (a && a.getAttribute('href') === '#') e.preventDefault();
+        if (!a) return;
+        const href = a.getAttribute('href');
+        if (href === '#') { e.preventDefault(); return; }
+        const m = href && href.match(/^\/?#(.+)$/);
+        if (!m) return;
+        const target = document.getElementById(m[1]);
+        if (!target) return;                 // not on this page → let it navigate
+        e.preventDefault();
+        if (lenis) lenis.scrollTo(target, { offset: -92 });
+        else target.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' });
+        history.replaceState(null, '', href);
       });
 
       // Smooth-scroll. The homepage's ScrollHero owns a tuned Lenis (it runs the

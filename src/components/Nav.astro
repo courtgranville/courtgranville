@@ -13,25 +13,20 @@
 //     (§6.7) with a held underline, so the visitor always knows where they are.
 
 const path = Astro.url.pathname;
+// About & Contact are homepage sections (anchors); the brand + Work are page links.
 const links = [
   { href: '/work/',    label: 'Work' },
-  { href: '/blog/',    label: 'Writing' },
-  { href: '/about/',   label: 'About' },
-  { href: '/contact/', label: 'Contact' },
-  { href: '/court-granville-cv.pdf', label: 'CV', external: true },
+  { href: '/#about',   label: 'About' },
+  { href: '/#contact', label: 'Contact' },
 ];
-const isCurrent = (href: string) => path === href || path.startsWith(href);
+// Only real page links can be the "current" page; hash anchors never are.
+const isCurrent = (href: string) => !href.includes('#') && (path === href || path.startsWith(href));
 ---
 <nav class="site-nav" aria-label="Primary">
-  <a class="brand" href="#top" data-scroll-top>Court Granville</a>
+  <a class="brand" href="#top" data-scroll-top aria-label="Court Granville — home">CG</a>
   <div class="nav-links">
     {links.map((l) => (
-      <a
-        class="nav-link"
-        href={l.href}
-        aria-current={!l.external && isCurrent(l.href) ? 'page' : undefined}
-        {...(l.external ? { target: '_blank', rel: 'noopener' } : {})}
-      >{l.label}</a>
+      <a class="nav-link" href={l.href} aria-current={isCurrent(l.href) ? 'page' : undefined}>{l.label}</a>
     ))}
   </div>
 </nav>
@@ -46,7 +41,7 @@ const isCurrent = (href: string) => path === href || path.startsWith(href);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 max(28px, 3vw);
+    padding: 0 var(--outer);
     z-index: 100;
     opacity: 0;
     transition: opacity 600ms var(--ease-out);
@@ -69,10 +64,13 @@ const isCurrent = (href: string) => path === href || path.startsWith(href);
   .site-nav.scrolled::before { opacity: 1; }
   .site-nav.scrolled { border-bottom: 1px solid var(--rule); }
 
+  /* Monogram — the "CG" mark, Playfair Bold to echo the particle hero glyph.
+     Scales with the viewport so it reads at the right weight on large/4K screens. */
   .brand {
     font-family: var(--serif);
-    font-weight: 400;
-    font-size: 22px;
+    font-weight: 700;
+    font-size: clamp(24px, 1.5vw, 40px);
+    letter-spacing: 0.01em;
     line-height: 1;
     color: var(--text);
     transition: opacity var(--dur-hover) var(--ease-out);
@@ -81,20 +79,20 @@ const isCurrent = (href: string) => path === href || path.startsWith(href);
 
   .nav-links {
     display: flex;
-    gap: 36px;
+    gap: clamp(28px, 2.2vw, 56px);
   }
 
   /* Raleway 500 uppercase, on the one shared label letter-spacing (§4.2). */
   .nav-link {
     position: relative;
     font-family: var(--sans);
-    font-weight: 500;
-    font-size: var(--fs-label);
+    font-weight: 600;
+    font-size: clamp(13px, 0.82vw, 18px);
     line-height: var(--lh-label);
     letter-spacing: var(--ls-label);
     text-transform: uppercase;
     color: var(--text);
-    opacity: 0.82;
+    opacity: 0.9;
     padding: 6px 0;
     transition:
       color var(--dur-hover) var(--ease-out),

@@ -1,0 +1,134 @@
+---
+// ContactForm — a Web3Forms form that posts to their API and forwards to Court's
+// inbox, so the email address never sits in the HTML for a harvester to scrape.
+// Submits async (no page reload) with an inline status line; the plain action/
+// method is the no-JS fallback (Web3Forms shows its own success page). The honeypot
+// (`botcheck`) is invisible to people; Web3Forms rejects any submission that ticks it.
+// Styled to the site system — bare fields with hairline underlines, Raleway labels,
+// a textlink-voice "Send →". Reusable (e.g. on /contact later).
+---
+<form id="contact-form" class="cf" action="https://api.web3forms.com/submit" method="POST">
+  <input type="hidden" name="access_key" value="08849949-45f0-4036-8d7b-c425ac1ce2ca" />
+  <input type="hidden" name="subject" value="New message from courtgranville.com" />
+  <input type="hidden" name="from_name" value="courtgranville.com" />
+
+  <div class="cf-field">
+    <label class="label" for="cf-name">Name</label>
+    <input id="cf-name" type="text" name="name" autocomplete="name" required />
+  </div>
+
+  <div class="cf-field">
+    <label class="label" for="cf-email">Email</label>
+    <input id="cf-email" type="email" name="email" autocomplete="email" required />
+  </div>
+
+  <div class="cf-field">
+    <label class="label" for="cf-message">Message</label>
+    <textarea id="cf-message" name="message" rows="5" required></textarea>
+  </div>
+
+  <!-- Honeypot: hidden from people; bots that tick it are rejected by Web3Forms. -->
+  <input type="checkbox" name="botcheck" class="cf-botcheck" tabindex="-1" autocomplete="off" aria-hidden="true" />
+
+  <div class="cf-foot">
+    <button class="cf-send" type="submit">Send &rarr;</button>
+    <p id="cf-result" class="cf-result" role="status" aria-live="polite"></p>
+  </div>
+</form>
+
+<style>
+  .cf { display: flex; flex-direction: column; gap: clamp(20px, 3.2vh, 32px); max-width: 52ch; }
+
+  .cf-field { display: flex; flex-direction: column; gap: 8px; }
+  .cf-field .label { color: var(--text-quiet); }
+
+  .cf input[type='text'],
+  .cf input[type='email'],
+  .cf textarea {
+    font-family: var(--sans);
+    font-size: var(--fs-body);
+    line-height: var(--lh-body);
+    color: var(--text);
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--rule);
+    padding: 8px 0;
+    width: 100%;
+    transition: border-color var(--dur-hover) var(--ease-out);
+  }
+  .cf textarea { resize: vertical; min-height: 7em; }
+  .cf input::placeholder,
+  .cf textarea::placeholder { color: var(--text-faint); }
+  .cf input:focus,
+  .cf textarea:focus {
+    outline: none;
+    border-bottom-color: var(--accent);
+  }
+
+  /* Honeypot — visually and structurally hidden from people. */
+  .cf-botcheck { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+
+  .cf-foot { display: flex; align-items: baseline; gap: 24px; flex-wrap: wrap; margin-top: 4px; }
+
+  /* Send — textlink voice, accent underline-wipe on hover. */
+  .cf-send {
+    font-family: var(--sans);
+    font-weight: 500;
+    font-size: var(--fs-label);
+    letter-spacing: var(--ls-label);
+    text-transform: uppercase;
+    color: var(--text);
+    padding-bottom: 2px;
+    border-bottom: 1px solid var(--rule);
+    transition: color var(--dur-hover) var(--ease-out), border-color var(--dur-hover) var(--ease-out);
+  }
+  .cf-send:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  .cf-send:disabled { opacity: 0.5; cursor: default; }
+
+  .cf-result {
+    margin: 0;
+    font-family: var(--sans);
+    font-size: var(--fs-body-s);
+    line-height: var(--lh-body-s);
+    color: var(--text-quiet);
+    min-height: 1.4em;
+  }
+  .cf-result[data-state='error'] { color: var(--accent); }
+</style>
+
+<script>
+  const contactForm = document.getElementById('contact-form') as HTMLFormElement | null;
+  const contactResult = document.getElementById('cf-result');
+  const sendBtn = contactForm?.querySelector('.cf-send') as HTMLButtonElement | null;
+  const setResult = (text: string, isError = false) => {
+    if (!contactResult) return;
+    if (isError) contactResult.setAttribute('data-state', 'error');
+    else contactResult.removeAttribute('data-state');
+    contactResult.textContent = text;
+  };
+  if (contactForm) {
+    contactForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      setResult('Sending…');
+      if (sendBtn) sendBtn.disabled = true;
+      try {
+        const res = await fetch('https://api.web3forms.com/submit', {
+          method: 'POST',
+          body: new FormData(contactForm),
+          headers: { Accept: 'application/json' },
+        });
+        const json = await res.json();
+        if (json.success) {
+          contactForm.reset();
+          setResult('Thanks — your message is on its way.');
+        } else {
+          setResult('Something went wrong. Please try again.', true);
+        }
+      } catch (err) {
+        setResult('Something went wrong. Please try again.', true);
+      } finally {
+        if (sendBtn) sendBtn.disabled = false;
+      }
+    });
+  }
+</script>

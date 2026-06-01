@@ -9,4 +9,4 @@
  * `display=block` keeps glyph rendering deferred until the typeface is ready,
  * which the hero's `document.fonts.ready` gate also relies on.
  */
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Raleway:wght@400;500&display=block');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Raleway:wght@400;500;600&display=block');

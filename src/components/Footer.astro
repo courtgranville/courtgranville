@@ -1,29 +1,25 @@
 ---
-// Minimal closing band. Ported from prototypes/hero/index.html — the email
-// is the surface; the nav links are repeated small; copyright is quiet.
-//
-// All caps run through the .label / Raleway 500 / 0.22em system so the
-// footer reads as one with the nav and the page kickers.
+// Closing band. "Get in touch" is the surface (→ the homepage contact form) — no
+// raw email sits in the HTML for a harvester. London/Madrid coordinates, a live
+// London clock beside the availability status, then the motto + copyright. All caps
+// run through the .label / Raleway 500 / 0.22em system so the footer reads as one
+// with the nav and the page kickers. (Social links omitted until real URLs exist.)
 ---
 <footer aria-label="Site footer">
   <div class="footer-inner">
     <div class="footer-contact reveal">
       <span class="label">Get in touch</span>
-      <a class="footer-email" href="mailto:court@courtgranville.com">court@courtgranville.com</a>
+      <a class="footer-reach" href="/#contact">Drop me a line &rarr;</a>
       <p class="footer-role">Court Granville &mdash; Multidisciplinary Designer</p>
     </div>
-    <nav class="footer-links" aria-label="Footer">
-      <a href="/work/">Work</a>
-      <a href="/blog/">Writing</a>
-      <a href="/about/">About</a>
-      <a href="/contact/">Contact</a>
-      <a href="/court-granville-cv.pdf" target="_blank" rel="noopener">CV</a>
-    </nav>
+
     <dl class="footer-locale">
       <div><dt>London</dt><dd>51.5074&deg; N, 0.1278&deg; W</dd></div>
       <div><dt>Madrid</dt><dd>40.4168&deg; N, 3.7038&deg; W</dd></div>
+      <div><dt>London time</dt><dd><time id="footer-clock">&mdash;&mdash;</time></dd></div>
       <div><dt>Status</dt><dd>Open to work</dd></div>
     </dl>
+
     <div class="footer-baseline">
       <span class="footer-motto">Designed and built with curiosity in London &amp; Madrid.</span>
       <span class="footer-copyright">&copy; 2026 Court Granville</span>
@@ -41,56 +37,36 @@
     display: grid;
     grid-template-columns: 1fr auto;
     grid-template-areas:
-      'contact links'
-      'locale  locale'
+      'contact locale'
       'baseline baseline';
     gap: 60px 40px;
-    align-items: end;
+    align-items: start;
   }
   .footer-contact { grid-area: contact; }
-  .footer-contact .label { display: block; margin-bottom: 12px; }
+  .footer-contact .label { display: block; margin-bottom: 12px; color: var(--text-quiet); }
+  .footer-reach {
+    font-family: var(--serif); font-weight: 400;
+    font-size: var(--fs-heading-s); line-height: var(--lh-heading-s);
+    color: var(--text);
+    transition: color var(--dur-hover) var(--ease-out);
+  }
+  .footer-reach:hover { color: var(--accent); }
   .footer-role {
     font-family: var(--serif); font-weight: 400;
     font-size: var(--fs-body-s); line-height: var(--lh-body-s);
     color: var(--text-quiet); margin: 14px 0 0;
   }
 
-  .footer-email {
-    font-family: var(--serif);
-    font-weight: 400;
-    font-size: var(--fs-heading-s);
-    line-height: var(--lh-heading-s);
-    color: var(--text);
-    transition: color var(--dur-hover) var(--ease-out);
-  }
-  .footer-email:hover { color: var(--accent); }
-
-  .footer-links {
-    grid-area: links;
-    display: flex;
-    gap: 28px;
-  }
-  .footer-links a {
-    font-family: var(--sans);
-    font-weight: 500;
-    font-size: var(--fs-label);
-    line-height: var(--lh-label);
-    letter-spacing: var(--ls-label);
-    text-transform: uppercase;
-    color: var(--text-quiet);
-    transition: color var(--dur-hover) var(--ease-out);
-  }
-  .footer-links a:hover { color: var(--accent); }
-
-  /* Locale — London / Madrid coordinates + status, on the .label system. */
+  /* Locale — London / Madrid coordinates, live London clock, status. */
   .footer-locale {
     grid-area: locale;
     margin: 0;
     display: flex;
-    flex-wrap: wrap;
-    gap: 12px 44px;
+    flex-direction: column;
+    gap: 12px;
+    text-align: right;
   }
-  .footer-locale div { display: flex; gap: 12px; align-items: baseline; }
+  .footer-locale div { display: flex; gap: 16px; align-items: baseline; justify-content: flex-end; }
   .footer-locale dt,
   .footer-locale dd {
     margin: 0;
@@ -131,8 +107,21 @@
   @media (max-width: 720px) {
     .footer-inner {
       grid-template-columns: 1fr;
-      grid-template-areas: 'contact' 'links' 'locale' 'baseline';
+      grid-template-areas: 'contact' 'locale' 'baseline';
       gap: 36px;
     }
+    .footer-locale { text-align: left; }
+    .footer-locale div { justify-content: flex-start; }
   }
 </style>
+
+<script>
+  // Live London clock — updates the footer time every 30s.
+  const clockEl = document.getElementById('footer-clock');
+  if (clockEl) {
+    const fmt = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' });
+    const tick = () => { clockEl.textContent = fmt.format(new Date()); };
+    tick();
+    setInterval(tick, 30000);
+  }
+</script>

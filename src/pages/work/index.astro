@@ -1,27 +1,121 @@
 ---
-// Work — the project index. The grid is the page: a typographic list paired
-// with the shared 3D image field (WorkIndex), visual on the right.
+// Work — the project index, rebuilt as a gallery of the products themselves:
+// each project is its own grab-and-spin textured GLB on the plain white ground,
+// laid out four-up on the canonical grid, with a "View project" link beneath.
+// The 3D is one React island (WorkGallery) mounted client:visible, so the page
+// ships static and the stage hydrates on scroll. Per-model framing (fill / the
+// resting viewRY·viewRX pose) mirrors the homepage's tuned values where they
+// exist; the rest take sensible defaults and can be tuned here, in one place.
 
 import Layout from '../../components/Layout.astro';
 import Nav from '../../components/Nav.astro';
 import Footer from '../../components/Footer.astro';
-import WorkIndex from '../../components/WorkIndex.astro';
+import Grid from '../../components/Grid.astro';
+import WorkGallery from '../../components/r3f/WorkGallery.tsx';
+
+// The Nuclear Question (web/data) is intentionally omitted for now — its model
+// is still in progress. Order follows the work index: most recent first.
+// `fill` = how much of the frame the model's bounding sphere fills. The sphere is
+// rotation-invariant, so a value ≤1 can NEVER clip at any spin angle — these stay
+// safely under that ceiling so nothing is ever cut off, with the taller stage box
+// (below) giving elongated objects (lamps, phones) the vertical room to read large
+// without crowding the edges. Boxier objects sit a touch higher.
+const PROJECTS = [
+  { name: 'Mantis',                  year: 2026, discipline: 'Product Design',          slug: 'mantis',               model: '/models/mantis.glb',     fill: 0.9,  viewRY: 0.0,  viewRX: 0.28 },
+  { name: 'Wave',                    year: 2026, discipline: 'Product Design',          slug: 'wave',                 model: '/models/speaker.glb',    fill: 0.94, viewRY: 0.0,  viewRX: 0.0  },
+  { name: 'Gravity Wave Backgammon', year: 2024, discipline: 'Product Design',          slug: 'backgammon',           model: '/models/backgammon.glb', fill: 0.96, viewRY: -0.7, viewRX: 0.62 },
+  { name: 'LUMI',                    year: 2023, discipline: 'Product · Critical Design', slug: 'lumi',                model: '/models/lumi.glb',       fill: 0.88, viewRY: 0.2,  viewRX: 0.12 },
+  { name: 'YourPAL',                 year: 2023, discipline: 'App Design · UX·UI',       slug: 'yourpal',              model: '/models/yourpal.glb',    fill: 0.86, viewRY: 0.25, viewRX: 0.1  },
+  { name: 'Spider-209',              year: 2022, discipline: 'Product Design',          slug: 'spider-209',           model: '/models/spider.glb',     fill: 0.88, viewRY: 0.3,  viewRX: 0.15 },
+  { name: 'Wabi Sabi',               year: 2022, discipline: 'Product Design',          slug: 'universal-phone-case', model: '/models/wabiSabi.glb',   fill: 0.86, viewRY: 0.3,  viewRX: 0.1  },
+];
 ---
-<Layout title="Work — Court Granville" description="Selected projects by Court Granville.">
+<Layout title="Work — Court Granville" description="Selected projects by Court Granville — each presented as the product itself, in 3D.">
   <Nav />
   <main class="work-main">
-    <h1 class="sr-only">Work</h1>
-    <WorkIndex side="right" kicker="Work" />
+    <Grid as="section" class="work" aria-label="Selected work">
+      <header class="work-head">
+        <span class="label reveal">Selected Work</span>
+        <h1 class="sr-only">Work</h1>
+      </header>
+      <div class="work-gallery">
+        <WorkGallery projects={PROJECTS} client:visible />
+      </div>
+    </Grid>
   </main>
   <Footer />
 </Layout>
 
 <style>
-  .work-main {
-    padding-block: calc(var(--nav-h) + var(--space-page-top)) var(--space-section);
-  }
+  .work-main { padding-block: calc(var(--nav-h) + var(--space-page-top)) var(--space-section); }
+  :global(.work) { row-gap: clamp(40px, 6vh, 88px); }
+  .work-head    { grid-column: 1 / -1; }
+  .work-gallery { grid-column: 1 / -1; }
 </style>
 
 <style is:global>
   main { position: relative; z-index: 2; }
+
+  /* The island wrapper is a passthrough so .wg-grid lays out directly inside
+     .work-gallery. Column count ramps with the viewport so the models stay
+     dominant: 1-up on phones, then 2 / 3, reaching 4-up only on very wide /
+     4K displays — where the generous gaps spread the models across the screen.
+     Both the gaps and (below) the type scale with vw, so nothing is fixed. */
+  .work-gallery > astro-island { display: contents; }
+  .wg-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    /* Generous, viewport-scaled gaps so neighbouring models never crowd each
+       other — the row gap stays larger than the column gap at every size. */
+    gap: clamp(64px, 9vh, 160px) clamp(32px, 3.4vw, 104px);
+  }
+  @media (min-width: 600px)  { .wg-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1024px) { .wg-grid { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 1600px) { .wg-grid { grid-template-columns: repeat(4, 1fr); } }
+
+  .wg-cell { display: flex; flex-direction: column; }
+
+  /* The stage: a tall box of plain ground, nothing around the object. The canvas
+     is alpha so the page white shows through — no frame, no card. It fills the
+     column width and stands taller than wide, giving elongated products real
+     vertical room so they read large yet never touch the edges (the fit binds on
+     the narrower axis, leaving safe headroom top and bottom at any spin angle). */
+  /* The box's height comes from the aspect-ratio alone. The canvas is pulled out
+     of flow (via the Canvas `style` prop, see WorkGallery) so its drawing-buffer
+     height can't feed back in and inflate the box frame-by-frame; min-height:0
+     stops this flex item from growing to that intrinsic size either way. */
+  .wg-stage { position: relative; width: 100%; aspect-ratio: 4 / 5; min-height: 0; }
+  .wg-stage canvas { width: 100% !important; height: 100% !important; display: block; cursor: grab; touch-action: pan-y; }
+  .wg-stage canvas:active { cursor: grabbing; }
+
+  /* Caption — no rule, just air. Hierarchy is real now: a serif title, clearly
+     larger, over quiet caps metadata and a fainter link. All three sizes scale
+     with the viewport (vw clamps) so the caption grows with the models. */
+  .wg-cap {
+    display: flex; flex-direction: column;
+    margin-top: clamp(16px, 1.4vw, 34px);
+    color: var(--text); transition: color var(--dur-hover) var(--ease-out);
+  }
+  .wg-cap .wg-name {
+    font-family: var(--serif); font-weight: 400;
+    font-size: clamp(19px, 1.15vw, 34px); line-height: 1.12;
+  }
+  .wg-cap .wg-meta {
+    font-size: clamp(11px, 0.62vw, 16px);
+    color: var(--text-quiet);
+    margin-top: clamp(8px, 0.7vw, 16px);
+  }
+  .wg-cap .wg-link {
+    font-size: clamp(11px, 0.62vw, 16px);
+    color: var(--text-faint);
+    margin-top: clamp(10px, 0.9vw, 20px);
+    transition: color var(--dur-hover) var(--ease-out);
+  }
+  .wg-cap:hover { color: var(--accent); }
+  .wg-cap:hover .wg-name,
+  .wg-cap:hover .wg-link { color: var(--accent); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wg-cap, .wg-link { transition: none; }
+  }
 </style>

@@ -2,8 +2,9 @@
 // Homepage. The CG particle hero is the first screen — large and borderless,
 // its canvas confined to the hero so it lives at the top only (it scrolls away
 // with the first screen rather than sitting as a fixed layer behind the page).
-// A small text complement is anchored lower-left; Selected Work + the thesis
-// band follow in normal flow.
+// The hero's text complement (the multidisciplinary positioning paragraph) is
+// anchored lower-left. Below the hero, in normal flow: Selected Work first, then
+// the approach band (the "translation layer" statement), then the Writing band.
 
 import Layout from '../components/Layout.astro';
 import Nav from '../components/Nav.astro';
@@ -20,26 +21,29 @@ import Grid from '../components/Grid.astro';
   <main>
     <h1 class="sr-only">Court Granville — Multidisciplinary Designer, London &amp; Madrid</h1>
 
-    <!-- Screen 1 — the CG particle hero, full screen, with a small complement. -->
-    <Hero>
-      <p class="hero-statement reveal">Making the technical legible, useful and beautiful.</p>
-      <a class="textlink hero-cta reveal" data-stagger="1" href="/work/">View work &rarr;</a>
-    </Hero>
+    <!-- Screen 1 — the CG particle hero, full screen. -->
+    <Hero />
+
+    <!-- Hero lead. Desktop: lifted onto the hero, vertically centred on the left,
+         reading as a caption beside the centred glyph. Mobile: falls into normal
+         flow as the first block BELOW the full-screen interaction. -->
+    <div class="hero-lead">
+      <p class="hero-lead-text reveal">I&rsquo;m a multidisciplinary designer working across product, interaction, data and the web. My training is in product design, but a pull toward technology, AI and systems has taken me wider &mdash; toward the industries where design is needed most, and the contested subjects in between.</p>
+    </div>
 
     <!-- Below the hero — opaque, occludes the fixed canvas as it scrolls up. -->
     <div class="hp-below">
-      <section class="hp-section hp-intro" aria-label="Introduction">
-        <Grid>
-          <span class="label hp-intro-kicker reveal">Multidisciplinary Designer</span>
-          <p class="hp-intro-pos reveal" data-stagger="1">Design is the translation layer between technical complexity and the people it&rsquo;s meant to serve.</p>
-          <p class="hp-intro-lead reveal" data-stagger="2">I&rsquo;m a multidisciplinary designer working across product, interaction, data and the web. My training is in product design, but a pull toward technology, AI and systems has taken me wider &mdash; toward the industries where design is needed most, and the contested subjects in between.</p>
-        </Grid>
-      </section>
-
       <section class="hp-section" aria-label="Selected work">
         <Carousel />
         <Grid>
           <a class="textlink hp-allwork reveal" href="/work/">All work &rarr;</a>
+        </Grid>
+      </section>
+
+      <section class="hp-section hp-intro" aria-label="Approach">
+        <Grid>
+          <span class="label hp-intro-kicker reveal">Multidisciplinary Designer</span>
+          <p class="hp-intro-pos reveal" data-stagger="1">Design is the translation layer between technical complexity and the people it&rsquo;s meant to serve.</p>
         </Grid>
       </section>
 
@@ -58,16 +62,39 @@ import Grid from '../components/Grid.astro';
 </Layout>
 
 <style>
-  /* Small text complement to the hero (slotted into .hero-overlay). */
-  .hero-statement {
+  /* Hero lead — the multidisciplinary paragraph.
+     Mobile-first: a normal-flow block below the full-screen hero interaction. */
+  .hero-lead {
+    padding: var(--space-block) var(--outer);
+  }
+  .hero-lead-text {
     font-family: var(--serif);
     font-weight: 400;
     font-size: var(--fs-body);
     line-height: 1.5;
     color: var(--text);
-    margin: 0 0 16px;
+    margin: 0;
+    max-width: 52ch;
   }
-  .hero-cta { font-size: var(--fs-label); }
+
+  /* Desktop & up: lift the lead onto the hero. Span the first screen on the
+     left and centre the text vertically with flex (so the .reveal transform on
+     the text stays free for the fade-in). Pointer-events off so the glyph
+     beneath stays interactive. */
+  @media (min-width: 768px) {
+    .hero-lead {
+      position: absolute;
+      left: var(--outer);
+      top: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: 0;
+      z-index: 3;
+      pointer-events: none;
+    }
+    .hero-lead-text { max-width: 38ch; }
+  }
 
   /* Everything after the hero, on the white ground, in normal flow. */
   .hp-below {

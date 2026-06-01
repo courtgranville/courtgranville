@@ -22,9 +22,6 @@
   <!-- The CG canvas lives INSIDE the hero so it occupies the first screen only,
        scrolling away with it — not a fixed full-page layer behind everything. -->
   <canvas id="c" aria-hidden="true"></canvas>
-  <!-- A small text complement to the 3D, supplied by the page. It sits over the
-       empty lower-left; the CG glyph reads in the centre of the field. -->
-  <div class="hero-overlay"><slot /></div>
   <div class="scroll-cue" id="scrollCue">
     SCROLL
     <span class="arrow">&darr;</span>
@@ -51,20 +48,6 @@
     overflow: hidden;       /* clip the canvas to the first screen */
     z-index: 2;
   }
-
-  /* Small text complement, anchored to the lower-left of the first screen.
-     Above the canvas (z-index 1) so it reads, on the same screen — not floating
-     in front of a background layer. */
-  .hero-overlay {
-    position: absolute;
-    left: var(--outer);
-    bottom: clamp(72px, 12vh, 132px);
-    max-width: 38ch;
-    z-index: 1;
-    pointer-events: none; /* re-enabled on interactive children below */
-  }
-  .hero-overlay :global(a),
-  .hero-overlay :global(button) { pointer-events: auto; }
 
   .scroll-cue {
     position: absolute;

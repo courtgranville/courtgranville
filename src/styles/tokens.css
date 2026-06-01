@@ -22,16 +22,20 @@
   --sans:  'Raleway', ui-sans-serif, system-ui, sans-serif;
 
   /* ── Type ROLES — one size per role, used everywhere ─ */
+  /* Every role is fluid and CAPS near the large-screen ceiling (~1600–1920px):
+     it grows with the viewport, then settles so line lengths stay editorial on
+     big monitors. Body/small/label grow only slightly on purpose — paragraphs
+     are meant to stay small; the display/heading roles carry the scale-up. */
   /* Display L: page statements, project name, about/contact/blog lead */
-  --fs-display-l: clamp(36px, 4.6vw, 60px);  --lh-display-l: 1.08;
+  --fs-display-l: clamp(36px, 4.6vw, 80px);  --lh-display-l: 1.08;
   /* Heading M: section headings, carousel + work names */
-  --fs-heading-m: clamp(26px, 3.0vw, 36px);  --lh-heading-m: 1.12;
+  --fs-heading-m: clamp(26px, 3.2vw, 48px);  --lh-heading-m: 1.12;
   /* Heading S: project framing italic, pull quotes */
-  --fs-heading-s: clamp(20px, 2.2vw, 26px);  --lh-heading-s: 1.30;
-  /* Body + small + label */
-  --fs-body:    17px;  --lh-body:    28px;
-  --fs-body-s:  14px;  --lh-body-s:  24px;
-  --fs-label:   12px;  --lh-label:   16px;
+  --fs-heading-s: clamp(20px, 2.4vw, 32px);  --lh-heading-s: 1.30;
+  /* Body + small + label — fluid but tightly capped (paragraphs stay small) */
+  --fs-body:    clamp(17px, 1.0vw, 19px);   --lh-body:    1.55;
+  --fs-body-s:  clamp(14px, 0.85vw, 16px);  --lh-body-s:  1.55;
+  --fs-label:   clamp(12px, 0.72vw, 14px);  --lh-label:   1.33;
   --ls-label:   0.18em;          /* THE caps letter-spacing. One value. */
   --ls-label-tight: 0.10em;      /* allowed only for caps ≥ 16px */
 
@@ -39,7 +43,7 @@
   --cols:        4;                       /* mobile-first; steps up below */
   --gutter:      24px;
   --outer:       clamp(20px, 4vw, 56px);  /* ONE outer margin, every page */
-  --content-max: 1600px;                  /* grid is centred within this */
+  --content-max: 1840px;                  /* grid is centred within this; caps the scale-up on very wide screens */
 
   /* ── Vertical rhythm ──────────────────────────────── */
   --space-page-top: clamp(48px, 9vh, 120px);   /* added on top of --nav-h */

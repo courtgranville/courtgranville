@@ -464,8 +464,18 @@ function fitCamera(){
     const Dh = HW / (tanV * fit);                   // …and to fit its HEIGHT into the viewport
     D = Math.max(CONFIG.scene.cameraDistance, Dw, Dh);
     const visW = 2 * D * tanV * (W / H);
-    const cx = (regionL + regionR) / 2;
-    x = -((cx - W / 2) / W) * visW;                 // slide content to the region's centre
+    // Prefer the TRUE screen centre: on a wide / fullscreen desktop the glyph and the
+    // product models sit dead-centre, where they read best. Only when a centred glyph
+    // would crowd the left-hand copy (narrower desktops) do we slide it right by the
+    // minimum needed to clear the copy — so the copy is never overlapped, but the 3D
+    // is no longer pinned to the right of an empty middle.
+    const halfPx = HW * H / (2 * D * tanV);         // content's on-screen half-width (px)
+    const copyRight = outer + copyW;                // right edge of the copy column
+    const minGap = Math.max(48, 0.025 * W);         // breathing room between copy and glyph
+    let cxPx = W / 2;                               // aim: centre of the screen
+    if (cxPx - halfPx < copyRight + minGap) cxPx = copyRight + minGap + halfPx;
+    cxPx = Math.min(cxPx, regionR - halfPx);        // never let it run under the beat dots
+    x = -((cxPx - W / 2) / W) * visW;
     y = 0;
   } else {
     D = Math.max(CONFIG.scene.cameraDistance, HW * H / (tanV * 0.42 * W), HW / (tanV * 0.5));

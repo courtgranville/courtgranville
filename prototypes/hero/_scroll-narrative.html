@@ -204,15 +204,19 @@ const CONFIG = {
     baseSize: 0.032, sizeVariance: 0.22,
     inkColor: '#161616',
   },
-  // Pointer "wind" — velocity impulses near the cursor (Omma-style), decaying.
-  // (No spring → no overshoot/bounce when the scroll target moves.)
-  pointer: { radius: 0.45, strength: 8, smoothing: 0.5, windDecay: 0.90 },
+  // Pointer "wind" — velocity impulses near the cursor. Tuned toward the original
+  // hero's playful repel: a wider reach, a firmer push, and slow velocity decay
+  // (≈ the hero's damping 0.99) so disturbed particles drift and linger before
+  // easing home, rather than snapping straight back.
+  pointer: { radius: 0.6, strength: 12, smoothing: 0.5, windDecay: 0.945 },
   rotation:{ speed: reducedMotion ? 0 : 0.06 },          // gentle auto-spin of the cloud
   loadIn:  { duration: 1.6, stagger: 0.7, startVolume: 7 },
   morph: {
     shapeRadius: 2.7,        // world radius every product/text shape fits into (bigger products)
     disperseRadius: 9.0,     // BIG — overflows the screen so the dispersal envelops the viewer
-    follow: 0.16,            // tighter first-order approach → deliberate, not floaty/laggy
+    follow: 0.105,           // softer home-return so pointer-disturbed particles can
+                             // be played with and drift back (not snap); still tracks scroll
+    settleFollow: 0.16,      // tighten the return WHILE actively scrolling so the morph stays deliberate
     // shapeW (formed-ness of the nearest stop) drives the TEXTURE/text crossfade.
     formIn:  0.12,           // |delta| ≤ this → fully formed
     formOut: 0.38,           // |delta| ≥ this → fully off
@@ -224,7 +228,7 @@ const CONFIG = {
   // 'stick' warps the scroll→timeline mapping so each stop is gently magnetic — a
   // subtle pull that makes it easy to land on a product, with NO programmatic
   // scroll animation to fight Lenis (the old snap's jank source).
-  scroll: { segmentVh: 1.3, stick: 0.55 },
+  scroll: { segmentVh: 1.3, stick: 0.78 },
   modelBase: '/public/models/',   // python http.server from repo root → /public/models/…
 };
 
@@ -405,9 +409,9 @@ class Particles {
 // eases in and NEVER overshoots, so scrubbing the scroll glides between shapes
 // instead of bouncing. Pointer proximity adds a decaying velocity impulse ("wind")
 // so the dust can still be disturbed, then drifts back. No spring, no oscillation.
-function stepMorph(ps, dt, probe){
+function stepMorph(ps, dt, probe, follow){
   const pos=ps.geometry.attributes.position.array, vel=ps.vel, home=ps.home;
-  const follow=CONFIG.morph.follow, decay=CONFIG.pointer.windDecay;
+  const decay=CONFIG.pointer.windDecay;
   const on=probe.active, ox=probe.o.x,oy=probe.o.y,oz=probe.o.z, rx=probe.d.x,ry=probe.d.y,rz=probe.d.z;
   const r=CONFIG.pointer.radius, r2=r*r, str=CONFIG.pointer.strength;
   for(let i=0;i<COUNT;i++){
@@ -503,7 +507,7 @@ function loadModel(i){
       const outer = new THREE.Group(); outer.scale.setScalar(fit.scale); outer.add(inner);
       outer.visible = false;
       scene.add(outer);                       // ← register in the scene graph (was missing)
-      models[i] = { group: outer, materials: mats, spin:0, spinVel:0, tiltX:0 };
+      models[i] = { group: outer, materials: mats, spin:0, spinVel:0, tiltX:0, solid:null };
       res();
     }, undefined, (err)=>{ console.warn('model load failed', b.file, err); res(); });
   });
@@ -686,7 +690,7 @@ function updateOverlay(){
 //  RENDER LOOP
 // ════════════════════════════════════════════════════════════════════
 const clock = new THREE.Clock(); clock.getDelta();
-let accumY=0;
+let accumY=0, prevP=0;
 const hud=document.getElementById('hud');
 
 let ready=false;
@@ -729,7 +733,10 @@ function frame(){
   cloudGroup.updateMatrixWorld();
 
   probeUpdate();
-  if(!(loadIn && !loadIn.done)) stepMorph(ps, dt, probe);
+  // Tight return while actively scrolling (deliberate morph); loose at rest so the
+  // pointer can play with the dust and it drifts home rather than snapping.
+  const moving = Math.abs(state.p - prevP) > 0.0006; prevP = state.p;
+  if(!(loadIn && !loadIn.done)) stepMorph(ps, dt, probe, moving ? CONFIG.morph.settleFollow : CONFIG.morph.follow);
 
   // ── Symmetric handoff: the texture skins on as the dust forms the shape, and
   //    dissolves back as it disperses — both driven by the SAME shapeW, so leaving
@@ -741,6 +748,15 @@ function frame(){
     const vis = (i===c) ? smootherstep(CONFIG.morph.texAt, 1.0, shapeW) : 0;
     m.group.visible = vis>0.001;
     for(const mat of m.materials) mat.opacity = vis;
+    // Render solid once fully formed: depth-write on + opaque pass, so overlapping
+    // faces sort correctly (a transparent material with no depth-write blends front
+    // and back faces → the see-through look). Only flip on state change (avoids a
+    // per-frame shader recompile). During the fade it stays transparent/no-depth.
+    const wantSolid = vis >= 0.999;
+    if(wantSolid !== m.solid){
+      for(const mat of m.materials){ mat.transparent=!wantSolid; mat.depthWrite=wantSolid; mat.needsUpdate=true; }
+      m.solid = wantSolid;
+    }
     if(i===c) particleOpacity = Math.min(particleOpacity, 1 - vis);
     // gentle drag-spin: capped velocity + light inertia; tilt eases back when idle
     m.spin += m.spinVel; m.spinVel *= CONFIG.spin.damping;

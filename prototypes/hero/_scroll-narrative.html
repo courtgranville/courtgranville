@@ -226,20 +226,25 @@ const CONFIG = {
   play: { springK: 16, damping: 0.985, maxDisp: 3.0 },
   // Drag-to-spin — gentle. Velocity is capped so a small flick can't whip it round.
   spin: { speed: 0.0013, maxVel: 0.020, damping: 0.88, returnLerp: 0.06, tilt: 0.5, tiltRange: 0.4 },
-  // 'stick' warps scroll→timeline so each stop is magnetic. With the morph now direct
-  // (no lag), keep it moderate — too high reads as 'scroll does nothing then lurches'.
-  scroll: { segmentVh: 1.3, stick: 0.6 },
+  // Scroll is 1:1 with the timeline (fully attached → you scrub the whole particle
+  // effect by hand). Section dispersals are LONGER than inter-model morphs. When the
+  // wheel stops AND the momentum settles, it eases to the nearest stop (ease-out → no
+  // bounce); the glide carries you to the right side first, so it's never stranded.
+  scroll: { sectionVh: 2.4, modelVh: 1.3, snapDuration: 0.6, snapStopMs: 90, snapSettle: 0.0012 },
   modelBase: '/public/models/',   // python http.server from repo root → /public/models/…
 };
 
 // ── The beats. kind 'glyph'/'text' → particle shape only; 'model' → particles
 //    that hand off to a textured GLB you can grab and spin. ───────────────────
+// viewRY / viewRX = the preferred resting orientation each product settles to (so the
+// work reads best at first glance). Yaw then pitch (group rotation order YXZ). Tuned
+// per Court's reference shots. Drag-spin is layered on top and eases back to this.
 const BEATS = [
   { id:'cg',     kind:'glyph', text:'CG' },
-  { id:'mantis', kind:'model', name:'Mantis',                  year:2026, disc:'Product Design', slug:'mantis',     file:'mantis.glb',     fill:1.0  },
-  { id:'wave',   kind:'model', name:'Wave',                    year:2026, disc:'Product Design', slug:'wave',       file:'speaker.glb',    fill:0.92 },
-  { id:'bg',     kind:'model', name:'Gravity Wave Backgammon', year:2024, disc:'Product Design', slug:'backgammon', file:'backgammon.glb', fill:0.92 },
-  { id:'spider', kind:'model', name:'Spider-209',              year:2022, disc:'Product Design', slug:'spider-209', file:'spider.glb',     fill:0.92 },
+  { id:'mantis', kind:'model', name:'Mantis',                  year:2026, disc:'Product Design', slug:'mantis',     file:'mantis.glb',     fill:1.0,  viewRY:0.0,  viewRX:0.28 },
+  { id:'wave',   kind:'model', name:'Wave',                    year:2026, disc:'Product Design', slug:'wave',       file:'speaker.glb',    fill:0.92, viewRY:0.0,  viewRX:0.0  },
+  { id:'bg',     kind:'model', name:'Gravity Wave Backgammon', year:2024, disc:'Product Design', slug:'backgammon', file:'backgammon.glb', fill:0.92, viewRY:0.1,  viewRX:1.0 },
+  { id:'spider', kind:'model', name:'Spider-209',              year:2022, disc:'Product Design', slug:'spider-209', file:'spider.glb',     fill:0.92, viewRY:0.3,  viewRX:0.15 },
   { id:'end',    kind:'text',  text:'Selected\nWork' },
 ];
 const N = BEATS.length;
@@ -252,6 +257,16 @@ const COUNT = CONFIG.particles.count;
 // stops are different kinds (glyph→model, model→text); model→model morphs directly.
 const GAP_DISPERSE = [];
 for(let i=0;i<N-1;i++) GAP_DISPERSE[i] = BEATS[i].kind !== BEATS[i+1].kind;
+
+// Per-gap SCROLL LENGTH (viewport-heights): the big section dispersals get more
+// scroll distance than the inter-model morphs, so you spend longer in — and actually
+// SEE — the enveloping dispersal. STOP_F holds each stop's cumulative scroll fraction,
+// so scroll↔timeline is a non-uniform but exact mapping.
+const GAP_VH = [];
+for(let i=0;i<N-1;i++) GAP_VH[i] = GAP_DISPERSE[i] ? CONFIG.scroll.sectionVh : CONFIG.scroll.modelVh;
+const TOTAL_VH = GAP_VH.reduce((a,b)=>a+b,0);
+const STOP_F = [0];
+for(let i=0;i<N-1;i++) STOP_F[i+1] = STOP_F[i] + GAP_VH[i]/TOTAL_VH;
 
 // ════════════════════════════════════════════════════════════════════
 //  SAMPLERS — every target is exactly COUNT points, index-aligned, so any
@@ -481,7 +496,7 @@ const fill= new THREE.DirectionalLight(0xffffff, 0.35); fill.position.set(-2,0.5
 
 // Two rotating groups: the particle cloud (auto-spins) and the model stage
 // (drag-spins). Both centred at the origin so particles ↔ texture register.
-const cloudGroup = new THREE.Group(); scene.add(cloudGroup);
+const cloudGroup = new THREE.Group(); cloudGroup.rotation.order='YXZ'; scene.add(cloudGroup);
 const modelGroup = new THREE.Group(); scene.add(modelGroup);
 
 const ps = new Particles();
@@ -532,8 +547,9 @@ function loadModel(i){
       const inner = new THREE.Group(); inner.position.copy(fit.center).multiplyScalar(-1); inner.add(obj);
       const outer = new THREE.Group(); outer.scale.setScalar(fit.scale); outer.add(inner);
       outer.visible = false;
+      outer.rotation.order = 'YXZ';            // match the cloud → shared rotation registers
       scene.add(outer);                       // ← register in the scene graph (was missing)
-      models[i] = { group: outer, materials: mats, spin:0, spinVel:0, tiltX:0, solid:null };
+      models[i] = { group: outer, materials: mats, solid:null };
       res();
     }, undefined, (err)=>{ console.warn('model load failed', b.file, err); res(); });
   });
@@ -617,43 +633,59 @@ addEventListener('pointerleave', ()=>{ probe.active=false; drag.on=false; canvas
 //  SCROLL — Lenis drives progress; gentle snap to each beat centre.
 // ════════════════════════════════════════════════════════════════════
 const stage = document.getElementById('stage');
-// total scroll: each gap between beats = segmentVh viewport-heights.
-stage.style.height = ((N-1)*CONFIG.scroll.segmentVh + 1) * 100 + 'vh';
+// Total scroll distance = TOTAL_VH viewport-heights (sum of the per-gap lengths);
+// +1 for the sticky viewport itself.
+stage.style.height = (TOTAL_VH + 1) * 100 + 'vh';
 
-// Lenis is advanced INSIDE the render loop (below), not on its own rAF — one clock
-// drives both, so the particle read never aliases against a separate scroll tick
-// (a real jitter source). `lerp` (snappier than a long duration) keeps it responsive.
+// Lenis advanced INSIDE the render loop (one clock → no read aliasing). lerp a touch
+// snappier so the glide settles quickly after you stop (less wait before the snap).
 let lenis=null;
 if(!reducedMotion){
-  lenis = new Lenis({ lerp:0.12, smoothWheel:true, smoothTouch:false });
+  lenis = new Lenis({ lerp:0.16, smoothWheel:true, smoothTouch:false });
 }
 
 const state = { p:0, center:0, shapeW:1 };  // p: beat-units · center: nearest stop · shapeW: how formed
 
-// Magnetic stops WITHOUT a programmatic scroll animation (so nothing fights Lenis
-// → no jank). We just WARP the scroll→timeline mapping: within each gap, remap the
-// linear fraction through a blended smootherstep. smootherstep has zero slope at 0
-// and 1, so the timeline moves slowly near a stop (it "sticks") and quicker through
-// the middle — a subtle pull that makes it easy to land on a product. `stick`
-// blends between linear (0) and full magnetic (1).
-function warpFrac(u){ const s=u*u*u*(u*(u*6-15)+10); return u + (s-u)*CONFIG.scroll.stick; }
+// scroll fraction (0..1) → timeline p, via the per-gap STOP_F map (section gaps span
+// more scroll than model gaps). 1:1 and exact, so scrolling scrubs the morph directly.
+function scrollFracToP(f){
+  f = clamp(f,0,1);
+  let i=0; while(i<N-2 && STOP_F[i+1] <= f) i++;
+  const span = STOP_F[i+1]-STOP_F[i] || 1;
+  return i + clamp((f-STOP_F[i])/span, 0, 1);
+}
+function pToScrollY(p){ const max=stage.scrollHeight-innerHeight; return STOP_F[clamp(Math.round(p),0,N-1)]*max; }
 function readScroll(){
   const max = stage.scrollHeight - innerHeight;
   const y = (scrollY||pageYOffset);
-  const f = max>0 ? clamp(y/max,0,1) : 0;
-  const lin = f*(N-1);
-  let i = Math.floor(lin); if(i>N-2) i=N-2; if(i<0) i=0;
-  state.p = i + warpFrac(lin - i);
+  state.p = scrollFracToP(max>0 ? y/max : 0);
   const cue = Math.max(0, 1 - y/90); scrollCue.style.opacity = String(cue*0.5);
 }
-if(lenis) lenis.on('scroll', readScroll); else addEventListener('scroll', readScroll, {passive:true});
+
+// Snap fires ONLY when the wheel has stopped (no input for snapStopMs) AND the
+// momentum has settled (timeline barely moving). Until then you scrub freely and see
+// the whole effect; the glide carries you to the nearest side, then it eases to that
+// stop (ease-out → no bounce). The snap loop lives in the render frame (below).
+let lastWheelT=-1e9, snapping=false, prevSnapP=0;
+function noteInput(){ lastWheelT = clock ? clock.elapsedTime*1000 : 0; snapping=false; }
+if(lenis){ ['wheel','touchstart','touchmove'].forEach(ev=> addEventListener(ev, noteInput, { passive:true })); }
+function maybeSnap(nowMs){
+  if(!lenis || drag.on || snapping) return;
+  const pv = Math.abs(state.p - prevSnapP); prevSnapP = state.p;
+  if(nowMs - lastWheelT < CONFIG.scroll.snapStopMs) return;     // still actively scrolling
+  if(pv > CONFIG.scroll.snapSettle) return;                     // momentum still gliding
+  const nearest = Math.round(state.p);
+  if(Math.abs(state.p - nearest) < 0.004) return;               // already at a stop
+  snapping = true;
+  lenis.scrollTo(pToScrollY(nearest), { duration: CONFIG.scroll.snapDuration,
+    easing:(x)=>1-Math.pow(1-x,3), onComplete:()=>{ snapping=false; } });
+}
 
 // Dev-only: drive the timeline to an exact beat for testing (append ?dbg). Never ships.
 if(new URLSearchParams(location.search).has('dbg')){
-  window.__toP = (p)=>{ const max=stage.scrollHeight-innerHeight; const y=(clamp(p,0,N-1)/(N-1))*max;
-    if(lenis) lenis.scrollTo(y,{immediate:true}); else window.scrollTo(0,y); };
+  window.__toP = (p)=>{ if(lenis) lenis.scrollTo(pToScrollY(p),{immediate:true}); else window.scrollTo(0,pToScrollY(p)); };
   window.__state = state;
-  window.__scrollTo = (p, opts)=>{ const max=stage.scrollHeight-innerHeight; lenis && lenis.scrollTo((clamp(p,0,N-1)/(N-1))*max, opts||{}); };
+  window.__scrollTo = (p, opts)=>{ lenis && lenis.scrollTo(pToScrollY(p), opts||{}); };
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -699,7 +731,7 @@ function updateOverlay(){
 //  RENDER LOOP
 // ════════════════════════════════════════════════════════════════════
 const clock = new THREE.Clock(); clock.getDelta();
-let accumY=0;
+let accumY=0, accumX=0;
 const hud=document.getElementById('hud');
 
 let ready=false;
@@ -736,6 +768,7 @@ function frame(ts){
   if(!ready) return;
   const dt=Math.min(clock.getDelta(),1/30), time=clock.elapsedTime;
   readScroll();                      // …then read it — no cross-rAF aliasing.
+  if(loadIn && loadIn.done) maybeSnap(time*1000);   // snap once the wheel stops + settles
 
   // Resolve the morph for this frame: nearest stop c, and formW = how fully c's
   // ACTUAL geometry is built in the cloud (the single value driving dust↔texture↔text).
@@ -748,14 +781,19 @@ function frame(ts){
   const activeModel = (BEATS[c]?.kind==='model' && models[c] && formW>0.85) ? c : -1;
 
   // ── ONE rotation, shared by cloud + model so they can NEVER disconnect ──
-  // Base: the CG stop auto-spins; every other stop eases to front (nearest TAU
-  // multiple → minimal unwind). User drag adds dragSpin/dragTilt on top; when you're
-  // not on a grabbable model it eases back to front. Cloud and model both use rotY/rotX.
-  if(c===0 && loadIn && loadIn.done){ accumY += CONFIG.rotation.speed*dt; }
-  else { accumY += (Math.round(accumY/TAU)*TAU - accumY) * 0.08; }
+  // Base eases to each stop's preferred view (viewRY/viewRX); the CG stop auto-spins.
+  // User drag adds dragSpin/dragTilt on top and eases back when you leave the model.
+  if(c===0 && loadIn && loadIn.done){ accumY += CONFIG.rotation.speed*dt; accumX += (0-accumX)*0.08; }
+  else {
+    const tgtRY = BEATS[c]?.viewRY || 0, tgtRX = BEATS[c]?.viewRX || 0;
+    // ease toward the nearest angle equivalent to tgtRY (mod TAU) → no long unwind
+    const aimY = Math.round((accumY - tgtRY)/TAU)*TAU + tgtRY;
+    accumY += (aimY - accumY) * 0.08;
+    accumX += (tgtRX - accumX) * 0.08;
+  }
   dragSpin += dragSpinVel; dragSpinVel *= CONFIG.spin.damping;
   if(activeModel<0){ dragSpin *= 0.94; dragTilt += (0-dragTilt)*CONFIG.spin.returnLerp; }
-  const rotY = accumY + dragSpin, rotX = dragTilt;
+  const rotY = accumY + dragSpin, rotX = accumX + dragTilt;
   cloudGroup.rotation.set(rotX, rotY, 0);
   cloudGroup.updateMatrixWorld();
 

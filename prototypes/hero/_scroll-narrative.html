@@ -234,7 +234,10 @@ const CONFIG = {
   // bridge the gap between discrete mouse-wheel notches, so continuous notch-scrolling
   // is never interrupted (a fresh notch also cleanly takes over an in-flight snap).
   // advanceThresh: how far into a gap (in the scroll direction) commits to the next stop.
-  scroll: { sectionVh: 2.4, modelVh: 1.3, snapDuration: 0.8, snapStopMs: 220, advanceThresh: 0.12 },
+  // snapSettle: only snap once the glide has slowed to ~this (p/frame), so the snap
+  // starts from near-rest and (with smootherstep easing) has no velocity discontinuity
+  // — the jolt that read as "jumpy". The Lenis glide fills the wait with smooth motion.
+  scroll: { sectionVh: 2.4, modelVh: 1.3, snapDuration: 0.7, snapStopMs: 200, snapSettle: 0.0009, advanceThresh: 0.12 },
   modelBase: '/public/models/',   // python http.server from repo root → /public/models/…
 };
 
@@ -678,10 +681,11 @@ function maybeSnap(nowMs){
   if(!lenis || drag.on || snapping){ prevSnapP = state.p; return; }
   const sdp = state.p - prevSnapP; prevSnapP = state.p;
   if(Math.abs(sdp) > 0.0015) scrollDir = Math.sign(sdp);        // latch the travel direction
-  // Fire only after the wheel has been QUIET for snapStopMs — long enough that the pauses
-  // between mouse notches don't trigger it. The Lenis glide (low lerp) keeps moving
-  // smoothly until then; the snap eases on from wherever it reached → no abrupt cut.
+  // Fire only after the wheel has been QUIET for snapStopMs (bridges mouse-notch gaps)
+  // AND the glide has settled (velocity ~0) — so the snap starts from rest. The glide
+  // before then is smooth Lenis motion, not a dead pause.
   if(nowMs - lastWheelT < CONFIG.scroll.snapStopMs) return;
+  if(Math.abs(sdp) > CONFIG.scroll.snapSettle) return;
   // DIRECTIONAL: scrolling forward commits to the next stop once you've left the current
   // one by advanceThresh (you're trying to move on); only fall back if you barely moved.
   const fp = Math.floor(state.p), frac = state.p - fp, th = CONFIG.scroll.advanceThresh;
@@ -689,8 +693,9 @@ function maybeSnap(nowMs){
   target = clamp(target, 0, N-1);
   if(Math.abs(state.p - target) < 0.004) return;                // already there
   snapping = true;
+  // smootherstep easing: zero velocity at BOTH ends → no jolt starting or arriving.
   lenis.scrollTo(pToScrollY(target), { duration: CONFIG.scroll.snapDuration,
-    easing:(x)=>1-Math.pow(1-x,3), onComplete:()=>{ snapping=false; } });
+    easing:(x)=>smootherstep(0,1,x), onComplete:()=>{ snapping=false; } });
 }
 
 // Dev-only: drive the timeline to an exact beat for testing (append ?dbg). Never ships.

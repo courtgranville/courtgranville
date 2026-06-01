@@ -5,26 +5,36 @@
   "framing": "A lamp that pushes back on our relationship with our screens.",
   "heroImage": "04-final-hero",
   "group": false,
+  "spec": {
+    "Brief":     "design a product that encourages responsible social-media use",
+    "Made with": "fully 3D-modelled · 3D-printed threaded parts · LED strips · electronics",
+    "Status":    "working artefact; the screen-time-responsive software is the next stage"
+  },
   "blocks": [
     { "type": "label", "text": "01 — The Brief" },
     {
       "type": "text",
-      "body": "My first fully 3D-modelled project, built entirely from 3D-printed parts and electronics. The brief — to design a product that encourages responsible social-media use and questions our addiction to it — became a lamp for people living with ADHD, anxiety, social-media addiction, or all three."
+      "body": "This was my first fully 3D-modelled project, built entirely from 3D-printed parts and electronics. The brief was a critical one — design a product that encourages responsible social-media use and questions our addiction to it. Mine became a lamp: an object for people living with ADHD, anxiety, social-media addiction, or some combination of the three."
     },
-    { "type": "label", "text": "02 — Making" },
+    { "type": "label", "text": "02 — The Idea" },
     {
       "type": "text",
-      "body": "I 3D-printed threaded components that screwed together, and modelled the internal housing for LED lighting strips — designed to be controlled by an app or custom software."
+      "body": "As critical design, LUMI is meant to provoke as much as to function. The premise is simple: the antidote to a screen shouldn't be another screen. A lamp is ambient, physical and already in the room — so rather than an app nagging you from the same device that's the problem, LUMI is designed to answer your screen time in the space around you, a quiet light-based nudge instead of another notification. The point isn't the gadget; it's the question it asks about how we'd actually want technology to intervene."
+    },
+    { "type": "label", "text": "03 — Making" },
+    {
+      "type": "text",
+      "body": "I modelled and 3D-printed a set of threaded components that screw together, and designed the internal housing to hold LED lighting strips — built to be driven by an app or custom software. It was where I learned to model for manufacture rather than just for the screen: parts that have to thread, align and genuinely fit together."
     },
     {
       "type": "imageGrid",
       "imageSlugs": ["01-cad-base", "02-cad-component", "03-cad-threaded"],
       "alt": "Threaded-part details from the 3D model"
     },
-    { "type": "label", "text": "03 — Resolved" },
+    { "type": "label", "text": "04 — Resolved" },
     {
       "type": "text",
-      "body": "The artefact: a working lamp object, designed for the screen-time-responsive behaviour but not yet implementing it. The software side remains open — the next stage of the project rather than this one."
+      "body": "What exists is the artefact — a working lamp object, designed for the screen-time-responsive behaviour but not yet running it. The software side is deliberately left open: the next stage of the project rather than this one. I'd rather show the honest state of it — a finished object and an unfinished system — than pretend the hard part is done."
     },
     {
       "type": "image",

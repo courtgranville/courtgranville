@@ -137,7 +137,7 @@ Cloudflare Pages dashboard with:
 - **Framework preset:** Astro
 - **Build command:** `npm run build`
 - **Build output directory:** `dist`
-- **Node version:** 20 (set env `NODE_VERSION=20`, or add a `.nvmrc`)
+- **Node version:** 22 — Astro 6 requires Node `>=22.12.0` (Node 20 is rejected at build). Pinned in-repo via `.nvmrc` (`22`), which Cloudflare reads for **every** deployment. Prefer this over a dashboard `NODE_VERSION` env var: dashboard vars are set per-environment (Production vs Preview are separate), so a Production-only var leaves PR **preview** builds on an unsupported default Node and they fail.
 - **Env vars:** none required.
 
 The hero/3D-canvas three.js loads from jsDelivr (CDN import map) and fonts from

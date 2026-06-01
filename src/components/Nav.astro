@@ -23,7 +23,7 @@ const links = [
 const isCurrent = (href: string) => !href.includes('#') && (path === href || path.startsWith(href));
 ---
 <nav class="site-nav" aria-label="Primary">
-  <a class="brand" href="#top" data-scroll-top>Court Granville</a>
+  <a class="brand" href="#top" data-scroll-top aria-label="Court Granville — home">CG</a>
   <div class="nav-links">
     {links.map((l) => (
       <a class="nav-link" href={l.href} aria-current={isCurrent(l.href) ? 'page' : undefined}>{l.label}</a>
@@ -64,10 +64,12 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
   .site-nav.scrolled::before { opacity: 1; }
   .site-nav.scrolled { border-bottom: 1px solid var(--rule); }
 
+  /* Monogram — the "CG" mark, Playfair Bold to echo the particle hero glyph. */
   .brand {
     font-family: var(--serif);
-    font-weight: 400;
-    font-size: 22px;
+    font-weight: 700;
+    font-size: 24px;
+    letter-spacing: 0.01em;
     line-height: 1;
     color: var(--text);
     transition: opacity var(--dur-hover) var(--ease-out);
@@ -83,13 +85,13 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
   .nav-link {
     position: relative;
     font-family: var(--sans);
-    font-weight: 500;
+    font-weight: 600;
     font-size: var(--fs-label);
     line-height: var(--lh-label);
     letter-spacing: var(--ls-label);
     text-transform: uppercase;
     color: var(--text);
-    opacity: 0.82;
+    opacity: 0.9;
     padding: 6px 0;
     transition:
       color var(--dur-hover) var(--ease-out),

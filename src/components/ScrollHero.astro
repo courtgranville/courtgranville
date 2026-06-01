@@ -33,24 +33,23 @@ const PRODUCTS = [
 
     <!-- Overlay copy — phases in/out per beat, driven by the engine. -->
     <div class="cg-overlay" aria-hidden="false">
-      <!-- Beat 0 — the CG hero lead (the multidisciplinary positioning paragraph). -->
+      <!-- Beat 0 — the name (sized to the lead column so the brand needn't repeat it)
+           over the multidisciplinary positioning paragraph. -->
       <div class="ov-block ov-lead">
-        <p>I&rsquo;m a multidisciplinary designer working across product, interaction, data and the web. I trained in product design, but a pull toward technology, AI and systems has taken me wider &mdash; toward the industries and problems where design is needed most, whatever shape they take.</p>
+        <h1 class="ov-name-hero">Court Granville<span class="sr-only"> &mdash; Multidisciplinary Designer, London &amp; Madrid</span></h1>
+        <p class="ov-lead-p">I&rsquo;m a multidisciplinary designer working across product, interaction, data and the web. I trained in product design, but a pull toward technology, AI and systems has taken me wider &mdash; toward the industries and problems where design is needed most, whatever shape they take.</p>
       </div>
 
-      <!-- Product beats — one block, contents swapped by the engine per product. -->
+      <!-- Product beats — one block, contents swapped by the engine per product. A
+           "Selected Work" kicker labels them all as such. -->
       <div class="ov-block ov-product" id="ovProduct">
+        <span class="ov-kicker label">Selected Work</span>
         <span class="ov-index" id="ovIndex">01 / 04</span>
         <h2 class="ov-name" id="ovName">{PRODUCTS[0].name}</h2>
         <div class="ov-meta" id="ovMeta">{PRODUCTS[0].year} &middot; {PRODUCTS[0].discipline}</div>
         <p class="ov-desc" id="ovDesc">{PRODUCTS[0].desc}</p>
         <a class="ov-link" id="ovLink" href={`/work/${PRODUCTS[0].slug}/`}>View project &rarr;</a>
         <span class="ov-hint">Drag to spin</span>
-      </div>
-
-      <!-- Closing particle-text divider — the dust resolves into this crisp type. -->
-      <div class="ov-block ov-divider">
-        <h2>Selected<br />Work</h2>
       </div>
     </div>
 
@@ -84,12 +83,18 @@ const PRODUCTS = [
   .ov-block { position: absolute; opacity: 0; will-change: opacity; }
   .ov-block a { pointer-events: auto; }
 
-  /* Hero lead — left, vertically centred beside the centred glyph. */
+  /* Hero lead — the name sized to the lead column, over the positioning paragraph,
+     left and vertically centred beside the centred glyph. */
   .ov-lead {
     left: var(--outer); top: 50%; transform: translateY(-50%);
     max-width: 38ch;
   }
-  .ov-lead p {
+  .ov-name-hero {
+    font-family: var(--serif); font-weight: 400;
+    font-size: clamp(30px, 4.05vw, 47px); line-height: 1.0; letter-spacing: -0.01em;
+    color: var(--text); margin: 0 0 22px;
+  }
+  .ov-lead-p {
     font-family: var(--serif); font-weight: 400;
     font-size: var(--fs-body); line-height: 1.5; color: var(--text); margin: 0;
   }
@@ -99,6 +104,7 @@ const PRODUCTS = [
     left: var(--outer); top: 50%; transform: translateY(-50%);
     display: flex; flex-direction: column; align-items: flex-start; max-width: 30ch;
   }
+  .ov-kicker { display: block; color: var(--text-faint); margin-bottom: 14px; }
   .ov-index {
     font-family: var(--sans); font-weight: 500;
     font-size: var(--fs-label); letter-spacing: var(--ls-label); text-transform: uppercase;
@@ -129,13 +135,6 @@ const PRODUCTS = [
   .ov-hint {
     margin-top: 28px; font-family: var(--sans); font-weight: 500;
     font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-faint);
-  }
-
-  /* Closing divider heading — centred display type the dust resolves into. */
-  .ov-divider { left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; }
-  .ov-divider h2 {
-    font-family: var(--serif); font-weight: 400;
-    font-size: var(--fs-display-l); line-height: var(--lh-display-l); color: var(--text); margin: 0;
   }
 
   /* Scroll cue — bottom centre, fades on first scroll (engine-driven opacity). */
@@ -201,7 +200,7 @@ const CONFIG = {
   // Scroll is 1:1 with the timeline; section dispersals are longer than inter-model
   // morphs; the snap (directional, smootherstep, settle-gated) fires only once the
   // wheel stops AND the glide settles → smooth, no jolt, no mid-notch interruption.
-  scroll: { sectionVh: 2.4, modelVh: 1.3, snapDuration: 0.7, snapStopMs: 200, snapSettle: 0.0009, advanceThresh: 0.12 },
+  scroll: { sectionVh: 2.4, modelVh: 1.3, exitVh: 1.6, snapDuration: 0.7, snapStopMs: 200, snapSettle: 0.0009, advanceThresh: 0.12 },
   modelBase: '/models/',
 };
 
@@ -213,7 +212,9 @@ const BEATS = [
   { id:'wave',   kind:'model', name:'Wave',                    year:2026, disc:'Product Design', slug:'wave',       desc:'A salvaged pair of speakers, rebuilt into a custom enclosure.',        file:'speaker.glb',    fill:0.92, viewRY:0.0,  viewRX:0.0  },
   { id:'bg',     kind:'model', name:'Gravity Wave Backgammon', year:2024, disc:'Product Design', slug:'backgammon', desc:'A sheet of recycled plastic turned into a backlit backgammon board.', file:'backgammon.glb', fill:0.92, viewRY:-0.7, viewRX:0.62 },
   { id:'spider', kind:'model', name:'Spider-209',              year:2022, disc:'Product Design', slug:'spider-209', desc:'A classic lamp, rebuilt from the streets of Madrid.',                 file:'spider.glb',     fill:0.92, viewRY:0.3,  viewRX:0.15 },
-  { id:'end',    kind:'text',  text:'Selected\nWork' },
+  // Final beat: the last product dissolves into the enveloping dispersal, which hands
+  // off to the editorial About section below (no "Selected Work" interstitial).
+  { id:'out',    kind:'disperse' },
 ];
 const N = BEATS.length;
 const COUNT = CONFIG.particles.count;
@@ -224,6 +225,9 @@ for(let i=0;i<N-1;i++) GAP_DISPERSE[i] = BEATS[i].kind !== BEATS[i+1].kind;
 // Per-gap scroll length (vh): section dispersals span more scroll than model morphs.
 const GAP_VH = [];
 for(let i=0;i<N-1;i++) GAP_VH[i] = GAP_DISPERSE[i] ? CONFIG.scroll.sectionVh : CONFIG.scroll.modelVh;
+// The exit dispersal (last product → enveloping cloud → About) is a touch shorter than
+// the opening one, so the hand-off into the editorial body isn't a long empty drift.
+if(BEATS[N-1].kind === 'disperse') GAP_VH[N-2] = CONFIG.scroll.exitVh;
 const TOTAL_VH = GAP_VH.reduce((a,b)=>a+b,0);
 const STOP_F = [0];
 for(let i=0;i<N-1;i++) STOP_F[i+1] = STOP_F[i] + GAP_VH[i]/TOTAL_VH;
@@ -434,6 +438,7 @@ function buildTextTargets(){
     const b=BEATS[i];
     if(b.kind==='glyph') targets[i]=sampleText(b.text, COUNT, { worldHeight:CONFIG.glyph.worldHeight, depth:CONFIG.glyph.depth, weight:700, seed:42 });
     else if(b.kind==='text') targets[i]=sampleText(b.text, COUNT, { worldHeight:CONFIG.morph.dividerHeight, depth:0.3, weight:700, seed:7 });
+    else if(b.kind==='disperse') targets[i]=DISPERSE;   // dissolves into the enveloping cloud
   }
 }
 function loadModel(i){
@@ -575,7 +580,6 @@ function maybeSnap(nowMs){
 const ov = {
   lead: document.querySelector('.ov-lead'),
   product: document.getElementById('ovProduct'),
-  divider: document.querySelector('.ov-divider'),
   index: document.getElementById('ovIndex'), name: document.getElementById('ovName'),
   meta: document.getElementById('ovMeta'), desc: document.getElementById('ovDesc'), link: document.getElementById('ovLink'),
 };
@@ -597,7 +601,6 @@ function updateOverlay(){
   const cb=BEATS[center];
   if(cb && cb.kind==='model'){ setProductChrome(center); ov.product.style.opacity = w; }
   else ov.product.style.opacity = 0;
-  ov.divider.style.opacity = (center===N-1) ? smootherstep(CONFIG.morph.texAt, 1.0, w) : 0;
   dots.forEach((d,idx)=> d.classList.toggle('on', idx+1===center));
 }
 
@@ -678,7 +681,6 @@ function frame(ts){
     if(i===c) particleOpacity = Math.min(particleOpacity, 1 - vis);
     if(m.group.visible){ m.group.rotation.set(rotX, rotY, 0); m.group.updateMatrixWorld(); }
   }
-  if (BEATS[c]?.kind === 'text') particleOpacity = Math.min(particleOpacity, 1 - smootherstep(CONFIG.morph.texAt, 1.0, formW));
   ps.material.uniforms.uOpacity.value = particleOpacity;
 
   canvas.classList.toggle('grabbable', activeModel>=0 && !drag.on);

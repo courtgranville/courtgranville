@@ -13,15 +13,6 @@ import ContactForm from '../components/ContactForm.astro';
 import Footer from '../components/Footer.astro';
 import Grid from '../components/Grid.astro';
 
-// Quick facts — the shared spec-table key/value pairs.
-const quickFacts: [string, string][] = [
-  ['Who',    'Court Granville'],
-  ['What',   'Multidisciplinary Designer'],
-  ['Where',  'London & Madrid'],
-  ['Focus',  'Technology-led design, across different design disciplines'],
-  ['Status', 'Graduated 2026 · Open to work'],
-];
-
 // What I do — disciplines in the deck's order (lead phrase + description each).
 const disciplines: [string, string][] = [
   ['Data Visualisation & Information Design', 'Making complex data navigable for people who aren’t specialists. Turning dense datasets and technical literature into visual systems you can read, explore and trust — drawn in Illustrator, then built interactive in code.'],
@@ -45,12 +36,10 @@ const principles: [string, string][] = [
 >
   <Nav />
   <main>
-    <h1 class="sr-only">Court Granville — Multidisciplinary Designer, London &amp; Madrid</h1>
-
-    <!-- Screen 1 onward — the scroll-driven particle narrative: CG hero → the four
-         featured products (each building from particles into its textured model) →
-         a particle-text "Selected Work" divider. Carries the hero lead + per-product
-         copy in its overlay. -->
+    <!-- Screen 1 onward — the scroll-driven particle narrative: CG hero (carrying the
+         name + lead as the page h1) → the four featured products (each building from
+         particles into its textured model) → a dispersal that hands off to the
+         editorial body below. -->
     <ScrollHero />
 
     <!-- Below the narrative — opaque, occludes the sticky canvas as it scrolls up.
@@ -59,16 +48,6 @@ const principles: [string, string][] = [
     <div class="hp-below">
       <Grid class="hp-allwork-row">
         <a class="textlink hp-allwork reveal" href="/work/">All work &rarr;</a>
-      </Grid>
-
-      <!-- Quick facts -->
-      <Grid as="section" class="hp-sec" aria-label="Quick facts">
-        <div class="hp-sec-head t-rail reveal">
-          <h2 class="hp-sec-title">Quick facts</h2>
-        </div>
-        <dl class="hp-sec-body t-body spec-table hp-facts reveal" data-stagger="1">
-          {quickFacts.map(([k, v]) => (<><dt>{k}</dt><dd>{v}</dd></>))}
-        </dl>
       </Grid>
 
       <!-- In short (About) -->
@@ -212,8 +191,6 @@ const principles: [string, string][] = [
     font-size: var(--fs-body); line-height: var(--lh-body);
     color: var(--text-quiet); margin: 0 0 var(--space-block); max-width: 56ch;
   }
-
-  .hp-facts { row-gap: 14px; }
 
   /* Disciplines */
   .hp-disciplines { display: flex; flex-direction: column; gap: clamp(24px, 4vh, 40px); }

@@ -167,9 +167,18 @@ const PRODUCTS = [
   }
   .cg-beats :global(.dot.on) { opacity: 1; background: var(--accent); }
 
-  /* On narrow screens the left-column copy can crowd the glyph — give it room. */
+  /* Stacked layout: below this width the copy can't sit beside the centred glyph
+     (its column would cross the screen centre), so the 3D content lifts into the
+     upper half (camera, see fitCamera) and the copy drops to the lower half —
+     full-width, left-aligned, no overlap. */
+  @media (max-width: 1200px) {
+    .ov-lead, .ov-product {
+      top: auto; bottom: clamp(56px, 13vh, 150px); transform: none;
+      left: var(--outer); right: var(--outer); max-width: min(86vw, 34ch);
+    }
+  }
   @media (max-width: 600px) {
-    .ov-lead, .ov-product { max-width: min(80vw, 30ch); }
+    .ov-lead, .ov-product { max-width: min(86vw, 30ch); bottom: clamp(48px, 11vh, 110px); }
     .cg-beats { right: 16px; }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -426,6 +435,26 @@ scene.background = new THREE.Color(CONFIG.scene.bg);
 const camera = new THREE.PerspectiveCamera(CONFIG.scene.fov, innerWidth/innerHeight, 0.1, 100);
 camera.position.set(0,0,CONFIG.scene.cameraDistance);
 
+// Dolly the camera to the viewport WIDTH so the whole composition (glyph + every
+// product model) scales down on narrower screens. The copy columns are a fixed
+// text width, so they take a larger share as the viewport narrows; scaling the 3D
+// down in step keeps the wide-screen proportions and stops the centred glyph from
+// growing into the left-hand copy. Reference is the wide layout the hero was tuned
+// at; clamped so it never zooms in past that (≥ref → 1), nor so far back the glyph
+// is lost. Pure projection change — the morph/snap/fit maths are all world-space.
+const CAM_REF_W = 1680, CAM_MIN_S = 0.56, STACK_BP = 1200, STACK_RISE = 0.22;
+function fitCamera(){
+  const s = Math.min(1, Math.max(CAM_MIN_S, innerWidth / CAM_REF_W));
+  camera.position.z = CONFIG.scene.cameraDistance / s;
+  // At/below STACK_BP the copy can no longer sit beside the centred glyph (its
+  // column crosses the screen centre), so the layout STACKS: CSS drops the copy
+  // into the lower half, and here we lift the 3D content into the upper half by
+  // dollying the camera DOWN (it looks straight ahead, so −y raises the content).
+  const visH = 2 * camera.position.z * Math.tan(THREE.MathUtils.degToRad(CONFIG.scene.fov) / 2);
+  camera.position.y = innerWidth <= STACK_BP ? -STACK_RISE * visH : 0;
+}
+fitCamera();
+
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 const key = new THREE.DirectionalLight(0xffffff, 1.1); key.position.set(2,3,2); scene.add(key);
@@ -659,7 +688,7 @@ scrollTo(0,0);
 })();
 
 addEventListener('resize', ()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth,innerHeight,false); sizeScale(); fitHeroName(); });
+  fitCamera(); renderer.setSize(innerWidth,innerHeight,false); sizeScale(); fitHeroName(); });
 
 // Pause the render loop while the stage is fully off-screen (scrolled into the body).
 let visible = true;

@@ -68,7 +68,7 @@
   /* ── 3D ───────────────────────────────────────────── */
   --tilt: 0.16;            /* shared parallax intensity, particle + photo cards */
 
-  --nav-h: 76px;
+  --nav-h: clamp(72px, 4.2vw, 108px);   /* grows on large/4K screens so the bar isn't tiny */
 }
 
 /* Tablet: 8 columns. */

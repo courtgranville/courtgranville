@@ -41,7 +41,7 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 max(28px, 3vw);
+    padding: 0 var(--outer);
     z-index: 100;
     opacity: 0;
     transition: opacity 600ms var(--ease-out);
@@ -64,11 +64,12 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
   .site-nav.scrolled::before { opacity: 1; }
   .site-nav.scrolled { border-bottom: 1px solid var(--rule); }
 
-  /* Monogram — the "CG" mark, Playfair Bold to echo the particle hero glyph. */
+  /* Monogram — the "CG" mark, Playfair Bold to echo the particle hero glyph.
+     Scales with the viewport so it reads at the right weight on large/4K screens. */
   .brand {
     font-family: var(--serif);
     font-weight: 700;
-    font-size: 24px;
+    font-size: clamp(24px, 1.5vw, 40px);
     letter-spacing: 0.01em;
     line-height: 1;
     color: var(--text);
@@ -78,7 +79,7 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
 
   .nav-links {
     display: flex;
-    gap: 36px;
+    gap: clamp(28px, 2.2vw, 56px);
   }
 
   /* Raleway 500 uppercase, on the one shared label letter-spacing (§4.2). */
@@ -86,7 +87,7 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
     position: relative;
     font-family: var(--sans);
     font-weight: 600;
-    font-size: var(--fs-label);
+    font-size: clamp(13px, 0.82vw, 18px);
     line-height: var(--lh-label);
     letter-spacing: var(--ls-label);
     text-transform: uppercase;

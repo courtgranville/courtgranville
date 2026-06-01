@@ -1,22 +1,34 @@
 ---
-// Project page template (§6.3). The flat block array is grouped into sections
-// at each `label` boundary, then each section is rendered on the shared grid by
-// kind:
-//   prose   — label on Rail, text on Body. Not a split.
-//   gallery — label on Rail, text on Body, the grid/pair/extra images on Wide.
-//   split   — exactly one single image + its text: text on the split-text track,
-//             image in the visual field on the split-visual track. Consumes an
-//             alternation index and toggles side.
+// Project page template. Each project now opens with its interactive 3D model
+// (the same grab-and-spin GLB used on the /work/ gallery), then its title and
+// description, then the written story laid out on the shared column grid in the
+// homepage's calm rail-kicker + body-prose rhythm — so a project page reads as
+// part of the same editorial space.
 //
-// The header is itself the first split (visual RIGHT, split-index 0), so the
-// first body split takes the left. Image slugs resolve against the per-project
-// manifest (projects-images.json). A cyclic "Next →" closes the page.
+// Layout, top to bottom:
+//   1. proj-top    — the interactive model stage (full width). Web/data projects
+//                    with no model fall straight through to the intro.
+//   2. proj-intro  — discipline·year, the title (serif, upright — no italic) and
+//                    the one-line framing, plus any live link / spec / exhibitions.
+//   3. proj-sec ×n — one per labelled section: de-numbered kicker on the rail,
+//                    body prose on the body track, and (below, full width) the
+//                    section's photographs as orientation-grouped justified rows.
+//   4. proj-final  — the project's hero studio shot, closing the page.
+//
+// Images carry no frame or background. Within a section the photos are split into
+// landscape and portrait groups so the two orientations are never placed side by
+// side, then each group is tiled in "justified" rows: flex-grow proportional to
+// each image's aspect makes every image in a row share the same height with no
+// crop and no leftover white space. On mobile every row collapses to one image
+// at a time. Image slugs resolve against the per-project manifest.
 
 import { getCollection } from 'astro:content';
 import Layout from '../../components/Layout.astro';
 import Nav from '../../components/Nav.astro';
 import Footer from '../../components/Footer.astro';
 import Grid from '../../components/Grid.astro';
+import ProjectModel from '../../components/r3f/ProjectModel.tsx';
+import { MODELS } from '../../data/models';
 
 import imageManifest from '../../content/projects-images.json';
 
@@ -45,6 +57,7 @@ const { name, year, discipline, framing, spec, exhibitions, blocks, heroImage, l
 
 const slug = project.id.replace(/\.json$/, '');
 const manifest = (imageManifest as any)[slug];
+const modelFraming = MODELS[slug];
 
 function img(imgSlug: string) {
   const entry = manifest?.images.find((i: any) => i.slug === imgSlug);
@@ -54,48 +67,86 @@ function img(imgSlug: string) {
   return entry;
 }
 
-// Web/data projects (e.g. The Nuclear Question) ship without a hero image —
-// the header falls back to a text-forward treatment.
-const hero = heroImage ? img(heroImage) : null;
+// Drop the "01 — " ordinal prefix from a section label: it should just read
+// "The Brief". Handles em/en-dash and hyphen separators.
+const cleanLabel = (text: string) => text.replace(/^\s*\d+\s*[—–-]\s*/, '');
 
-// ── Group the flat block array into sections, classify, assign split sides ──
+// ── Group the flat block array into sections at each label boundary ──
 type Block = (typeof blocks)[number];
-interface Section {
-  label: string | null;
-  items: Block[];
-  kind: 'prose' | 'gallery' | 'split';
-  side?: 'left' | 'right';
+interface ImageEntry { src: string; srcset: string; aspect: number; alt: string; caption?: string }
+interface FigRow { orient: 'landscape' | 'portrait'; items: ImageEntry[] }
+type TextBlock = Extract<Block, { type: 'text' }>;
+interface Section { label: string | null; texts: TextBlock[]; rows: FigRow[] }
+
+// Expand a visual block into its image entries (manifest data + alt/caption).
+function entriesOf(b: Block): ImageEntry[] {
+  if (b.type === 'image') {
+    const m = img(b.imageSlug);
+    return [{ src: m.src, srcset: m.srcset, aspect: m.aspect, alt: b.alt, caption: b.caption }];
+  }
+  if (b.type === 'imagePair' || b.type === 'imageGrid') {
+    return b.imageSlugs.map((s: string) => {
+      const m = img(s);
+      return { src: m.src, srcset: m.srcset, aspect: m.aspect, alt: b.alt } as ImageEntry;
+    });
+  }
+  return [];
+}
+
+// Portrait < 1.0 aspect; square and wider count as landscape.
+const isPortrait = (e: ImageEntry) => e.aspect < 1.0;
+
+// How many images sit in each justified row, by group size — kept to ≤3 so each
+// photo stays large, and balanced (4 → 2+2) so no row is left half-empty.
+function rowSizes(n: number): number[] {
+  if (n <= 1) return [1];
+  if (n === 2) return [2];
+  if (n === 3) return [3];
+  if (n === 4) return [2, 2];
+  if (n === 5) return [3, 2];
+  const sizes: number[] = [];
+  let rem = n;
+  while (rem > 0) { const s = Math.min(3, rem); sizes.push(s); rem -= s; }
+  return sizes;
+}
+
+// Split a section's images into landscape then portrait groups (so the two are
+// never adjacent) and chunk each into justified rows.
+function rowsFor(entries: ImageEntry[]): FigRow[] {
+  const build = (list: ImageEntry[], orient: 'landscape' | 'portrait'): FigRow[] => {
+    const rows: FigRow[] = [];
+    let i = 0;
+    for (const s of rowSizes(list.length)) { rows.push({ orient, items: list.slice(i, i + s) }); i += s; }
+    return rows;
+  };
+  return [
+    ...build(entries.filter((e) => !isPortrait(e)), 'landscape'),
+    ...build(entries.filter(isPortrait), 'portrait'),
+  ];
 }
 
 const sections: Section[] = [];
 let current: Section | null = null;
+const pushVisuals: ImageEntry[] = []; // accumulates the current section's images
+function flushRows() { if (current) current.rows = rowsFor(pushVisuals.splice(0)); }
 for (const b of blocks) {
   if (b.type === 'label') {
-    current = { label: b.text, items: [], kind: 'prose' };
+    flushRows();
+    current = { label: b.text, texts: [], rows: [] };
     sections.push(current);
   } else {
-    if (!current) { current = { label: null, items: [], kind: 'prose' }; sections.push(current); }
-    current.items.push(b);
+    if (!current) { current = { label: null, texts: [], rows: [] }; sections.push(current); }
+    if (b.type === 'text') current.texts.push(b);
+    else pushVisuals.push(...entriesOf(b));
   }
 }
+flushRows();
 
-const isVisual = (b: Block) => b.type === 'image' || b.type === 'imageGrid' || b.type === 'imagePair';
+// The hero studio shot isn't part of the block flow — it closes the page.
+const hero = heroImage ? img(heroImage) : null;
+const heroPortrait = hero ? hero.aspect < 1.0 : false;
 
-// Classify, and alternate split sides. The header took split-index 0 (visual
-// right), so the first body split is index 1 → visual left, then toggling.
-let splitIdx = 1;
-for (const s of sections) {
-  const visuals = s.items.filter(isVisual);
-  const singleImages = s.items.filter((b) => b.type === 'image');
-  if (visuals.length === 0) s.kind = 'prose';
-  else if (visuals.length === 1 && singleImages.length === 1) s.kind = 'split';
-  else s.kind = 'gallery';
-
-  if (s.kind === 'split') {
-    s.side = splitIdx % 2 === 0 ? 'right' : 'left';
-    splitIdx++;
-  }
-}
+const FIG_SIZES = '(min-width: 1200px) 1100px, 100vw';
 
 // Next-project navigation (cyclic).
 const idx = ORDER.indexOf(slug);
@@ -108,26 +159,24 @@ const nextName = nextProject?.data.name ?? '';
   <Nav />
   <main>
     <article>
-      <!-- Header — the first split (visual RIGHT, split-index 0). Visual first
-           in the DOM so mobile stacks field-above-text (§2.4). Projects without
-           a hero image (web/data work) get a text-forward header instead. -->
-      <Grid class:list={['proj-head', !hero && 'proj-head--text']}>
-        {hero && (
-          <div class="t-visual-r proj-head-visual reveal">
-            <div class="field">
-              <img
-                src={hero.src}
-                srcset={hero.srcset}
-                sizes="(min-width: 1200px) 58vw, 100vw"
-                alt={`${name} — hero`}
-                loading="eager"
-                fetchpriority="high"
-                decoding="async"
-              />
-            </div>
+      <!-- 1. The interactive model — the first thing on every project that has one. -->
+      {modelFraming && (
+        <Grid class="proj-top">
+          <div class="proj-stage">
+            <ProjectModel
+              client:visible
+              model={modelFraming.model}
+              fill={modelFraming.fill}
+              viewRY={modelFraming.viewRY}
+              viewRX={modelFraming.viewRX}
+            />
           </div>
-        )}
-        <div class:list={[hero ? 't-text-l' : 't-body', 'proj-head-text', 'reveal']} data-stagger="1">
+        </Grid>
+      )}
+
+      <!-- 2. Title + description, below the model. -->
+      <Grid class="proj-intro">
+        <div class="proj-intro-inner reveal" data-stagger="1">
           <span class="label proj-meta">{discipline} &middot; {year}</span>
           <h1 class="proj-name">{name}</h1>
           <p class="proj-framing">{framing}</p>
@@ -155,106 +204,64 @@ const nextName = nextProject?.data.name ?? '';
         </div>
       </Grid>
 
-      <!-- Body sections -->
-      {sections.map((s) => {
-        const texts = s.items.filter((b) => b.type === 'text');
-
-        if (s.kind === 'split') {
-          const single = s.items.find((b) => b.type === 'image')!;
-          const m = img(single.imageSlug);
-          const visualTrack = s.side === 'right' ? 't-visual-r' : 't-visual-l';
-          const textTrack   = s.side === 'right' ? 't-text-l'   : 't-text-r';
-          return (
-            <Grid class="proj-section proj-split">
-              <div class:list={[visualTrack, 'proj-split-visual', 'reveal']}>
-                <div class="field">
-                  <img
-                    src={m.src}
-                    srcset={m.srcset}
-                    sizes="(min-width: 1200px) 58vw, 100vw"
-                    alt={single.alt}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </div>
-                {single.caption && <figcaption class="label proj-cap">{single.caption}</figcaption>}
-              </div>
-              <div class:list={[textTrack, 'proj-split-text', 'reveal']} data-stagger="1">
-                {s.label && <span class="label proj-seclabel">{s.label}</span>}
-                {texts.map((t) => <p class="proj-prose" set:html={t.body} />)}
-              </div>
-            </Grid>
-          );
-        }
-
-        // prose + gallery share the Rail-label / Body-text head; gallery adds visuals on Wide.
-        return (
-          <Grid class:list={['proj-section', s.kind === 'gallery' ? 'proj-gallery' : 'proj-prose-sec']}>
-            {s.label && <span class="label t-rail proj-seclabel reveal">{s.label}</span>}
-            {texts.length > 0 && (
-              <div class="t-body proj-body reveal" data-stagger="1">
-                {texts.map((t) => <p class="proj-prose" set:html={t.body} />)}
-              </div>
-            )}
-            {s.kind === 'gallery' && s.items.filter(isVisual).map((v) => {
-              if (v.type === 'image') {
-                const m = img(v.imageSlug);
-                return (
-                  <figure class="t-wide g-figure reveal">
-                    <img
-                      src={m.src}
-                      srcset={m.srcset}
-                      sizes="(min-width: 1200px) 80vw, 100vw"
-                      alt={v.alt}
-                      loading="lazy"
-                      decoding="async"
-                      style={m.aspect ? `aspect-ratio: ${m.aspect};` : ''}
-                    />
-                    {v.caption && <figcaption class="label proj-cap">{v.caption}</figcaption>}
-                  </figure>
-                );
-              }
-              if (v.type === 'imagePair') {
-                const imgs = v.imageSlugs.map(img);
-                return (
-                  <div class="t-wide g-pair reveal">
-                    {imgs.map((m: any) => (
+      <!-- 3. The written story — kicker on the rail, prose on the body, photos full width. -->
+      {sections.map((s) => (
+        <Grid class="proj-sec">
+          {s.label && (
+            <div class="proj-sec-head t-rail reveal">
+              <span class="label proj-seclabel">{cleanLabel(s.label)}</span>
+            </div>
+          )}
+          {s.texts.length > 0 && (
+            <div class="proj-sec-body t-body reveal" data-stagger="1">
+              {s.texts.map((t) => <p class="proj-prose" set:html={t.body} />)}
+            </div>
+          )}
+          {s.rows.length > 0 && (
+            <div class="proj-figures reveal">
+              {s.rows.map((row) => (
+                <div class:list={['fig-row', `fig-row--${row.orient}`, row.items.length === 1 && 'fig-row--solo']}>
+                  {row.items.map((e) => (
+                    <figure class="fig" style={`flex-grow:${e.aspect}`}>
                       <img
-                        src={m.src}
-                        srcset={m.srcset}
-                        sizes="(min-width: 1200px) 40vw, (min-width: 768px) 45vw, 100vw"
-                        alt={v.alt}
+                        src={e.src}
+                        srcset={e.srcset}
+                        sizes={FIG_SIZES}
+                        alt={e.alt}
                         loading="lazy"
                         decoding="async"
-                        style={m.aspect ? `aspect-ratio: ${m.aspect};` : ''}
+                        style={`aspect-ratio:${e.aspect}`}
                       />
-                    ))}
-                  </div>
-                );
-              }
-              // imageGrid
-              const imgs = v.imageSlugs.map(img);
-              return (
-                <div class:list={['t-wide', 'g-grid', `up-${imgs.length}`, 'reveal']}>
-                  {imgs.map((m: any) => (
-                    <img
-                      src={m.src}
-                      srcset={m.srcset}
-                      sizes={imgs.length >= 3
-                        ? '(min-width: 1200px) 30vw, (min-width: 768px) 45vw, 100vw'
-                        : '(min-width: 1200px) 40vw, (min-width: 768px) 45vw, 100vw'}
-                      alt={v.alt}
-                      loading="lazy"
-                      decoding="async"
-                      style={m.aspect ? `aspect-ratio: ${m.aspect};` : ''}
-                    />
+                      {e.caption && <figcaption class="label proj-cap">{e.caption}</figcaption>}
+                    </figure>
                   ))}
                 </div>
-              );
-            })}
-          </Grid>
-        );
-      })}
+              ))}
+            </div>
+          )}
+        </Grid>
+      ))}
+
+      <!-- 4. The hero studio shot closes the page. -->
+      {hero && (
+        <Grid class="proj-final">
+          <div class="proj-figures reveal">
+            <div class:list={['fig-row', heroPortrait ? 'fig-row--portrait' : 'fig-row--landscape', 'fig-row--solo']}>
+              <figure class="fig" style={`flex-grow:${hero.aspect}`}>
+                <img
+                  src={hero.src}
+                  srcset={hero.srcset}
+                  sizes={FIG_SIZES}
+                  alt={`${name} — finished`}
+                  loading="lazy"
+                  decoding="async"
+                  style={`aspect-ratio:${hero.aspect}`}
+                />
+              </figure>
+            </div>
+          </div>
+        </Grid>
+      )}
 
       <Grid class="proj-foot">
         <a class="next-link" href={`/work/${nextSlug}/`}>
@@ -271,24 +278,40 @@ const nextName = nextProject?.data.name ?? '';
 <style>
   article { padding-top: calc(var(--nav-h) + var(--space-page-top)); }
 
-  /* ── Header split ─────────────────────────────────────────────────────── */
-  /* Grid roots render inside <Grid> and miss this file's scope hash → :global. */
-  :global(.proj-head) {
-    align-items: center;
-    grid-auto-flow: dense;       /* visual is first in DOM; text packs left */
-    row-gap: var(--space-block);
+  /* ── 1. Model stage — full content width, a generous fixed height so the model
+        reads large. Explicit height (not aspect-ratio) so the canvas drawing
+        buffer can't feed back into the box size. Grid roots render inside <Grid>
+        and miss this file's scope hash → :global for the container. ── */
+  :global(.proj-top) { margin-bottom: var(--space-block); }
+  .proj-stage {
+    grid-column: 1 / -1;
+    position: relative;
+    width: 100%;
+    height: clamp(340px, 62vh, 720px);
   }
-  .proj-head-text { display: flex; flex-direction: column; gap: 16px; }
+  .proj-stage :global(.proj-stage-canvas) { position: absolute; inset: 0; }
+  .proj-stage :global(canvas) {
+    width: 100% !important; height: 100% !important; display: block;
+    cursor: grab; touch-action: pan-y;
+  }
+  .proj-stage :global(canvas:active) { cursor: grabbing; }
+
+  /* ── 2. Title + description ── */
+  .proj-intro-inner { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 16px; }
+  @media (min-width: 768px)  { .proj-intro-inner { grid-column: 1 / 8; } }
+  @media (min-width: 1200px) { .proj-intro-inner { grid-column: 1 / 10; } }
+
   .proj-meta { color: var(--text-quiet); }
   .proj-name {
-    font-family: var(--serif); font-weight: 400;
+    font-family: var(--serif); font-weight: 400; font-style: normal;
     font-size: var(--fs-display-l); line-height: var(--lh-display-l);
     color: var(--text); margin: 0;
   }
+  /* The framing line — upright, not italic (it used to be), a calm subtitle. */
   .proj-framing {
-    font-family: var(--serif); font-weight: 400; font-style: italic;
+    font-family: var(--serif); font-weight: 400; font-style: normal;
     font-size: var(--fs-heading-s); line-height: var(--lh-heading-s);
-    color: var(--text); margin: 0; max-width: 40ch;
+    color: var(--text-quiet); margin: 0; max-width: 38ch;
   }
   .proj-live { width: fit-content; margin-top: 4px; }
   .proj-spec { margin-top: 8px; }
@@ -301,49 +324,57 @@ const nextName = nextProject?.data.name ?? '';
     font-size: var(--fs-body-s); line-height: var(--lh-body-s); color: var(--text);
   }
 
-  /* ── Body sections ────────────────────────────────────────────────────── */
-  :global(.proj-section) {
+  /* ── 3. Sections — the homepage's rail-kicker + body-prose rhythm. ── */
+  :global(.proj-sec) {
     margin-top: var(--space-section);
     row-gap: var(--space-block);
     align-items: start;
   }
-  :global(.proj-split) {
-    align-items: center;
-    grid-auto-flow: dense;       /* visual first in DOM; text packs to its side */
-  }
+  .proj-sec-head { align-self: start; }
+  .proj-seclabel { display: block; color: var(--text-quiet); }
 
-  .proj-seclabel { color: var(--text-quiet); align-self: start; }
-  .proj-split-text { display: flex; flex-direction: column; gap: 16px; }
-
+  .proj-sec-body { display: flex; flex-direction: column; gap: 20px; }
   .proj-prose {
     font-family: var(--sans); font-weight: 400;
     font-size: var(--fs-body); line-height: var(--lh-body);
-    color: var(--text); max-width: 62ch; margin: 0;
+    color: var(--text-quiet); max-width: 60ch; margin: 0;
   }
-  .proj-body { display: flex; flex-direction: column; gap: var(--space-block); }
 
-  /* Gallery visuals — natural aspect, contained, never cropped. */
-  .g-figure { margin: 0; }
-  .g-figure img,
-  .g-pair img,
-  .g-grid img {
-    width: 100%; height: auto; display: block;
-    object-fit: contain; background: var(--field-bg);
+  /* ── Photographs — no frame, no background. Full content width, stacked rows. ── */
+  .proj-figures {
+    grid-column: 1 / -1;
+    margin-top: var(--space-block);
+    display: flex; flex-direction: column; gap: var(--gutter);
   }
+  /* When a section has no prose, the figures are its only body — pull them up to
+     sit directly under the kicker rather than leaving a block of empty space. */
+  .proj-sec-head + .proj-figures { margin-top: 0; }
+
+  /* A justified row: each image's flex-grow is its aspect ratio, so columns are
+     proportional to width and every image in the row lands on the SAME height —
+     no crop, no leftover white space. */
+  .fig-row { display: flex; gap: var(--gutter); align-items: flex-start; }
+  .fig { margin: 0; flex-basis: 0; min-width: 0; }
+  .fig img { width: 100%; height: auto; display: block; }
   .proj-cap { display: block; margin-top: 12px; color: var(--text-quiet); }
 
-  .g-pair, .g-grid { display: grid; gap: var(--gutter); grid-template-columns: 1fr; }
-  @media (min-width: 768px) {
-    .g-pair, .g-grid { grid-template-columns: 1fr 1fr; }
-  }
-  @media (min-width: 1200px) {
-    .g-pair { grid-template-columns: 1fr 1fr; }
-    .g-grid.up-2 { grid-template-columns: 1fr 1fr; }
-    .g-grid.up-3 { grid-template-columns: 1fr 1fr 1fr; }
-    .g-grid.up-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  /* A lone portrait would be enormous at full width — sit it left at a measured
+     width. A lone landscape keeps the full width. */
+  .fig-row--portrait.fig-row--solo { justify-content: flex-start; }
+  .fig-row--portrait.fig-row--solo .fig {
+    flex-grow: 0 !important; width: clamp(280px, 42vw, 480px); max-width: 100%;
   }
 
-  /* ── Footer nav ───────────────────────────────────────────────────────── */
+  /* Mobile — one photograph at a time, each at full width. */
+  @media (max-width: 767px) {
+    .fig-row { flex-direction: column; }
+    .fig-row--portrait.fig-row--solo .fig { width: 100%; }
+  }
+
+  /* ── 4. Closing hero shot ── */
+  :global(.proj-final) { margin-top: var(--space-section); }
+
+  /* ── Footer nav ── */
   :global(.proj-foot) {
     margin-top: var(--space-section);
     padding-bottom: clamp(48px, 6vh, 72px);

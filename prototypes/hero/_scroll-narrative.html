@@ -230,10 +230,11 @@ const CONFIG = {
   // effect by hand). Section dispersals are LONGER than inter-model morphs. When the
   // wheel stops AND the momentum settles, it eases to the nearest stop (ease-out → no
   // bounce); the glide carries you to the right side first, so it's never stranded.
-  // advanceThresh: how far INTO a gap (in the scroll direction) commits you to the
-  // next stop on release. Low → a modest forward scroll advances (you're trying to move
-  // on); you only fall back if you barely left the current stop.
-  scroll: { sectionVh: 2.4, modelVh: 1.3, snapDuration: 0.6, snapStopMs: 90, snapSettle: 0.0012, advanceThresh: 0.2 },
+  // snapStopMs: quiet time after the last wheel/touch before it snaps — long enough to
+  // bridge the gap between discrete mouse-wheel notches, so continuous notch-scrolling
+  // is never interrupted (a fresh notch also cleanly takes over an in-flight snap).
+  // advanceThresh: how far into a gap (in the scroll direction) commits to the next stop.
+  scroll: { sectionVh: 2.4, modelVh: 1.3, snapDuration: 0.8, snapStopMs: 220, advanceThresh: 0.12 },
   modelBase: '/public/models/',   // python http.server from repo root → /public/models/…
 };
 
@@ -644,7 +645,8 @@ stage.style.height = (TOTAL_VH + 1) * 100 + 'vh';
 // snappier so the glide settles quickly after you stop (less wait before the snap).
 let lenis=null;
 if(!reducedMotion){
-  lenis = new Lenis({ lerp:0.16, smoothWheel:true, smoothTouch:false });
+  // lerp lower = smoother, more glide between notches (less snappy/janky for mouse users).
+  lenis = new Lenis({ lerp:0.1, smoothWheel:true, smoothTouch:false });
 }
 
 const state = { p:0, center:0, shapeW:1 };  // p: beat-units · center: nearest stop · shapeW: how formed
@@ -675,11 +677,13 @@ if(lenis){ ['wheel','touchstart','touchmove'].forEach(ev=> addEventListener(ev, 
 function maybeSnap(nowMs){
   if(!lenis || drag.on || snapping){ prevSnapP = state.p; return; }
   const sdp = state.p - prevSnapP; prevSnapP = state.p;
-  if(Math.abs(sdp) > 0.002) scrollDir = Math.sign(sdp);         // latch the travel direction
-  if(nowMs - lastWheelT < CONFIG.scroll.snapStopMs) return;     // still actively scrolling
-  if(Math.abs(sdp) > CONFIG.scroll.snapSettle) return;          // momentum still gliding
-  // DIRECTIONAL snap: scrolling forward commits to the next stop once you've left the
-  // current one by advanceThresh (you're trying to move on); only fall back if barely moved.
+  if(Math.abs(sdp) > 0.0015) scrollDir = Math.sign(sdp);        // latch the travel direction
+  // Fire only after the wheel has been QUIET for snapStopMs — long enough that the pauses
+  // between mouse notches don't trigger it. The Lenis glide (low lerp) keeps moving
+  // smoothly until then; the snap eases on from wherever it reached → no abrupt cut.
+  if(nowMs - lastWheelT < CONFIG.scroll.snapStopMs) return;
+  // DIRECTIONAL: scrolling forward commits to the next stop once you've left the current
+  // one by advanceThresh (you're trying to move on); only fall back if you barely moved.
   const fp = Math.floor(state.p), frac = state.p - fp, th = CONFIG.scroll.advanceThresh;
   let target = scrollDir >= 0 ? (frac > th ? fp+1 : fp) : (frac < 1-th ? fp : fp+1);
   target = clamp(target, 0, N-1);

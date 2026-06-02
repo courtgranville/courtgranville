@@ -78,19 +78,24 @@
    Only the colour tokens flip; almost the whole site reads these custom
    properties, so the editorial body inverts automatically. The contrast is
    still generative-vs-editorial on one ground, not a different design — just
-   dark ink on a near-black ground (softer than pure #000) with the warm
-   near-white the prototypes explored. The single accent stays. The homepage
-   particle hero handles its own WebGL colours + dark-only bloom in JS
-   (see ScrollHero.astro), driven by the `theme:change` event. */
+   dark ink on a pure-black ground with the warm near-white the prototypes
+   explored. The single accent stays. The homepage particle hero handles its
+   own WebGL colours + dark-only bloom in JS (see ScrollHero.astro), driven by
+   the `theme:change` event.
+   NB: --bg is pure #000 to match the hero canvas. The canvas renders its
+   #0E0E0E clear colour through the dark-only bloom composer, whose OutputPass
+   ACES-tone-maps the whole frame and crushes that near-black to pure black; a
+   CSS #0E0E0E body therefore sat visibly lighter than the canvas. Matching the
+   editorial ground to the canvas keeps one seamless black across the page. */
 :root[data-theme="dark"] {
-  --bg:         #0E0E0E;                  /* near-black, not pure #000 — softer */
+  --bg:         #000000;                  /* pure black — matches the ACES-crushed hero canvas */
   --text:       #F4F3EF;                  /* warm near-white (the off-white the prototypes explored) */
   --text-quiet: rgba(244,243,239,0.60);
   --text-faint: rgba(244,243,239,0.38);
   --rule:       rgba(244,243,239,0.14);
   --hairline:   #2A2A2A;
   --field-bg:   #161616;                  /* one step up from --bg */
-  --nav-backdrop: rgba(14,14,14,0.78);
+  --nav-backdrop: rgba(0,0,0,0.78);
   /* --accent kept at #8E1B0E. If it reads muddy on near-black, a brighter
      dark-mode accent (e.g. #C8412E) is a tunable option — leave light untouched. */
 }

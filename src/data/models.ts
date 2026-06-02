@@ -15,6 +15,9 @@ export interface ModelFraming {
 }
 
 export const MODELS: Record<string, ModelFraming> = {
+  // The Nuclear Question has no GLB here — it is shown as the live nucleus atom
+  // (NuclearAtom) on its project page and in the /work/ gallery, and as a
+  // particle beat in the homepage ScrollHero. So it is intentionally absent.
   'mantis':               { model: '/models/mantis.glb',     fill: 0.9,  viewRY: 0.0,  viewRX: 0.28 },
   'wave':                 { model: '/models/speaker.glb',    fill: 0.94, viewRY: 0.0,  viewRX: 0.0  },
   'backgammon':           { model: '/models/backgammon.glb', fill: 0.96, viewRY: -0.7, viewRX: 0.62 },

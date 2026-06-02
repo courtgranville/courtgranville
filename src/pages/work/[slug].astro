@@ -28,9 +28,11 @@ import Nav from '../../components/Nav.astro';
 import Footer from '../../components/Footer.astro';
 import Grid from '../../components/Grid.astro';
 import ProjectModel from '../../components/r3f/ProjectModel.tsx';
+import NuclearAtom from '../../components/nuclear/NuclearAtom.tsx';
 import { MODELS } from '../../data/models';
 
 import imageManifest from '../../content/projects-images.json';
+import '../../styles/atom.css';
 
 // Canonical order — most-recent-first; matches the Work index.
 const ORDER = [
@@ -76,7 +78,11 @@ type Block = (typeof blocks)[number];
 interface ImageEntry { src: string; srcset: string; aspect: number; alt: string; caption?: string }
 interface FigRow { orient: 'landscape' | 'portrait'; items: ImageEntry[] }
 type TextBlock = Extract<Block, { type: 'text' }>;
-interface Section { label: string | null; texts: TextBlock[]; rows: FigRow[] }
+type QuoteBlock = Extract<Block, { type: 'quote' }>;
+// A section's prose track is an ordered mix of text and pull-quotes, so quotes
+// land exactly where the copy places them. Existing projects use only text.
+type BodyBlock = TextBlock | QuoteBlock;
+interface Section { label: string | null; body: BodyBlock[]; rows: FigRow[] }
 
 // Expand a visual block into its image entries (manifest data + alt/caption).
 function entriesOf(b: Block): ImageEntry[] {
@@ -132,11 +138,11 @@ function flushRows() { if (current) current.rows = rowsFor(pushVisuals.splice(0)
 for (const b of blocks) {
   if (b.type === 'label') {
     flushRows();
-    current = { label: b.text, texts: [], rows: [] };
+    current = { label: b.text, body: [], rows: [] };
     sections.push(current);
   } else {
-    if (!current) { current = { label: null, texts: [], rows: [] }; sections.push(current); }
-    if (b.type === 'text') current.texts.push(b);
+    if (!current) { current = { label: null, body: [], rows: [] }; sections.push(current); }
+    if (b.type === 'text' || b.type === 'quote') current.body.push(b);
     else pushVisuals.push(...entriesOf(b));
   }
 }
@@ -166,8 +172,16 @@ const nextName = nextProject?.data.name ?? '';
         </nav>
       </Grid>
 
-      <!-- 1. The interactive model — the first thing on every project that has one. -->
-      {modelFraming && (
+      <!-- 1. The hero interaction — the first thing on every project that has one.
+           The Nuclear Question leads with the live nucleus atom (cursor-reactive,
+           U-235/238 fission); product projects lead with their grab-spin GLB. -->
+      {slug === 'the-nuclear-question' ? (
+        <Grid class="proj-top">
+          <div class="proj-atom-hero">
+            <NuclearAtom client:visible viewportParticles />
+          </div>
+        </Grid>
+      ) : modelFraming && (
         <Grid class="proj-top">
           <div class="proj-stage">
             <ProjectModel
@@ -219,9 +233,16 @@ const nextName = nextProject?.data.name ?? '';
               <span class="label proj-seclabel">{cleanLabel(s.label)}</span>
             </div>
           )}
-          {s.texts.length > 0 && (
+          {s.body.length > 0 && (
             <div class="proj-sec-body t-body reveal" data-stagger="1">
-              {s.texts.map((t) => <p class="proj-prose" set:html={t.body} />)}
+              {s.body.map((b) => b.type === 'quote' ? (
+                <blockquote class="proj-quote">
+                  <p set:html={b.body} />
+                  {b.attribution && <cite>{b.attribution}</cite>}
+                </blockquote>
+              ) : (
+                <p class="proj-prose" set:html={b.body} />
+              ))}
             </div>
           )}
           {s.rows.length > 0 && (
@@ -305,6 +326,9 @@ const nextName = nextProject?.data.name ?? '';
     width: 100%;
     height: clamp(340px, 62vh, 720px);
   }
+  /* The atom hero (The Nuclear Question) spans the full width; its own
+     .atom .hero-icon (atom.css) drives the height. */
+  .proj-atom-hero { grid-column: 1 / -1; }
   .proj-stage :global(.proj-stage-canvas) { position: absolute; inset: 0; }
   .proj-stage :global(canvas) {
     width: 100% !important; height: 100% !important; display: block;
@@ -354,6 +378,25 @@ const nextName = nextProject?.data.name ?? '';
     font-family: var(--sans); font-weight: 400;
     font-size: var(--fs-body); line-height: var(--lh-body);
     color: var(--text-quiet); max-width: 60ch; margin: 0;
+  }
+
+  /* Pull-quote — Playfair, full ink (it speaks louder than the prose around it),
+     set off by a thin accent rule on the left. Sits in the body track's flow. */
+  .proj-quote {
+    margin: 4px 0; padding-left: 20px;
+    border-left: 1px solid var(--accent);
+    max-width: 52ch;
+  }
+  .proj-quote p {
+    font-family: var(--serif); font-weight: 400; font-style: italic;
+    font-size: var(--fs-heading-s); line-height: var(--lh-heading-s);
+    color: var(--text); margin: 0;
+  }
+  .proj-quote cite {
+    display: block; margin-top: 12px; font-style: normal;
+    font-family: var(--sans); font-weight: 500;
+    font-size: var(--fs-label); letter-spacing: var(--ls-label);
+    text-transform: uppercase; color: var(--text-quiet);
   }
 
   /* ── Photographs — no frame, no background. Full content width, stacked rows. ── */

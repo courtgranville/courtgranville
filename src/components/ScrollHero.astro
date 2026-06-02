@@ -23,6 +23,9 @@
 // canvas. It dispatches `hero:loaded` (see below) once the load-in completes; Nav
 // fades in on that event.
 
+import NuclearAtom from './nuclear/NuclearAtom';
+import '../styles/atom.css';
+
 // The curated four-product sequence (a subset of the full /work index). Kept here
 // for the SSR/no-JS link list; the engine's BEAT config (with view angles + model
 // files) mirrors these in the inline script below — keep the two in sync.
@@ -36,6 +39,13 @@ const PRODUCTS = [
 <div class="scroll-stage" id="cgStage">
   <div class="cg-sticky">
     <canvas id="c" aria-hidden="true"></canvas>
+
+    <!-- The live nucleus atom — the homepage's TNQ beat. The dust builds the
+         nucleus, then crossfades to this real interactive atom (engine drives its
+         position + opacity per beat). Sits above the canvas, below the copy. -->
+    <div class="cg-atom-overlay" id="atomOverlay" aria-hidden="true">
+      <NuclearAtom client:visible roomLink={false} />
+    </div>
 
     <!-- Overlay copy — phases in/out per beat, driven by the engine. -->
     <div class="cg-overlay" aria-hidden="false">
@@ -84,6 +94,27 @@ const PRODUCTS = [
   #c { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
   #c.grabbable { cursor: grab; }
   #c.grabbing  { cursor: grabbing; }
+
+  /* The live atom overlay — full-screen so the fission particles can fly across
+     the whole stage, while the nucleus FORM is drawn small at the model region
+     (the engine sets --form-cx/cy/r). Above the canvas, below the copy; the
+     engine drives opacity (crossfade per beat) and only captures the pointer once
+     the atom is formed, so scrolling past is free. */
+  .cg-atom-overlay { position: absolute; inset: 0; z-index: 1; opacity: 0; pointer-events: none; }
+  .cg-atom-overlay :global(.atom),
+  .cg-atom-overlay :global(.atom .hero-icon) { width: 100%; height: 100%; }
+  /* Controls anchor to the form box's bottom-right corner (engine-set vars), out
+     of the way of the form; right-aligned so the label sits over the switch. */
+  .cg-atom-overlay :global(.atom-control) {
+    top: auto; left: auto;
+    right: var(--atom-ctl-right, 20px); bottom: var(--atom-ctl-bottom, 20px);
+    align-items: flex-end;
+  }
+  .cg-atom-overlay :global(.atom-hint) {
+    top: var(--atom-hint-y, auto); bottom: auto;
+    left: var(--atom-hint-x, 50%); right: auto;
+    transform: translateX(-50%); width: max-content;
+  }
 
   /* Overlay — above the canvas, pointer-transparent except real links. */
   .cg-overlay { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
@@ -200,6 +231,9 @@ const isMobile = window.matchMedia('(max-width: 768px)').matches;
 const CONFIG = {
   scene:  { bg: '#FFFFFF', cameraDistance: 15, fov: 32 },
   glyph:  { text: 'CG', worldHeight: 3.1, depth: 0.39, fontWeight: 700 },
+  // The nucleus beat — the dust re-forms into the atom (The Nuclear Question),
+  // sampled from its SVG contour paths the same way the glyph is sampled from text.
+  nucleus: { worldHeight: 3.4, depth: 0.6, pathsUrl: '/nucleus-paths.json' },
   particles: { count: isMobile ? 55000 : 140000, baseSize: 0.032, sizeVariance: 0.22, inkColor: '#161616' },
   pointer: { radius: 0.5, strength: 22, smoothing: 0.55 },
   rotation:{ speed: reducedMotion ? 0 : 0.06 },
@@ -232,6 +266,9 @@ function themeKey(){ return document.documentElement.dataset.theme === 'dark' ? 
 // textured GLB you can grab and spin. viewRY/viewRX = preferred resting orientation.
 const BEATS = [
   { id:'cg',     kind:'glyph', text:'CG' },
+  // The flagship beat: the dust re-forms into the live-site atom (rendered as
+  // particles, not a GLB — the interactive fission atom lives on the project page).
+  { id:'tnq',    kind:'nucleus', name:'The Nuclear Question',  year:2026, disc:'Data Visualisation · Web', slug:'the-nuclear-question', desc:'A thesis on nuclear energy, rebuilt as a public data-visualisation platform.' },
   { id:'mantis', kind:'model', name:'Mantis',                  year:2026, disc:'Product Design', slug:'mantis',     desc:'A side table in need of repair, reborn as a standing lamp.',          file:'mantis.glb',     fill:1.0,  viewRY:0.0,  viewRX:0.28 },
   { id:'wave',   kind:'model', name:'Wave',                    year:2026, disc:'Product Design', slug:'wave',       desc:'A salvaged pair of speakers, rebuilt into a custom enclosure.',        file:'speaker.glb',    fill:0.92, viewRY:0.0,  viewRX:0.0  },
   { id:'bg',     kind:'model', name:'Gravity Wave Backgammon', year:2024, disc:'Product Design', slug:'backgammon', desc:'A sheet of recycled plastic turned into a backlit backgammon board.', file:'backgammon.glb', fill:0.92, viewRY:-0.7, viewRX:0.62 },
@@ -242,6 +279,10 @@ const BEATS = [
 ];
 const N = BEATS.length;
 const MODEL_COUNT = BEATS.filter(b=>b.kind==='model').length;
+// Featured beats = the products shown with overlay copy (the GLB models + the
+// nucleus). Drives the "NN / NN" index and the beat dots.
+const FEATURED_COUNT = BEATS.filter(b=>b.kind==='model' || b.kind==='nucleus').length;
+const NUCLEUS_BEAT = BEATS.findIndex(b=>b.kind==='nucleus');
 const COUNT = CONFIG.particles.count;
 
 // Disperse only across SECTION boundaries (different kinds); model→model morphs directly.
@@ -295,6 +336,34 @@ function sampleText(text, count, { worldHeight, depth=0.4, weight=700, seed=11 }
     out[i*3]   =  (pool[k]   - cx) * scale + (jr()-0.5)*0.02;
     out[i*3+1] = -(pool[k+1] - cy) * scale + (jr()-0.5)*0.02;
     out[i*3+2] =  (jr()-0.5) * depth;
+  }
+  return out;
+}
+// Rasterise the atom's SVG contour paths and sample dark pixels into particle
+// positions — identical technique to sampleText (draw → getImageData → sample),
+// so the dust re-forms into the nucleus. The paths live in a ~1190² icon viewBox.
+function sampleNucleus(paths, count, { worldHeight, depth=0.5, seed=23 }){
+  const S = 1191;
+  const cv = document.createElement('canvas'); cv.width=S; cv.height=S;
+  const ctx = cv.getContext('2d', { willReadFrequently:true });
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,S,S);
+  ctx.strokeStyle='#000'; ctx.lineWidth=3; ctx.lineJoin='round'; ctx.lineCap='round';
+  for(const d of paths){ try{ ctx.stroke(new Path2D(d)); }catch(e){} }
+  const data = ctx.getImageData(0,0,S,S).data;
+  const pool=[]; let minX=S,minY=S,maxX=0,maxY=0;
+  for(let y=0;y<S;y++) for(let x=0;x<S;x++){
+    if(data[(y*S+x)*4] < 100){ pool.push(x,y); if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; }
+  }
+  if(!pool.length) return DISPERSE;
+  const cx=(minX+maxX)/2, cy=(minY+maxY)/2, span=(maxY-minY)||1;
+  const scale = worldHeight/span;
+  const rng=seededRNG(seed), jr=seededRNG(seed*7+1);
+  const out=new Float32Array(count*3); const M2=pool.length/2;
+  for(let i=0;i<count;i++){
+    const k=(Math.floor(rng()*M2))*2;
+    out[i*3]   =  (pool[k]  -cx)*scale + (jr()-0.5)*0.02;
+    out[i*3+1] = -(pool[k+1]-cy)*scale + (jr()-0.5)*0.02;
+    out[i*3+2] =  (jr()-0.5)*depth;
   }
   return out;
 }
@@ -430,6 +499,9 @@ function stepParticles(dt, probe){
 
 // ── THREE setup ──
 const canvas = document.getElementById('c');
+// The live-atom overlay (the TNQ beat). fitCamera positions it over the model
+// region; the frame loop drives its opacity. Sized to ~match the dust nucleus.
+const atomOverlay = document.getElementById('atomOverlay');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false });
 renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
 renderer.setSize(innerWidth, innerHeight, false);
@@ -469,7 +541,7 @@ function fitCamera(){
   const regionR = W - Math.max(outer, 72);         // keep clear of the beat dots
   const regionW = regionR - regionL;
   const stacked = regionW < 360;                   // no room beside the copy → stack
-  let D, x, y;
+  let D, x, y, cx, cy;
   if (!stacked) {
     const fit = 0.86;
     const Dw = HW * H / (tanV * fit * regionW);     // distance to fit content WIDTH into the region
@@ -489,14 +561,36 @@ function fitCamera(){
     cxPx = Math.min(cxPx, regionR - halfPx);        // never let it run under the beat dots
     x = -((cxPx - W / 2) / W) * visW;
     y = 0;
+    cx = cxPx; cy = H / 2;
   } else {
     D = Math.max(CONFIG.scene.cameraDistance, HW * H / (tanV * 0.42 * W), HW / (tanV * 0.5));
     x = 0;
     y = -0.22 * (2 * D * tanV);                     // lift content into the upper half
+    cx = W / 2; cy = 0.28 * H;                      // …so it sits in the upper area on screen
   }
   camera.position.set(x, y, D);
   const ovl = document.querySelector('.cg-overlay');
   if (ovl) ovl.classList.toggle('stacked', stacked);
+  // The overlay is full-screen; tell the atom where to draw its FORM (the model
+  // region) via CSS vars. half = on-screen half-extent of a worst-case bounding
+  // sphere (HW projected); the form field radius ~matches the dust nucleus it
+  // crossfades from. Controls/hint anchor to the form box, not the screen corner.
+  if (atomOverlay) {
+    const half = HW * H / (2 * D * tanV);
+    const formR = 0.95 * half;
+    atomOverlay.style.setProperty('--form-cx', cx + 'px');
+    atomOverlay.style.setProperty('--form-cy', cy + 'px');
+    atomOverlay.style.setProperty('--form-r', formR + 'px');
+    // Isotope control anchored to the form box's BOTTOM-RIGHT corner — in the
+    // square box's corner dead-space, clear of the circular form even as it
+    // bulges toward the cursor. (right/bottom = distance from the viewport edges.)
+    atomOverlay.style.setProperty('--atom-ctl-right', (W - (cx + formR)) + 'px');
+    atomOverlay.style.setProperty('--atom-ctl-bottom', (H - (cy + formR)) + 'px');
+    // Shake hint centred just below the form box — below the toggle's row, so the
+    // two never overlap while the U-238 hint is showing.
+    atomOverlay.style.setProperty('--atom-hint-x', cx + 'px');
+    atomOverlay.style.setProperty('--atom-hint-y', (cy + formR + 16) + 'px');
+  }
 }
 fitCamera();
 
@@ -564,6 +658,16 @@ function buildTextTargets(){
     else if(b.kind==='text') targets[i]=sampleText(b.text, COUNT, { worldHeight:CONFIG.morph.dividerHeight, depth:0.3, weight:700, seed:7 });
     else if(b.kind==='disperse') targets[i]=DISPERSE;   // dissolves into the enveloping cloud
   }
+}
+// Fetch the atom's contour paths (served static, homepage-only — kept out of the
+// HTML) and build the nucleus particle target. Until it resolves the beat falls
+// back to DISPERSE, exactly like an unloaded model.
+async function loadNucleus(i){
+  try{
+    const res = await fetch(CONFIG.nucleus.pathsUrl);
+    const paths = await res.json();
+    targets[i] = sampleNucleus(paths, COUNT, { worldHeight:CONFIG.nucleus.worldHeight, depth:CONFIG.nucleus.depth, seed:23 });
+  }catch(e){ console.warn('[ScrollHero] nucleus load failed', e); }
 }
 function loadModel(i){
   const b=BEATS[i]; if(b.kind!=='model') return Promise.resolve();
@@ -641,6 +745,8 @@ let dragSpin=0, dragSpinVel=0, dragTilt=0;
 function activeModelBeat(){
   if (state.shapeW < 0.85) return -1;
   const b = state.center;
+  // Only GLB models are drag-to-spin. The nucleus beat hands off to the live atom
+  // overlay, which owns its own interaction, so the dust itself isn't grabbable.
   return BEATS[b] && BEATS[b].kind==='model' && models[b] ? b : -1;
 }
 addEventListener('pointermove', (e)=>{
@@ -706,25 +812,29 @@ const ov = {
   product: document.getElementById('ovProduct'),
   index: document.getElementById('ovIndex'), name: document.getElementById('ovName'),
   meta: document.getElementById('ovMeta'), desc: document.getElementById('ovDesc'), link: document.getElementById('ovLink'),
+  hint: document.querySelector('.ov-hint'),
 };
 const scrollCue = document.getElementById('scrollCue');
 let curProductBeat=-1;
 function setProductChrome(b){
   if(b===curProductBeat) return; curProductBeat=b; const d=BEATS[b];
-  ov.index.textContent = `${String(b).padStart(2,'0')} / ${String(MODEL_COUNT).padStart(2,'0')}`;
+  ov.index.textContent = `${String(b).padStart(2,'0')} / ${String(FEATURED_COUNT).padStart(2,'0')}`;
   ov.name.textContent = d.name; ov.meta.textContent = `${d.year} · ${d.disc}`;
   ov.desc.textContent = d.desc || '';
   ov.link.setAttribute('href', `/work/${d.slug}/`);
+  // "Drag to spin" applies to the GLB models; the nucleus hands off to the live
+  // atom (which carries its own controls), so the hint is hidden there.
+  if(ov.hint) ov.hint.style.display = (d.kind==='model') ? '' : 'none';
 }
 const dotsWrap=document.getElementById('beatDots');
-for(let i=0;i<MODEL_COUNT;i++){ const dot=document.createElement('div'); dot.className='dot'; dotsWrap.appendChild(dot); }
+for(let i=0;i<FEATURED_COUNT;i++){ const dot=document.createElement('div'); dot.className='dot'; dotsWrap.appendChild(dot); }
 const dots=[...dotsWrap.children];
 
 function updateOverlay(){
   const center=state.center, w=state.shapeW;
   ov.lead.style.opacity = (center===0) ? w : 0;
   const cb=BEATS[center];
-  if(cb && cb.kind==='model'){ setProductChrome(center); ov.product.style.opacity = w; }
+  if(cb && (cb.kind==='model' || cb.kind==='nucleus')){ setProductChrome(center); ov.product.style.opacity = w; }
   else ov.product.style.opacity = 0;
   dots.forEach((d,idx)=> d.classList.toggle('on', idx+1===center));
 }
@@ -744,7 +854,7 @@ scrollTo(0,0);
   ready=true;
   // Load models, then PRE-WARM the GPU (offscreen render) so the first scroll to each
   // product doesn't hitch on a lazy texture upload.
-  Promise.all(BEATS.map((b,i)=> b.kind==='model' ? loadModel(i) : null)).then(()=>{
+  Promise.all(BEATS.map((b,i)=> b.kind==='model' ? loadModel(i) : b.kind==='nucleus' ? loadNucleus(i) : null)).then(()=>{
     const rt = new THREE.WebGLRenderTarget(4,4);
     models.forEach(m=>{ if(m) m.group.visible = true; });
     renderer.setRenderTarget(rt);
@@ -806,6 +916,17 @@ function frame(ts){
     for(const mat of m.materials) mat.opacity = vis;
     if(i===c) particleOpacity = Math.min(particleOpacity, 1 - vis);
     if(m.group.visible){ m.group.rotation.set(rotX, rotY, 0); m.group.updateMatrixWorld(); }
+  }
+
+  // Live-atom crossfade — the nucleus beat hands the dust off to the real atom,
+  // the same way models skin on from particles. As the nucleus forms, the overlay
+  // fades in and the dust fades out; the overlay captures the pointer only once
+  // it's mostly there, so scrolling/dragging other beats is never blocked.
+  if(atomOverlay){
+    const atomVis = (c===NUCLEUS_BEAT) ? smootherstep(CONFIG.morph.texAt, 1.0, formW) : 0;
+    atomOverlay.style.opacity = atomVis;
+    atomOverlay.style.pointerEvents = atomVis > 0.6 ? 'auto' : 'none';
+    particleOpacity = Math.min(particleOpacity, 1 - atomVis);
   }
   ps.material.uniforms.uOpacity.value = particleOpacity;
 

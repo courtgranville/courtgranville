@@ -13,13 +13,14 @@ import Footer from '../../components/Footer.astro';
 import Grid from '../../components/Grid.astro';
 import WorkGallery from '../../components/r3f/WorkGallery.tsx';
 import { MODELS } from '../../data/models';
+import '../../styles/atom.css';
 
-// The Nuclear Question (web/data) is intentionally omitted for now — its model
-// is still in progress. Order follows the work index: most recent first. The
-// per-model framing (model path, fill, resting viewRY·viewRX) lives once in
-// src/data/models.ts and is shared with the project pages; this array only
-// carries the gallery's editorial labels.
+// Order follows the work index: most recent first. The per-model framing (model
+// path, fill, resting viewRY·viewRX) lives once in src/data/models.ts and is
+// shared with the project pages; this array only carries the gallery's editorial
+// labels.
 const PROJECTS = [
+  { name: 'The Nuclear Question',    year: 2026, discipline: 'Data Visualisation · Web',  slug: 'the-nuclear-question' },
   { name: 'Mantis',                  year: 2026, discipline: 'Product Design',           slug: 'mantis' },
   { name: 'Wave',                    year: 2026, discipline: 'Product Design',           slug: 'wave' },
   { name: 'Gravity Wave Backgammon', year: 2024, discipline: 'Product Design',           slug: 'backgammon' },
@@ -86,6 +87,8 @@ const PROJECTS = [
   .wg-stage { position: relative; width: 100%; aspect-ratio: 4 / 5; min-height: 0; }
   .wg-stage canvas { width: 100% !important; height: 100% !important; display: block; cursor: grab; touch-action: pan-y; }
   .wg-stage canvas:active { cursor: grabbing; }
+  /* The atom cell (The Nuclear Question) is cursor-reactive, not grab-to-rotate. */
+  .wg-stage--atom canvas { cursor: default; }
 
   /* Caption — no rule, just air. Hierarchy is real now: a serif title, clearly
      larger, over quiet caps metadata and a fainter link. All three sizes scale

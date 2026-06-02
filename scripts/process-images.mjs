@@ -25,6 +25,17 @@ const QUALITY_INLINE = 72;
 // Ordered per-project source → output mapping. Slugs are numeric-prefixed so
 // the content collection can reference them deterministically.
 const MANIFEST = {
+  'the-nuclear-question': {
+    sourceDir: 'the-nuclear-question',
+    images: [
+      { src: '001.png', slug: 'poster-001', role: 'poster', priority: 'hero' },
+      { src: '002.png', slug: 'poster-002', role: 'poster', priority: 'hero' },
+      { src: '003.png', slug: 'poster-003', role: 'poster', priority: 'hero' },
+      { src: '004.png', slug: 'poster-004', role: 'poster', priority: 'hero' },
+      { src: '005.png', slug: 'poster-005', role: 'poster', priority: 'hero' },
+      { src: '006.png', slug: 'poster-006', role: 'poster', priority: 'hero' },
+    ],
+  },
   'spider-209': {
     sourceDir: 'lamp (SPIDER-209)',
     images: [

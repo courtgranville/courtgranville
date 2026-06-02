@@ -19,13 +19,14 @@ import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import NuclearAtom from '../nuclear/NuclearAtom';
 
 type Project = {
   name: string;
   year: number;
   discipline: string;
   slug: string;
-  model: string;
+  model?: string;    // absent for web/data projects shown as the live atom (TNQ)
   fill?: number;     // how much of the frame the bounding sphere fills
   viewRY?: number;   // resting yaw / pitch — the pose the cell opens on
   viewRX?: number;
@@ -127,6 +128,23 @@ function Cell({ p }: { p: Project }) {
     return () => io.disconnect();
   }, []);
 
+  // Projects with no GLB (The Nuclear Question) are shown as the live atom — a
+  // compact, cursor-reactive nucleus — instead of an R3F model canvas.
+  if (!p.model) {
+    return (
+      <article className="wg-cell">
+        <div className="wg-stage wg-stage--atom" ref={wrapRef}>
+          <NuclearAtom compact />
+        </div>
+        <a className="wg-cap" href={`/work/${p.slug}/`}>
+          <span className="wg-name">{p.name}</span>
+          <span className="wg-meta label">{p.year} · {p.discipline}</span>
+          <span className="wg-link label">View project &rarr;</span>
+        </a>
+      </article>
+    );
+  }
+
   return (
     <article className="wg-cell">
       <div className="wg-stage" ref={wrapRef}>
@@ -144,7 +162,7 @@ function Cell({ p }: { p: Project }) {
           <directionalLight position={[2, 3, 2]} intensity={1.1} />
           <directionalLight position={[-2, 0.5, -1.5]} intensity={0.35} />
           <Suspense fallback={null}>
-            <Model url={p.model} fill={p.fill ?? DEFAULT_FILL} viewRY={p.viewRY ?? 0} viewRX={p.viewRX ?? 0} />
+            <Model url={p.model!} fill={p.fill ?? DEFAULT_FILL} viewRY={p.viewRY ?? 0} viewRX={p.viewRX ?? 0} />
           </Suspense>
           <OrbitControls
             makeDefault

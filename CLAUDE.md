@@ -41,6 +41,12 @@ A single light ground, dark ink, one sharp accent. No other colours; no decorati
 - Ink / text: **`#161616`** (`--text`), with `--text-quiet` / `--text-faint` / `--rule` / `--hairline` derivations.
 - Accent: a single **deep red `#8E1B0E`** (`--accent`), used sparingly.
 
+### Light / dark theme
+The site ships a **light/dark toggle** (a half-disc "contrast" button in the nav, right of Contact). The whole system rides the existing tokens — don't add per-component theme code:
+- **`data-theme` attribute on `<html>`** (`light` | `dark`) is the switch. A `:root[data-theme="dark"]` block in `tokens.css` overrides the colour tokens (`--bg`, `--text`, the quiet/faint/rule/hairline derivations, `--field-bg`, `--nav-backdrop`); everything reading those flips automatically. **Light is the brand default**; dark is opt-in. The starting dark palette (near-black `#0E0E0E` ground, warm near-white `#F4F3EF` ink) is a tunable call — adjust in `tokens.css`, not inline. The single accent is kept in both.
+- **No-flash:** a blocking inline script at the very top of `<head>` (`Layout.astro`) sets `data-theme` from the `cg-theme` **localStorage** key before first paint. The preference persists across reloads and pages.
+- **The hero:** the homepage particle hero is the only opaque WebGL surface, so it can't flip via CSS. The toggle dispatches a **`theme:change` CustomEvent** on `window` (mirroring the `hero:loaded` contract); `ScrollHero.astro` listens and runs `applyTheme()` — sets the clear/scene colour + the `uInk` particle uniform, and lazily builds the bloom composer (dark only). Particle **motion/density/behaviour is identical** in both themes; only ink colour (→white) and the dark-only bloom differ. The alpha `/work/` + ProjectViewer canvases need no change — they inherit the page ground.
+
 ### Typography
 Google Fonts only (`src/styles/fonts.css`).
 - Display / headings: **Playfair Display, Regular (400)** (`--serif`); Italic for pull-quotes.
@@ -51,7 +57,7 @@ Google Fonts only (`src/styles/fonts.css`).
 - **Work-first.** The path from landing to the work is short and unmistakable.
 - **One signature interaction, then restraint.** The CG hero is the single "wow" moment. Do not add decorative animation elsewhere.
 - **Editorial and precise.** Whitespace is a material. Full-bleed imagery for project work.
-- **Atmosphere through depth, not decoration.** Richness comes from real dimensional depth, density and motion — never glow, bloom, or applied filters.
+- **Atmosphere through depth, not decoration.** Richness comes from real dimensional depth, density and motion — never glow, bloom, or applied filters. **One deliberate exception:** bloom is used on the homepage particle hero, but **scoped to the dark theme only** (the white particles read as light against the near-black ground). The **light theme stays bloom-free** — its render path is byte-for-byte unchanged from before the theme system.
 
 ### Explicitly forbidden
 This site must read as the work of a professional designer. Never introduce:

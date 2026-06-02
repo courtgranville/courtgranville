@@ -190,6 +190,12 @@ import * as THREE from 'three';
 import { GLTFLoader }     from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+// Postprocessing — used ONLY for the dark theme's bloom; built lazily the first
+// time dark is entered so light mode keeps the original direct-render path.
+import { EffectComposer }  from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass }      from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass }      from 'three/addons/postprocessing/OutputPass.js';
 import Lenis from 'lenis';
 
 const TAU = Math.PI * 2;
@@ -214,7 +220,18 @@ const CONFIG = {
   // wheel stops AND the glide settles → smooth, no jolt, no mid-notch interruption.
   scroll: { sectionVh: 2.4, modelVh: 1.3, exitVh: 1.6, snapDuration: 0.7, snapStopMs: 200, snapSettle: 0.0009, advanceThresh: 0.12 },
   modelBase: '/models/',
+  // Theme colours for the WebGL surface (the editorial body flips via CSS tokens).
+  // Light keeps today's values exactly; dark turns the particles white on a
+  // near-black ground and switches on bloom. The bloom values are starting
+  // points — tunable.
+  theme: {
+    light: { bg: '#FFFFFF', ink: '#161616' },
+    dark:  { bg: '#0E0E0E', ink: '#FFFFFF' },                 // particles go white on dark
+    bloom: { strength: 0.6, radius: 0.4, threshold: 0.75 },
+  },
 };
+// The active theme key, read from <html data-theme> (set pre-paint by Layout).
+function themeKey(){ return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'; }
 
 // kind 'glyph'/'text' → particle shape only; 'model' → particles that hand off to a
 // textured GLB you can grab and spin. viewRY/viewRX = preferred resting orientation.
@@ -364,7 +381,7 @@ class Particles {
     this.geometry.setAttribute('aSizeMul', new THREE.BufferAttribute(sizeMul,1));
     this.material = new THREE.ShaderMaterial({
       uniforms:{ uBaseSize:{value:CONFIG.particles.baseSize}, uSizeScale:{value:1},
-                 uInk:{value:new THREE.Color(CONFIG.particles.inkColor)}, uOpacity:{value:1} },
+                 uInk:{value:new THREE.Color(CONFIG.theme[themeKey()].ink)}, uOpacity:{value:1} },
       vertexShader:VERT, fragmentShader:FRAG,
       transparent:true, depthWrite:false, depthTest:false, blending:THREE.NormalBlending,
     });
@@ -421,12 +438,12 @@ const canvas = document.getElementById('c');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false });
 renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
 renderer.setSize(innerWidth, innerHeight, false);
-renderer.setClearColor(new THREE.Color(CONFIG.scene.bg));
+renderer.setClearColor(new THREE.Color(CONFIG.theme[themeKey()].bg));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(CONFIG.scene.bg);
+scene.background = new THREE.Color(CONFIG.theme[themeKey()].bg);
 const camera = new THREE.PerspectiveCamera(CONFIG.scene.fov, innerWidth/innerHeight, 0.1, 100);
 camera.position.set(0,0,CONFIG.scene.cameraDistance);
 
@@ -499,6 +516,44 @@ cloudGroup.add(ps.points);
 
 function sizeScale(){ const t=new THREE.Vector2(); renderer.getDrawingBufferSize(t); ps.material.uniforms.uSizeScale.value = t.y*0.5; }
 sizeScale();
+
+// ── Theme: particle/ground colour + dark-only bloom ─────────────────────────
+// Light mode keeps the original direct renderer.render path EXACTLY untouched —
+// no composer is ever constructed. Only when dark mode is first entered do we
+// lazily build the EffectComposer chain and use it while `useBloom` is true.
+// The particle MOTION/density/behaviour is identical in both themes — only the
+// ink colour and this bloom differ.
+let useBloom = false;
+let composer = null, bloomPass = null;
+function buildComposer(){
+  composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  const b = CONFIG.theme.bloom;
+  // Global bloom. threshold 0.75 is meant to bloom the bright white particles but
+  // mostly spare the mid-tone textured GLB models sharing the scene. If the lit
+  // models glow undesirably, the escalation path is SELECTIVE bloom via layers
+  // (put ps.points on a dedicated bloom layer, render the models on a separate
+  // pass excluded from it). Try the simple global pass first.
+  bloomPass = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), b.strength, b.radius, b.threshold);
+  composer.addPass(bloomPass);
+  // OutputPass does ACES tone-mapping + sRGB at the end of the chain — needed
+  // because the composer path bypasses the renderer's built-in output conversion.
+  composer.addPass(new OutputPass());
+  composer.setPixelRatio(renderer.getPixelRatio());
+  composer.setSize(innerWidth, innerHeight);
+}
+function applyTheme(key){
+  const c = CONFIG.theme[key] || CONFIG.theme.light;
+  renderer.setClearColor(new THREE.Color(c.bg));
+  scene.background.set(c.bg);
+  ps.material.uniforms.uInk.value.set(c.ink);
+  useBloom = (key === 'dark');
+  if(useBloom && !composer) buildComposer();   // built once, on first dark entry
+}
+applyTheme(themeKey());
+// The toggle (Nav.astro) dispatches `theme:change` — mirrors the `hero:loaded`
+// contract, keeps the toggle and the engine decoupled.
+addEventListener('theme:change', (e)=> applyTheme((e.detail && e.detail.theme) || themeKey()));
 
 // ── Targets: text/glyph/disperse up front; models async. ──
 const DISPERSE = sampleDisperse(COUNT, CONFIG.morph.disperseRadius);
@@ -721,7 +776,8 @@ scrollTo(0,0);
 })();
 
 addEventListener('resize', ()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
-  fitCamera(); renderer.setSize(innerWidth,innerHeight,false); sizeScale(); fitHeroName(); });
+  fitCamera(); renderer.setSize(innerWidth,innerHeight,false); sizeScale(); fitHeroName();
+  if(composer){ composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(innerWidth,innerHeight); } });
 
 // Pause the render loop while the stage is fully off-screen (scrolled into the body).
 let visible = true;
@@ -774,7 +830,9 @@ function frame(ts){
   ps.material.uniforms.uOpacity.value = particleOpacity;
 
   canvas.classList.toggle('grabbable', activeModel>=0 && !drag.on);
-  renderer.render(scene, camera);
+  // Light mode: the original direct render (unchanged). Dark mode: the lazy
+  // bloom composer. The OutputPass in the chain handles tone-mapping + sRGB.
+  if(useBloom && composer) composer.render(); else renderer.render(scene, camera);
 }
 requestAnimationFrame(frame);
 </script>

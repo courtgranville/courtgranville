@@ -16,6 +16,9 @@
   --rule:       rgba(22,22,22,0.10);
   --hairline:   #E5E5E5;
   --accent:     #8E1B0E;
+  /* Nav backdrop — the blurred bar that appears once the hero is scrolled past.
+     Tokenised so the dark theme can flip it (Nav's ::before reads this). */
+  --nav-backdrop: rgba(255,255,255,0.78);
 
   /* ── Type families ────────────────────────────────── */
   --serif: 'Playfair Display', Georgia, serif;
@@ -69,6 +72,27 @@
   --tilt: 0.16;            /* shared parallax intensity, particle + photo cards */
 
   --nav-h: clamp(72px, 4.2vw, 108px);   /* grows on large/4K screens so the bar isn't tiny */
+}
+
+/* ── Dark theme — opt-in via [data-theme="dark"] on <html> ──────────────────
+   Only the colour tokens flip; almost the whole site reads these custom
+   properties, so the editorial body inverts automatically. The contrast is
+   still generative-vs-editorial on one ground, not a different design — just
+   dark ink on a near-black ground (softer than pure #000) with the warm
+   near-white the prototypes explored. The single accent stays. The homepage
+   particle hero handles its own WebGL colours + dark-only bloom in JS
+   (see ScrollHero.astro), driven by the `theme:change` event. */
+:root[data-theme="dark"] {
+  --bg:         #0E0E0E;                  /* near-black, not pure #000 — softer */
+  --text:       #F4F3EF;                  /* warm near-white (the off-white the prototypes explored) */
+  --text-quiet: rgba(244,243,239,0.60);
+  --text-faint: rgba(244,243,239,0.38);
+  --rule:       rgba(244,243,239,0.14);
+  --hairline:   #2A2A2A;
+  --field-bg:   #161616;                  /* one step up from --bg */
+  --nav-backdrop: rgba(14,14,14,0.78);
+  /* --accent kept at #8E1B0E. If it reads muddy on near-black, a brighter
+     dark-mode accent (e.g. #C8412E) is a tunable option — leave light untouched. */
 }
 
 /* Tablet: 8 columns. */

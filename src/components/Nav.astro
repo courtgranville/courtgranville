@@ -30,6 +30,16 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
     {links.map((l) => (
       <a class="nav-link" href={l.href} aria-current={isCurrent(l.href) ? 'page' : undefined}>{l.label}</a>
     ))}
+    <!-- Theme switch — sits to the right of Contact, sharing the nav-links flex
+         gap. NOT a .nav-link (so it skips the underline-wipe / active-underline).
+         A minimal half-filled "contrast" disc, not a sun/moon icon. The aria
+         state + the half-disc flip are synced to the live theme by the script. -->
+    <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark theme">
+      <svg class="theme-glyph" width="17" height="17" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+        <circle cx="10" cy="10" r="8.25" fill="none" stroke="currentColor" stroke-width="1.5" />
+        <path d="M10 1.75 A8.25 8.25 0 0 1 10 18.25 Z" fill="currentColor" />
+      </svg>
+    </button>
   </div>
 </nav>
 
@@ -56,7 +66,7 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
     content: '';
     position: absolute;
     inset: 0;
-    background: rgba(255, 255, 255, 0.78);
+    background: var(--nav-backdrop);
     backdrop-filter: saturate(140%) blur(10px);
     -webkit-backdrop-filter: saturate(140%) blur(10px);
     opacity: 0;
@@ -81,6 +91,7 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
 
   .nav-links {
     display: flex;
+    align-items: center;   /* centre the toggle icon against the text labels */
     gap: clamp(28px, 2.2vw, 56px);
   }
 
@@ -119,9 +130,66 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
   .nav-link[aria-current='page'] { opacity: 1; }
   .nav-link[aria-current='page']::after { transform: scaleX(1); }
 
+  /* Theme toggle — a real button, no link chrome. Padding matches the nav-link
+     block so the row heights agree; line-height:0 + inline-flex put the SVG on
+     the labels' optical line. Hover follows the nav idiom (colour shift to
+     accent), but no underline wipe. */
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    line-height: 0;
+    padding: 6px 0;
+    background: none;
+    border: 0;
+    cursor: pointer;
+    color: var(--text);
+    opacity: 0.9;
+    transition: color var(--dur-hover) var(--ease-out), opacity var(--dur-hover) var(--ease-out);
+  }
+  .theme-toggle:hover { color: var(--accent); opacity: 1; }
+  /* The half-disc flips 180° to mark the switch — understated, sub-second. */
+  .theme-glyph { transition: transform var(--dur-hover) var(--ease-out); }
+  .theme-toggle[aria-pressed='true'] .theme-glyph { transform: rotate(180deg); }
+
   @media (max-width: 720px) {
     .site-nav { padding: 0 20px; }
     .nav-links { gap: 22px; }
     .brand { font-size: 18px; }
   }
 </style>
+
+<script is:inline type="module">
+  // ── Theme toggle ──────────────────────────────────────────────────────────
+  // The head script (Layout.astro) has already set <html data-theme> from the
+  // stored preference before first paint; here we only wire the button. The
+  // `theme:change` CustomEvent is the contract with the hero (ScrollHero.astro)
+  // — mirrors the existing `hero:loaded` pattern, keeps the two decoupled.
+  const root = document.documentElement;
+  const btn  = document.querySelector('.theme-toggle');
+
+  function syncButton(theme) {
+    if (!btn) return;
+    const dark = theme === 'dark';
+    btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+    btn.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
+  }
+
+  function setTheme(next) {
+    root.dataset.theme = next;
+    try { localStorage.setItem('cg-theme', next); } catch (e) {}
+    // Keep the mobile browser chrome in step with the active ground.
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = getComputedStyle(root).getPropertyValue('--bg').trim();
+    syncButton(next);
+    window.dispatchEvent(new CustomEvent('theme:change', { detail: { theme: next } }));
+  }
+
+  // Sync the button's aria state to whatever the head script applied.
+  syncButton(root.dataset.theme === 'dark' ? 'dark' : 'light');
+
+  if (btn) {
+    btn.addEventListener('click', () => {
+      setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark');
+    });
+  }
+</script>

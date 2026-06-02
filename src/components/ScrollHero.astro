@@ -39,10 +39,11 @@ const PRODUCTS = [
 
     <!-- Overlay copy — phases in/out per beat, driven by the engine. -->
     <div class="cg-overlay" aria-hidden="false">
-      <!-- Beat 0 — the name (sized to the lead column so the brand needn't repeat it)
-           over the multidisciplinary positioning paragraph. -->
+      <!-- Beat 0 — the multidisciplinary positioning paragraph, beside the glyph.
+           The name now lives in the nav brand, so the visible heading is gone; the
+           h1 stays (screen-reader-only) to keep the homepage's page heading for SEO. -->
       <div class="ov-block ov-lead">
-        <h1 class="ov-name-hero">Court Granville<span class="sr-only"> &mdash; Multidisciplinary Designer, London &amp; Madrid</span></h1>
+        <h1 class="sr-only">Court Granville &mdash; Multidisciplinary Designer, London &amp; Madrid</h1>
         <p class="ov-lead-p">I&rsquo;m a multidisciplinary designer working across product, interaction, data and the web. I trained in product design, but a pull toward technology, AI and systems has taken me wider &mdash; toward the industries and problems where design is needed most, whatever shape they take.</p>
       </div>
 
@@ -89,18 +90,12 @@ const PRODUCTS = [
   .ov-block { position: absolute; opacity: 0; will-change: opacity; }
   .ov-block a { pointer-events: auto; }
 
-  /* Hero lead — the name sized to the lead column, over the positioning paragraph,
-     left and vertically centred beside the centred glyph. */
+  /* Hero lead — the positioning paragraph, left and vertically centred beside the
+     centred glyph (translateY(-50%) centres the block on its own height, so the
+     paragraph sits level with the hero interaction now the name has moved to the nav). */
   .ov-lead {
     left: var(--outer); top: 50%; transform: translateY(-50%);
     width: min(520px, 36vw);
-  }
-  /* The name in bold caps, JS-fitted so its width exactly equals the lead column
-     (the paragraph) at every viewport. font-size is set by fitHeroName(). */
-  .ov-name-hero {
-    font-family: var(--serif); font-weight: 700; text-transform: uppercase;
-    font-size: 56px; line-height: 0.96; letter-spacing: 0.005em;
-    color: var(--text); margin: 0 0 clamp(18px, 1.6vw, 30px); white-space: nowrap;
   }
   .ov-lead-p {
     font-family: var(--sans); font-weight: 400;
@@ -725,20 +720,6 @@ const dotsWrap=document.getElementById('beatDots');
 for(let i=0;i<MODEL_COUNT;i++){ const dot=document.createElement('div'); dot.className='dot'; dotsWrap.appendChild(dot); }
 const dots=[...dotsWrap.children];
 
-// Size the hero name so its width exactly equals the lead column (the paragraph) at
-// any viewport — measure at a reference size, then scale. Runs after the font loads.
-function fitHeroName(){
-  const name = document.querySelector('.ov-name-hero');
-  const lead = document.querySelector('.ov-lead');
-  if(!name || !lead) return;
-  // Measure the TEXT width via scrollWidth (the block's own width is the column width,
-  // so getBoundingClientRect wouldn't reflect the overflowing nowrap text), then scale
-  // the font so the name fills the column exactly.
-  name.style.fontSize = '100px';
-  const w = name.scrollWidth;
-  const target = lead.clientWidth;
-  if(w > 0 && target > 0) name.style.fontSize = (100 * target / w).toFixed(2) + 'px';
-}
 function updateOverlay(){
   const center=state.center, w=state.shapeW;
   ov.lead.style.opacity = (center===0) ? w : 0;
@@ -757,7 +738,6 @@ if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 scrollTo(0,0);
 (async function init(){
   await fontReady();
-  fitHeroName();
   buildTextTargets();
   ps.home.set(targets[0]);
   startLoadIn();
@@ -776,7 +756,7 @@ scrollTo(0,0);
 })();
 
 addEventListener('resize', ()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
-  fitCamera(); renderer.setSize(innerWidth,innerHeight,false); sizeScale(); fitHeroName();
+  fitCamera(); renderer.setSize(innerWidth,innerHeight,false); sizeScale();
   if(composer){ composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(innerWidth,innerHeight); } });
 
 // Pause the render loop while the stage is fully off-screen (scrolled into the body).

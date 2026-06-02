@@ -25,7 +25,7 @@ const links = [
 const isCurrent = (href: string) => !href.includes('#') && (path === href || path.startsWith(href));
 ---
 <nav class="site-nav" aria-label="Primary">
-  <a class="brand" href="/" data-scroll-top={isHome ? '' : undefined} aria-label="Court Granville — home">CG</a>
+  <a class="brand" href="/" data-scroll-top={isHome ? '' : undefined} aria-label="Court Granville — home">Court Granville</a>
   <div class="nav-links">
     {links.map((l) => (
       <a class="nav-link" href={l.href} aria-current={isCurrent(l.href) ? 'page' : undefined}>{l.label}</a>
@@ -76,14 +76,16 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
   .site-nav.scrolled::before { opacity: 1; }
   .site-nav.scrolled { border-bottom: 1px solid var(--rule); }
 
-  /* Monogram — the "CG" mark, Playfair Bold to echo the particle hero glyph.
-     Scales with the viewport so it reads at the right weight on large/4K screens. */
+  /* Wordmark — the full "Court Granville" name in Playfair, the brand at top-left
+     (the particle hero still carries the "CG" glyph). Sized to sit comfortably in
+     the nav height and scale on large/4K screens; nowrap so it never breaks line. */
   .brand {
     font-family: var(--serif);
-    font-weight: 700;
-    font-size: clamp(24px, 1.5vw, 40px);
+    font-weight: 500;
+    font-size: clamp(18px, 1.25vw, 28px);
     letter-spacing: 0.01em;
     line-height: 1;
+    white-space: nowrap;
     color: var(--text);
     transition: opacity var(--dur-hover) var(--ease-out);
   }
@@ -154,7 +156,7 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
   @media (max-width: 720px) {
     .site-nav { padding: 0 20px; }
     .nav-links { gap: 22px; }
-    .brand { font-size: 18px; }
+    .brand { font-size: 15px; }
   }
 </style>
 

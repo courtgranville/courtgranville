@@ -2,40 +2,40 @@
   "name": "Wabi Sabi",
   "year": 2022,
   "discipline": "Product Design",
-  "framing": "A universal iPhone case for MUJI — beauty in serenity, simplicity and imperfection.",
+  "framing": "A universal iPhone case for MUJI - beauty in serenity, simplicity and imperfection.",
   "heroImage": "07-final-hero",
   "group": true,
   "spec": {
     "Brief":    "design a product MUJI could sell",
-    "Concept":  "Wabi Sabi — beauty in serenity, simplicity and imperfection",
+    "Concept":  "Wabi Sabi - beauty in serenity, simplicity and imperfection",
     "Range":    "fits iPhone SE to iPhone 14",
     "Material": "flexible 3D-printing filament"
   },
   "blocks": [
-    { "type": "label", "text": "01 — The Brief" },
+    { "type": "label", "text": "01 - The Brief" },
     {
       "type": "text",
-      "body": "An ambitious early project, and my introduction to 3D modelling. The brief was to design something MUJI could sell — the Japanese brand built on restraint, on the unbranded and the essential, on a quietly confident \"this will do.\""
+      "body": "An ambitious early project, and my introduction to 3D modelling. The brief was to design something MUJI could sell - the Japanese brand built on restraint, on the unbranded and the essential, on a quietly confident \"this will do.\""
     },
-    { "type": "label", "text": "02 — Concept" },
+    { "type": "label", "text": "02 - Concept" },
     {
       "type": "text",
-      "body": "We named the project Wabi Sabi, after the Japanese principle of finding beauty in serenity, simplicity and imperfection — a fitting frame for MUJI, and a discipline to design against. The aim was an object honest in form and useful in function, and nothing more: a single phone case, universal, that earned every feature it had."
+      "body": "We named the project Wabi Sabi, after the Japanese principle of finding beauty in serenity, simplicity and imperfection - a fitting frame for MUJI, and a discipline to design against. The aim was an object honest in form and useful in function, and nothing more: a single phone case, universal, that earned every feature it had."
     },
-    { "type": "label", "text": "03 — Key Decisions" },
+    { "type": "label", "text": "03 - Key Decisions" },
     {
       "type": "text",
-      "body": "The central idea was universality through flexibility. Using a flexible 3D-printing filament, we developed a case that could expand and contract to fit every iPhone from the SE to the 14 — the most recent model at the time — so one object replaced a whole range of single-fit cases. The flexible material did a second job as protection, and that became the only feature we let ourselves add: padded corners, on top of the bare case form. Everything else, in the spirit of the brief, we left out."
+      "body": "The central idea was universality through flexibility. Using a flexible 3D-printing filament, we developed a case that could expand and contract to fit every iPhone from the SE to the 14 - the most recent model at the time - so one object replaced a whole range of single-fit cases. The flexible material did a second job as protection, and that became the only feature we let ourselves add: padded corners, on top of the bare case form. Everything else, in the spirit of the brief, we left out."
     },
     {
       "type": "imageGrid",
       "imageSlugs": ["01-process-1", "02-process-2", "03-process-3"],
       "alt": "Iteration shots from the print runs, November 2022"
     },
-    { "type": "label", "text": "04 — Resolved" },
+    { "type": "label", "text": "04 - Resolved" },
     {
       "type": "text",
-      "body": "Many iterations later we had a functional prototype that fit the entire range — deliberately minimal, one material, one functional addition. The restraint was the design: in a category that adds pattern, bulk and branding, Wabi Sabi tried to earn its place by subtracting."
+      "body": "Many iterations later we had a functional prototype that fit the entire range - deliberately minimal, one material, one functional addition. The restraint was the design: in a category that adds pattern, bulk and branding, Wabi Sabi tried to earn its place by subtracting."
     },
     {
       "type": "imageGrid",

@@ -1,14 +1,14 @@
-// WorkGallery — the /work/ index as a gallery of independently grab-and-spin
+// WorkGallery - the /work/ index as a gallery of independently grab-and-spin
 // product models on the plain white ground. One React island: each project is
 // its own small Canvas carrying a textured GLB you rotate like the homepage
 // models, with a "View project" link beneath. The 3D handoff (fit-to-sphere,
-// Meshy normalisation, in-engine studio IBL) mirrors ProjectViewer.tsx — the
-// proven reference — kept self-contained so this island can't disturb it.
+// Meshy normalisation, in-engine studio IBL) mirrors ProjectViewer.tsx - the
+// proven reference - kept self-contained so this island can't disturb it.
 //
 // Restraint (per the brief): drag-to-rotate is the only interaction; zoom and
 // pan are off so the wheel still scrolls the page, and there is no idle auto-
 // spin. Each Canvas runs on the `demand` frameloop, so an untouched cell costs
-// nothing — OrbitControls invalidates while you drag (and during the damping
+// nothing - OrbitControls invalidates while you drag (and during the damping
 // settle), the entrance tween invalidates itself, and the studio env requests
 // one frame once it's ready. Styling lives as global .wg-* CSS on the page.
 
@@ -28,7 +28,7 @@ type Project = {
   slug: string;
   model?: string;    // absent for web/data projects shown as the live atom (TNQ)
   fill?: number;     // how much of the frame the bounding sphere fills
-  viewRY?: number;   // resting yaw / pitch — the pose the cell opens on
+  viewRY?: number;   // resting yaw / pitch - the pose the cell opens on
   viewRX?: number;
 };
 type Props = { projects: Project[] };
@@ -117,7 +117,7 @@ function Cell({ p }: { p: Project }) {
   // Render only while the cell is on (or near) screen: an off-screen cell pauses
   // its loop so a wall of canvases stays cheap, and `rootMargin` re-arms it just
   // before it scrolls into view so the model is always painted by the time it's
-  // seen — no blank pre-load frame, no compositor-cleared buffer.
+  // seen - no blank pre-load frame, no compositor-cleared buffer.
   const wrapRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(true);
   useEffect(() => {
@@ -128,8 +128,8 @@ function Cell({ p }: { p: Project }) {
     return () => io.disconnect();
   }, []);
 
-  // Projects with no GLB (The Nuclear Question) are shown as the live atom — a
-  // compact, cursor-reactive nucleus — instead of an R3F model canvas.
+  // Projects with no GLB (The Nuclear Question) are shown as the live atom - a
+  // compact, cursor-reactive nucleus - instead of an R3F model canvas.
   if (!p.model) {
     return (
       <article className="wg-cell">
@@ -154,7 +154,7 @@ function Cell({ p }: { p: Project }) {
           camera={{ position: [1.0, 0.45, 3.0], fov: 32 }}
           gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true, toneMapping: THREE.ACESFilmicToneMapping }}
           // Absolute (inline, so it overrides R3F's own inline position:relative)
-          // pulls the canvas out of flow — its drawing-buffer height can't feed
+          // pulls the canvas out of flow - its drawing-buffer height can't feed
           // back into the .wg-stage aspect box and inflate it frame-by-frame.
           style={{ position: 'absolute', inset: 0 }}
         >

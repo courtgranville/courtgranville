@@ -1,5 +1,5 @@
 ---
-// Writing — the index. Published (non-draft) posts list here automatically;
+// Writing - the index. Published (non-draft) posts list here automatically;
 // drafts show in dev only. Conformed to the type roles + named tracks (§6.6).
 
 import { getCollection } from 'astro:content';
@@ -13,7 +13,7 @@ const posts = (await getCollection('blog', ({ data }) => import.meta.env.PROD ? 
 
 const fmt = (d: Date) => d.toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
 ---
-<Layout title="Writing — Court Granville" description="Notes on design, trust, and contested technology — the writing track of the site.">
+<Layout title="Writing - Court Granville" description="Notes on design, trust, and contested technology - the writing track of the site.">
   <Nav />
   <main>
     <Grid as="section" class="blog">

@@ -2,18 +2,18 @@
 // Project page template. Each project now opens with its interactive 3D model
 // (the same grab-and-spin GLB used on the /work/ gallery), then its title and
 // description, then the written story laid out on the shared column grid in the
-// homepage's calm rail-kicker + body-prose rhythm — so a project page reads as
+// homepage's calm rail-kicker + body-prose rhythm - so a project page reads as
 // part of the same editorial space.
 //
 // Layout, top to bottom:
-//   1. proj-top    — the interactive model stage (full width). Web/data projects
+//   1. proj-top    - the interactive model stage (full width). Web/data projects
 //                    with no model fall straight through to the intro.
-//   2. proj-intro  — discipline·year, the title (serif, upright — no italic) and
+//   2. proj-intro  - discipline·year, the title (serif, upright - no italic) and
 //                    the one-line framing, plus any live link / spec / exhibitions.
-//   3. proj-sec ×n — one per labelled section: de-numbered kicker on the rail,
+//   3. proj-sec ×n - one per labelled section: de-numbered kicker on the rail,
 //                    body prose on the body track, and (below, full width) the
 //                    section's photographs as orientation-grouped justified rows.
-//   4. proj-final  — the project's hero studio shot, closing the page.
+//   4. proj-final  - the project's hero studio shot, closing the page.
 //
 // Images carry no frame or background. Within a section the photos are split into
 // landscape and portrait groups so the two orientations are never placed side by
@@ -34,7 +34,7 @@ import { MODELS } from '../../data/models';
 import imageManifest from '../../content/projects-images.json';
 import '../../styles/atom.css';
 
-// Canonical order — most-recent-first; matches the Work index.
+// Canonical order - most-recent-first; matches the Work index.
 const ORDER = [
   'the-nuclear-question',
   'mantis',
@@ -64,12 +64,12 @@ const modelFraming = MODELS[slug];
 function img(imgSlug: string) {
   const entry = manifest?.images.find((i: any) => i.slug === imgSlug);
   if (!entry) {
-    throw new Error(`Missing image for ${slug}/${imgSlug} — re-run scripts/process-images.mjs`);
+    throw new Error(`Missing image for ${slug}/${imgSlug} - re-run scripts/process-images.mjs`);
   }
   return entry;
 }
 
-// Drop the "01 — " ordinal prefix from a section label: it should just read
+// Drop the "01 - " ordinal prefix from a section label: it should just read
 // "The Brief". Handles em/en-dash and hyphen separators.
 const cleanLabel = (text: string) => text.replace(/^\s*\d+\s*[—–-]\s*/, '');
 
@@ -102,7 +102,7 @@ function entriesOf(b: Block): ImageEntry[] {
 // Portrait < 1.0 aspect; square and wider count as landscape.
 const isPortrait = (e: ImageEntry) => e.aspect < 1.0;
 
-// How many images sit in each justified row, by group size — kept to ≤3 so each
+// How many images sit in each justified row, by group size - kept to ≤3 so each
 // photo stays large, and balanced (4 → 2+2) so no row is left half-empty.
 function rowSizes(n: number): number[] {
   if (n <= 1) return [1];
@@ -148,7 +148,7 @@ for (const b of blocks) {
 }
 flushRows();
 
-// The hero studio shot isn't part of the block flow — it closes the page.
+// The hero studio shot isn't part of the block flow - it closes the page.
 const hero = heroImage ? img(heroImage) : null;
 const heroPortrait = hero ? hero.aspect < 1.0 : false;
 
@@ -161,18 +161,18 @@ const allProjects = await getCollection('projects');
 const nextProject = allProjects.find((p) => p.id.replace(/\.json$/, '') === nextSlug);
 const nextName = nextProject?.data.name ?? '';
 ---
-<Layout title={`${name} — Court Granville`} description={framing}>
+<Layout title={`${name} - Court Granville`} description={framing}>
   <Nav />
   <main>
     <article>
-      <!-- Breadcrumb — a way back to the gallery from the top of the page. -->
+      <!-- Breadcrumb - a way back to the gallery from the top of the page. -->
       <Grid class="proj-crumb">
         <nav class="proj-crumb-inner" aria-label="Breadcrumb">
           <a class="crumb label" href="/work/">&larr; All work</a>
         </nav>
       </Grid>
 
-      <!-- 1. The hero interaction — the first thing on every project that has one.
+      <!-- 1. The hero interaction - the first thing on every project that has one.
            The Nuclear Question leads with the live nucleus atom (cursor-reactive,
            U-235/238 fission); product projects lead with their grab-spin GLB. -->
       {slug === 'the-nuclear-question' ? (
@@ -225,7 +225,7 @@ const nextName = nextProject?.data.name ?? '';
         </div>
       </Grid>
 
-      <!-- 3. The written story — kicker on the rail, prose on the body, photos full width. -->
+      <!-- 3. The written story - kicker on the rail, prose on the body, photos full width. -->
       {sections.map((s) => (
         <Grid class="proj-sec">
           {s.label && (
@@ -280,7 +280,7 @@ const nextName = nextProject?.data.name ?? '';
                   src={hero.src}
                   srcset={hero.srcset}
                   sizes={FIG_SIZES}
-                  alt={`${name} — finished`}
+                  alt={`${name} - finished`}
                   loading="lazy"
                   decoding="async"
                   style={`aspect-ratio:${hero.aspect}`}
@@ -306,7 +306,7 @@ const nextName = nextProject?.data.name ?? '';
 <style>
   article { padding-top: calc(var(--nav-h) + var(--space-page-top)); }
 
-  /* ── Breadcrumb — a quiet label-voice link back to the gallery, on the rail. ── */
+  /* ── Breadcrumb - a quiet label-voice link back to the gallery, on the rail. ── */
   :global(.proj-crumb) { margin-bottom: var(--space-block); }
   .proj-crumb-inner { grid-column: 1 / -1; }
   .crumb {
@@ -315,7 +315,7 @@ const nextName = nextProject?.data.name ?? '';
   }
   .crumb:hover { color: var(--accent); }
 
-  /* ── 1. Model stage — full content width, a generous fixed height so the model
+  /* ── 1. Model stage - full content width, a generous fixed height so the model
         reads large. Explicit height (not aspect-ratio) so the canvas drawing
         buffer can't feed back into the box size. Grid roots render inside <Grid>
         and miss this file's scope hash → :global for the container. ── */
@@ -347,7 +347,7 @@ const nextName = nextProject?.data.name ?? '';
     font-size: var(--fs-display-l); line-height: var(--lh-display-l);
     color: var(--text); margin: 0;
   }
-  /* The framing line — upright, not italic (it used to be), a calm subtitle. */
+  /* The framing line - upright, not italic (it used to be), a calm subtitle. */
   .proj-framing {
     font-family: var(--serif); font-weight: 400; font-style: normal;
     font-size: var(--fs-heading-s); line-height: var(--lh-heading-s);
@@ -364,7 +364,7 @@ const nextName = nextProject?.data.name ?? '';
     font-size: var(--fs-body-s); line-height: var(--lh-body-s); color: var(--text);
   }
 
-  /* ── 3. Sections — the homepage's rail-kicker + body-prose rhythm. ── */
+  /* ── 3. Sections - the homepage's rail-kicker + body-prose rhythm. ── */
   :global(.proj-sec) {
     margin-top: var(--space-section);
     row-gap: var(--space-block);
@@ -380,7 +380,7 @@ const nextName = nextProject?.data.name ?? '';
     color: var(--text-quiet); max-width: 60ch; margin: 0;
   }
 
-  /* Pull-quote — Playfair, full ink (it speaks louder than the prose around it),
+  /* Pull-quote - Playfair, full ink (it speaks louder than the prose around it),
      set off by a thin accent rule on the left. Sits in the body track's flow. */
   .proj-quote {
     margin: 4px 0; padding-left: 20px;
@@ -399,32 +399,32 @@ const nextName = nextProject?.data.name ?? '';
     text-transform: uppercase; color: var(--text-quiet);
   }
 
-  /* ── Photographs — no frame, no background. Full content width, stacked rows. ── */
+  /* ── Photographs - no frame, no background. Full content width, stacked rows. ── */
   .proj-figures {
     grid-column: 1 / -1;
     margin-top: var(--space-block);
     display: flex; flex-direction: column; gap: var(--gutter);
   }
-  /* When a section has no prose, the figures are its only body — pull them up to
+  /* When a section has no prose, the figures are its only body - pull them up to
      sit directly under the kicker rather than leaving a block of empty space. */
   .proj-sec-head + .proj-figures { margin-top: 0; }
 
   /* A justified row: each image's flex-grow is its aspect ratio, so columns are
-     proportional to width and every image in the row lands on the SAME height —
+     proportional to width and every image in the row lands on the SAME height -
      no crop, no leftover white space. */
   .fig-row { display: flex; gap: var(--gutter); align-items: flex-start; }
   .fig { margin: 0; flex-basis: 0; min-width: 0; }
   .fig img { width: 100%; height: auto; display: block; }
   .proj-cap { display: block; margin-top: 12px; color: var(--text-quiet); }
 
-  /* A lone portrait would be enormous at full width — sit it left at a measured
+  /* A lone portrait would be enormous at full width - sit it left at a measured
      width. A lone landscape keeps the full width. */
   .fig-row--portrait.fig-row--solo { justify-content: flex-start; }
   .fig-row--portrait.fig-row--solo .fig {
     flex-grow: 0 !important; width: clamp(280px, 42vw, 480px); max-width: 100%;
   }
 
-  /* Mobile — one photograph at a time, each at full width. */
+  /* Mobile - one photograph at a time, each at full width. */
   @media (max-width: 767px) {
     .fig-row { flex-direction: column; }
     .fig-row--portrait.fig-row--solo .fig { width: 100%; }

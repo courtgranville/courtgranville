@@ -2,7 +2,7 @@
  * Type system: Playfair Display + Raleway, four weights.
  *
  * Playfair 700 is loaded because the WebGL hero rasterises "CG" at Bold to
- * sample particle positions — the hero's letterform identity depends on it.
+ * sample particle positions - the hero's letterform identity depends on it.
  * It is not exposed in the editorial type scale (§4 of site-v2-build-spec-rev2);
  * editorial display uses Regular only.
  *

@@ -1,4 +1,4 @@
-// SpinCard — the minimal react-three-fiber island, kept as the canonical
+// SpinCard - the minimal react-three-fiber island, kept as the canonical
 // reference for the R3F + drei + GSAP pattern (see /lab/). Mount with
 // client:visible. The shape: a declarative scene, GSAP via the useGSAP hook for
 // choreography, useFrame for per-frame motion. Copy this when building new 3D

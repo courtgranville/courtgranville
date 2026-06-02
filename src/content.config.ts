@@ -1,4 +1,4 @@
-// Astro content collections — projects. Each project is a JSON file under
+// Astro content collections - projects. Each project is a JSON file under
 // src/content/projects/<slug>.json holding frontmatter + an ordered block
 // array. Block image references are slugs into the per-project image manifest
 // (src/content/projects-images.json), which the project route resolves to
@@ -8,7 +8,7 @@ import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
 
 // Discriminated by `type`. Block layout (column ranges, gutter behaviour)
-// is decided by the rendering component, not the data — the JSON only
+// is decided by the rendering component, not the data - the JSON only
 // declares *what* it is, not *how wide*.
 const blockSchema = z.discriminatedUnion('type', [
   z.object({
@@ -27,8 +27,8 @@ const blockSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('image'),
     imageSlug: z.string(),
-    // field — single image placed in the 3:2 visual field (used by split sections);
-    // wide — Wide track at natural aspect (used inside galleries). (§6.3)
+    // field - single image placed in the 3:2 visual field (used by split sections);
+    // wide - Wide track at natural aspect (used inside galleries). (§6.3)
     variant: z.enum(['field', 'wide']).default('wide'),
     alt: z.string(),
     caption: z.string().optional(),
@@ -57,7 +57,7 @@ const projects = defineCollection({
     discipline: z.string(),
     framing: z.string(),
     // Optional: web/data projects (e.g. The Nuclear Question) have no hero
-    // image — the route renders a text-forward header when this is absent.
+    // image - the route renders a text-forward header when this is absent.
     heroImage: z.string().optional(),
     // Optional external link (e.g. a live site) surfaced in the project header.
     liveUrl: z.string().optional(),
@@ -68,7 +68,7 @@ const projects = defineCollection({
   }),
 });
 
-// Blog — markdown posts. `draft: true` keeps a post out of production builds
+// Blog - markdown posts. `draft: true` keeps a post out of production builds
 // (the route + listing filter on import.meta.env.PROD) while staying visible
 // in dev so the template can be worked on before launch.
 const blog = defineCollection({

@@ -8,23 +8,23 @@
   "spec": {
     "Brief":     "recreate a well-known lamp using only found or recycled materials",
     "Original":  "Joe Colombo, Spider (1965, Oluce) · Compasso d'Oro, 1967",
-    "Made with": "metal · plastics · wood · electronics — sourced from the streets of Madrid"
+    "Made with": "metal · plastics · wood · electronics - sourced from the streets of Madrid"
   },
   "blocks": [
-    { "type": "label", "text": "01 — The Brief" },
+    { "type": "label", "text": "01 - The Brief" },
     {
       "type": "text",
-      "body": "My first product design project at IE University, and a deceptively hard one: take a well-known lamp and build our own version of it — using only materials found or recycled from the streets of Madrid. We chose Joe Colombo's Spider, a 1965 design for Oluce and a winner of the Compasso d'Oro in 1967, and reconfigured it as a desk lamp, fabricated from the ground up in metal, plastics, wood and electronics."
+      "body": "My first product design project at IE University, and a deceptively hard one: take a well-known lamp and build our own version of it - using only materials found or recycled from the streets of Madrid. We chose Joe Colombo's Spider, a 1965 design for Oluce and a winner of the Compasso d'Oro in 1967, and reconfigured it as a desk lamp, fabricated from the ground up in metal, plastics, wood and electronics."
     },
-    { "type": "label", "text": "02 — The Idea" },
+    { "type": "label", "text": "02 - The Idea" },
     {
       "type": "text",
-      "body": "The interest wasn't in copying a lamp — it was in reproducing a precision design object from scrap. Colombo's Spider is an icon: a single fire-painted reflector on a chromed stem, its tilting joint elegant enough to put the lamp in the permanent collections of museums from Milan to Philadelphia. Rebuilding that from whatever Madrid's streets provided meant reverse-engineering its proportions and working out how to fake precision with found parts — a first lesson in looking at an object closely enough to remake it."
+      "body": "The interest wasn't in copying a lamp - it was in reproducing a precision design object from scrap. Colombo's Spider is an icon: a single fire-painted reflector on a chromed stem, its tilting joint elegant enough to put the lamp in the permanent collections of museums from Milan to Philadelphia. Rebuilding that from whatever Madrid's streets provided meant reverse-engineering its proportions and working out how to fake precision with found parts - a first lesson in looking at an object closely enough to remake it."
     },
-    { "type": "label", "text": "03 — Process" },
+    { "type": "label", "text": "03 - Process" },
     {
       "type": "text",
-      "body": "Research and drawings came first — studying the original closely enough to reproduce it from measurement rather than memory. Then a cardboard prototype to check proportion and assembly before committing materials. Then the working build."
+      "body": "Research and drawings came first - studying the original closely enough to reproduce it from measurement rather than memory. Then a cardboard prototype to check proportion and assembly before committing materials. Then the working build."
     },
     {
       "type": "imageGrid",
@@ -37,10 +37,10 @@
       "variant": "wide",
       "alt": "The cardboard prototype, before the final build"
     },
-    { "type": "label", "text": "04 — Resolved" },
+    { "type": "label", "text": "04 - Resolved" },
     {
       "type": "text",
-      "body": "The finished piece is Colombo's form, reproduced from what we could find — a desk lamp that reads as the original at a glance and is, underneath, entirely salvage. It's the first of a recurring theme in my work: building something considered out of materials that were headed for the bin."
+      "body": "The finished piece is Colombo's form, reproduced from what we could find - a desk lamp that reads as the original at a glance and is, underneath, entirely salvage. It's the first of a recurring theme in my work: building something considered out of materials that were headed for the bin."
     },
     {
       "type": "image",

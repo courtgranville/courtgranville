@@ -1,4 +1,4 @@
-// NuclearAtom — the live homepage interaction from thenuclearquestion.com,
+// NuclearAtom - the live homepage interaction from thenuclearquestion.com,
 // re-homed as a self-contained portfolio island for the project page. It wraps
 // the ported canvas-2D NucleusHero (no three.js) with the isotope control, the
 // U-238 shake hint and the link out to the Fission Room.
@@ -9,7 +9,7 @@
 // here it is an outbound link, not a port.
 //
 // Styling lives in the host page (src/pages/work/[slug].astro, global block)
-// and rides the portfolio tokens — the source site's cream surfaces are not
+// and rides the portfolio tokens - the source site's cream surfaces are not
 // reused, per the design system. Stroke ink is theme-aware so the atom flips
 // with the light/dark toggle (mirrors the hero's `theme:change` contract).
 
@@ -26,7 +26,7 @@ const readInk = () =>
     ? INK_DARK
     : INK_LIGHT;
 
-// `compact` (a /work/ gallery cell) shows only the cursor-reactive nucleus — no
+// `compact` (a /work/ gallery cell) shows only the cursor-reactive nucleus - no
 // isotope control, hint or room link. `roomLink` (default true) can be turned off
 // where the link would clutter (e.g. the homepage hero, which has its own copy).
 // `viewportParticles` makes the fission explode across the whole screen while the
@@ -72,7 +72,7 @@ export default function NuclearAtom({ compact = false, roomLink = true, viewport
       >
         {!compact && (
           <>
-            {/* Isotope control — re-styled to the portfolio's ink/accent, not the
+            {/* Isotope control - re-styled to the portfolio's ink/accent, not the
                 source site's cream pill. */}
             <div className="atom-control">
               <span className="atom-control-label label">Isotope</span>

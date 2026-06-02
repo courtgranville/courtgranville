@@ -1,4 +1,4 @@
-// hero-canvas.js — the shared "3D image canvas" for photo cards (Work index,
+// hero-canvas.js - the shared "3D image canvas" for photo cards (Work index,
 // homepage Selected-Work, project headers). The image is shown TRUE: a flat
 // plane with MeshBasicMaterial (no lights, no luminance shift on move), no
 // bevel, no idle motion. 3D is expressed only as a restrained cursor-parallax
@@ -6,7 +6,7 @@
 // field. At rest the card faces the viewer. (§3 of the v3 spec.)
 //
 // The card is `contain`-fit inside the canvas, which fills a fixed-aspect
-// `.field` cell — so portraits letterbox against the field ground, landscapes
+// `.field` cell - so portraits letterbox against the field ground, landscapes
 // nearly fill it; the field itself never reshapes.
 //
 // mountHeroCanvas(canvasEl, opts) → { show(hero), preload(srcs), destroy() }
@@ -83,7 +83,7 @@ export function mountHeroCanvas(canvas, opts = {}) {
     });
   }
 
-  // parallax tilt — only while the pointer is over the field
+  // parallax tilt - only while the pointer is over the field
   const tgt = { x: 0, y: 0 }; let active = false;
   const clamp = (v) => Math.max(-1, Math.min(1, v));
   function onMove(e) {

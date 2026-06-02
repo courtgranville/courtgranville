@@ -1,10 +1,10 @@
 /*
- * Design tokens — the single source of truth for the whole site (v3).
+ * Design tokens - the single source of truth for the whole site (v3).
  *
  * If a value isn't here, it shouldn't be in a component: one grid, one type
  * scale, one label letter-spacing, one section rhythm, one visual field.
  * Type is expressed as ROLES (one size per role), applied identically on every
- * page — that is what makes the pages read as one designed object.
+ * page - that is what makes the pages read as one designed object.
  */
 
 :root {
@@ -16,7 +16,7 @@
   --rule:       rgba(22,22,22,0.10);
   --hairline:   #E5E5E5;
   --accent:     #8E1B0E;
-  /* Nav backdrop — the blurred bar that appears once the hero is scrolled past.
+  /* Nav backdrop - the blurred bar that appears once the hero is scrolled past.
      Tokenised so the dark theme can flip it (Nav's ::before reads this). */
   --nav-backdrop: rgba(255,255,255,0.78);
 
@@ -24,10 +24,10 @@
   --serif: 'Playfair Display', Georgia, serif;
   --sans:  'Raleway', ui-sans-serif, system-ui, sans-serif;
 
-  /* ── Type ROLES — one size per role, used everywhere ─ */
+  /* ── Type ROLES - one size per role, used everywhere ─ */
   /* Every role is fluid and CAPS near the large-screen ceiling (~1600–1920px):
      it grows with the viewport, then settles so line lengths stay editorial on
-     big monitors. Body/small/label grow only slightly on purpose — paragraphs
+     big monitors. Body/small/label grow only slightly on purpose - paragraphs
      are meant to stay small; the display/heading roles carry the scale-up. */
   /* Display L: page statements, project name, about/contact/blog lead */
   --fs-display-l: clamp(36px, 4.6vw, 80px);  --lh-display-l: 1.08;
@@ -35,7 +35,7 @@
   --fs-heading-m: clamp(26px, 3.2vw, 48px);  --lh-heading-m: 1.12;
   /* Heading S: project framing italic, pull quotes */
   --fs-heading-s: clamp(20px, 2.4vw, 32px);  --lh-heading-s: 1.30;
-  /* Body + small + label — fluid but tightly capped (paragraphs stay small) */
+  /* Body + small + label - fluid but tightly capped (paragraphs stay small) */
   --fs-body:    clamp(17px, 1.0vw, 19px);   --lh-body:    1.55;
   --fs-body-s:  clamp(14px, 0.85vw, 16px);  --lh-body-s:  1.55;
   --fs-label:   clamp(12px, 0.72vw, 14px);  --lh-label:   1.33;
@@ -74,10 +74,10 @@
   --nav-h: clamp(72px, 4.2vw, 108px);   /* grows on large/4K screens so the bar isn't tiny */
 }
 
-/* ── Dark theme — opt-in via [data-theme="dark"] on <html> ──────────────────
+/* ── Dark theme - opt-in via [data-theme="dark"] on <html> ──────────────────
    Only the colour tokens flip; almost the whole site reads these custom
    properties, so the editorial body inverts automatically. The contrast is
-   still generative-vs-editorial on one ground, not a different design — just
+   still generative-vs-editorial on one ground, not a different design - just
    dark ink on a pure-black ground with the warm near-white the prototypes
    explored. The single accent stays. The homepage particle hero handles its
    own WebGL colours + dark-only bloom in JS (see ScrollHero.astro), driven by
@@ -88,7 +88,7 @@
    CSS #0E0E0E body therefore sat visibly lighter than the canvas. Matching the
    editorial ground to the canvas keeps one seamless black across the page. */
 :root[data-theme="dark"] {
-  --bg:         #000000;                  /* pure black — matches the ACES-crushed hero canvas */
+  --bg:         #000000;                  /* pure black - matches the ACES-crushed hero canvas */
   --text:       #F4F3EF;                  /* warm near-white (the off-white the prototypes explored) */
   --text-quiet: rgba(244,243,239,0.60);
   --text-faint: rgba(244,243,239,0.38);
@@ -97,7 +97,7 @@
   --field-bg:   #161616;                  /* one step up from --bg */
   --nav-backdrop: rgba(0,0,0,0.78);
   /* --accent kept at #8E1B0E. If it reads muddy on near-black, a brighter
-     dark-mode accent (e.g. #C8412E) is a tunable option — leave light untouched. */
+     dark-mode accent (e.g. #C8412E) is a tunable option - leave light untouched. */
 }
 
 /* Tablet: 8 columns. */

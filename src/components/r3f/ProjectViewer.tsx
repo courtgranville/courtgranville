@@ -1,13 +1,13 @@
-// ProjectViewer — the Selected-Work 3D stage as a React island (R3F + drei +
+// ProjectViewer - the Selected-Work 3D stage as a React island (R3F + drei +
 // GSAP), the "richer, stateful 3D" path from CLAUDE.md. Each project is a
 // textured GLB you grab and spin like a modelling viewport. The editorial chrome
 // (index, name, meta, prev/next) stays static in Carousel.astro and drives this
-// island by dispatching a `cg:project` CustomEvent with the new index — so only
+// island by dispatching a `cg:project` CustomEvent with the new index - so only
 // this stage hydrates, mounted client:visible.
 //
 // Restraint (per the brief): drag-to-rotate is the only interaction. Zoom and
 // pan are disabled so the wheel keeps scrolling the page; there is no idle auto-
-// spin — the hero is the site's single kinetic "wow". Switching projects plays a
+// spin - the hero is the site's single kinetic "wow". Switching projects plays a
 // brief GSAP settle, nothing more. The render loop pauses while off-screen.
 
 import { Canvas, useThree } from '@react-three/fiber';
@@ -24,7 +24,7 @@ type Props = { projects: Project[]; eventName?: string };
 // How much of the frame's tighter axis the object's bounding SPHERE fills.
 // The sphere is rotation-invariant, so framing to fit it guarantees the object
 // can never clip at any spin angle. Per-project `fill` overrides this (e.g.
-// Mantis fills more — it's the largest product). SAFETY keeps a hair of margin.
+// Mantis fills more - it's the largest product). SAFETY keeps a hair of margin.
 const DEFAULT_FILL = 0.92;
 const IMAGE_FILL = 0.86;
 const SAFETY = 0.97;
@@ -98,7 +98,7 @@ function Model({ url, fill }: { url: string; fill: number }) {
   );
 }
 
-// Fallback for projects with no model (e.g. an app design) — the cutout shown
+// Fallback for projects with no model (e.g. an app design) - the cutout shown
 // flat, facing the viewer; orbit is disabled for these.
 function ImagePlane({ src, fill }: { src: string; fill: number }) {
   const tex = useTexture(src);

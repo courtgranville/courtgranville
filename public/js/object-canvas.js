@@ -1,4 +1,4 @@
-// object-canvas.js — a cursor-reactive 3D object built from a transparent
+// object-canvas.js - a cursor-reactive 3D object built from a transparent
 // cutout PNG. The clean photo is the front face; behind it the silhouette is
 // stacked into a few alpha-cut slices and darkened, giving the object a SUBTLE
 // real-depth body rather than a thick slab. At rest it faces front; on hover it
@@ -16,7 +16,7 @@ import * as THREE from 'three';
 
 export function mountObjectCanvas(canvas, opts = {}) {
   const LAYERS    = opts.layers   ?? 22;     // depth slices behind the front face
-  const DEPTH     = opts.depth    ?? 0.06;   // total thickness (object height = 1) — subtle
+  const DEPTH     = opts.depth    ?? 0.06;   // total thickness (object height = 1) - subtle
   const BACK_DARK = opts.backDark ?? 0.55;   // brightness of the rearmost slice
   const REST_TILT = opts.restTilt ?? 0.06;   // tiny resting lean → a hint of depth
   const TILT      = opts.tilt     ?? 0.32;   // cursor parallax intensity (radians)
@@ -38,7 +38,7 @@ export function mountObjectCanvas(canvas, opts = {}) {
   scene.add(group);
 
   // Front face at +DEPTH/2 (the clean photo, full brightness), slices receding
-  // to -DEPTH/2 and darkening — the body sits BEHIND the photo. Pivot centred.
+  // to -DEPTH/2 and darkening - the body sits BEHIND the photo. Pivot centred.
   const geo = new THREE.PlaneGeometry(1, 1);
   const meshes = [];
   for (let i = 0; i < LAYERS; i++) {
@@ -148,7 +148,7 @@ export function mountObjectCanvas(canvas, opts = {}) {
   const ro = new ResizeObserver(resize);
   ro.observe(canvas);
 
-  // Cursor parallax — gated to the canvas bounds so it only reacts on hover.
+  // Cursor parallax - gated to the canvas bounds so it only reacts on hover.
   let active = false;
   const tgt = { x: 0, y: 0 };
   function onMove(e) {

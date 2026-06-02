@@ -123,7 +123,7 @@ async function processOne(srcAbs, outDir, slug, priority) {
   const meta = await base.metadata();
   // metadata() reports PRE-rotation dimensions. EXIF orientation 5–8 rotates
   // the displayed image 90°, so swap to record the TRUE (post-rotation) aspect
-  // — otherwise a portrait shot stored landscape-with-flag yields a landscape
+  // - otherwise a portrait shot stored landscape-with-flag yields a landscape
   // aspect here while the emitted webp (which is rotated) is portrait.
   let trueW = meta.width, trueH = meta.height;
   if (meta.orientation && meta.orientation >= 5) { [trueW, trueH] = [trueH, trueW]; }

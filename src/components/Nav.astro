@@ -1,7 +1,7 @@
 ---
 // Persistent site navigation. Ported verbatim from prototypes/hero/index.html
-// — fade-in after hero load-in, scroll-backdrop transition, underline-wipe
-// hover, brand-as-home anchor — only the markup moves into a real component.
+// - fade-in after hero load-in, scroll-backdrop transition, underline-wipe
+// hover, brand-as-home anchor - only the markup moves into a real component.
 //
 // Behaviours (the in/scrolled logic itself lives in Layout.astro):
 //   - Fades in (`.in`) when the hero's load-in completes. On the homepage that
@@ -9,7 +9,7 @@
 //     without a hero stage fade the nav in immediately (see Layout.astro).
 //   - Adds `.scrolled` once we are past the hero, from the homepage's Lenis
 //     scroll listener (Layout.astro).
-//   - Brand is the home link — clicking smooth-scrolls to top.
+//   - Brand is the home link - clicking smooth-scrolls to top.
 //   - The link matching the current section carries aria-current="page"
 //     (§6.7) with a held underline, so the visitor always knows where they are.
 
@@ -25,12 +25,12 @@ const links = [
 const isCurrent = (href: string) => !href.includes('#') && (path === href || path.startsWith(href));
 ---
 <nav class="site-nav" aria-label="Primary">
-  <a class="brand" href="/" data-scroll-top={isHome ? '' : undefined} aria-label="Court Granville — home">Court Granville</a>
+  <a class="brand" href="/" data-scroll-top={isHome ? '' : undefined} aria-label="Court Granville - home">Court Granville</a>
   <div class="nav-links">
     {links.map((l) => (
       <a class="nav-link" href={l.href} aria-current={isCurrent(l.href) ? 'page' : undefined}>{l.label}</a>
     ))}
-    <!-- Theme switch — sits to the right of Contact, sharing the nav-links flex
+    <!-- Theme switch - sits to the right of Contact, sharing the nav-links flex
          gap. NOT a .nav-link (so it skips the underline-wipe / active-underline).
          A minimal half-filled "contrast" disc, not a sun/moon icon. The aria
          state + the half-disc flip are synced to the live theme by the script. -->
@@ -76,7 +76,7 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
   .site-nav.scrolled::before { opacity: 1; }
   .site-nav.scrolled { border-bottom: 1px solid var(--rule); }
 
-  /* Wordmark — the full "Court Granville" name in Playfair, the brand at top-left
+  /* Wordmark - the full "Court Granville" name in Playfair, the brand at top-left
      (the particle hero still carries the "CG" glyph). Sized to sit comfortably in
      the nav height and scale on large/4K screens; nowrap so it never breaks line. */
   .brand {
@@ -128,11 +128,11 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
   .nav-link:hover { color: var(--accent); opacity: 1; }
   .nav-link:hover::after { transform: scaleX(1); }
 
-  /* Active page — full opacity with a held underline (§6.7). */
+  /* Active page - full opacity with a held underline (§6.7). */
   .nav-link[aria-current='page'] { opacity: 1; }
   .nav-link[aria-current='page']::after { transform: scaleX(1); }
 
-  /* Theme toggle — a real button, no link chrome. Padding matches the nav-link
+  /* Theme toggle - a real button, no link chrome. Padding matches the nav-link
      block so the row heights agree; line-height:0 + inline-flex put the SVG on
      the labels' optical line. Hover follows the nav idiom (colour shift to
      accent), but no underline wipe. */
@@ -149,7 +149,7 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
     transition: color var(--dur-hover) var(--ease-out), opacity var(--dur-hover) var(--ease-out);
   }
   .theme-toggle:hover { color: var(--accent); opacity: 1; }
-  /* The half-disc flips 180° to mark the switch — understated, sub-second. */
+  /* The half-disc flips 180° to mark the switch - understated, sub-second. */
   .theme-glyph { transition: transform var(--dur-hover) var(--ease-out); }
   .theme-toggle[aria-pressed='true'] .theme-glyph { transform: rotate(180deg); }
 
@@ -165,7 +165,7 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
   // The head script (Layout.astro) has already set <html data-theme> from the
   // stored preference before first paint; here we only wire the button. The
   // `theme:change` CustomEvent is the contract with the hero (ScrollHero.astro)
-  // — mirrors the existing `hero:loaded` pattern, keeps the two decoupled.
+  // - mirrors the existing `hero:loaded` pattern, keeps the two decoupled.
   const root = document.documentElement;
   const btn  = document.querySelector('.theme-toggle');
 

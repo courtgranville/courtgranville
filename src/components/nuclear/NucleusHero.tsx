@@ -27,7 +27,7 @@ interface NucleusHeroProps {
    * the portfolio passes a theme-aware value so the atom flips with the page. */
   ink?: string;
   /** When true, the canvas is sized to the full viewport (the host fixes it over
-   * the page) and the nucleus form is drawn at — and tracks — the container's
+   * the page) and the nucleus form is drawn at - and tracks - the container's
    * on-screen box, so the fission particles explode across the whole screen while
    * the form stays put. Used by the project-page hero. */
   viewportParticles?: boolean;
@@ -92,7 +92,7 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       readFormRegion();
     };
-    // Resolve the form region (where/how big the nucleus is drawn, in canvas px —
+    // Resolve the form region (where/how big the nucleus is drawn, in canvas px -
     // which equal viewport px, since every form-region canvas sits at viewport 0,0).
     //   • viewportParticles → the container's live on-screen box (tracks scroll).
     //   • --form-* CSS vars  → an explicit offset region (the homepage).
@@ -324,7 +324,7 @@ interface DrawFrameArgs {
 
 function drawFrame(a: DrawFrameArgs): void {
   const { ctx, W, H, t, dt, ptr, smoothSpeed, polylines, bbox, fission, reduced } = a;
-  // The nucleus is drawn at the form centre with the form radius as its field —
+  // The nucleus is drawn at the form centre with the form radius as its field -
   // small and offset on the homepage's full-screen canvas, the whole canvas
   // otherwise. The fission particles (below) are not bounded by this, so they
   // fly across the entire canvas.

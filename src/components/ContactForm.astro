@@ -1,10 +1,10 @@
 ---
-// ContactForm — a Web3Forms form that posts to their API and forwards to Court's
+// ContactForm - a Web3Forms form that posts to their API and forwards to Court's
 // inbox, so the email address never sits in the HTML for a harvester to scrape.
 // Submits async (no page reload) with an inline status line; the plain action/
 // method is the no-JS fallback (Web3Forms shows its own success page). The honeypot
 // (`botcheck`) is invisible to people; Web3Forms rejects any submission that ticks it.
-// Styled to the site system — bare fields with hairline underlines, Raleway labels,
+// Styled to the site system - bare fields with hairline underlines, Raleway labels,
 // a textlink-voice "Send →". Reusable (e.g. on /contact later).
 ---
 <form id="contact-form" class="cf" action="https://api.web3forms.com/submit" method="POST">
@@ -65,12 +65,12 @@
     border-bottom-color: var(--accent);
   }
 
-  /* Honeypot — visually and structurally hidden from people. */
+  /* Honeypot - visually and structurally hidden from people. */
   .cf-botcheck { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 
   .cf-foot { display: flex; align-items: baseline; gap: 24px; flex-wrap: wrap; margin-top: 4px; }
 
-  /* Send — textlink voice, accent underline-wipe on hover. */
+  /* Send - textlink voice, accent underline-wipe on hover. */
   .cf-send {
     font-family: var(--sans);
     font-weight: 500;
@@ -120,7 +120,7 @@
         const json = await res.json();
         if (json.success) {
           contactForm.reset();
-          setResult('Thanks — your message is on its way.');
+          setResult('Thanks - your message is on its way.');
         } else {
           setResult('Something went wrong. Please try again.', true);
         }

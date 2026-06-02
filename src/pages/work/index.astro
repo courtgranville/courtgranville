@@ -1,5 +1,5 @@
 ---
-// Work — the project index, rebuilt as a gallery of the products themselves:
+// Work - the project index, rebuilt as a gallery of the products themselves:
 // each project is its own grab-and-spin textured GLB on the plain white ground,
 // laid out four-up on the canonical grid, with a "View project" link beneath.
 // The 3D is one React island (WorkGallery) mounted client:visible, so the page
@@ -30,7 +30,7 @@ const PROJECTS = [
   { name: 'Wabi Sabi',               year: 2022, discipline: 'Product Design',           slug: 'universal-phone-case' },
 ].map((p) => ({ ...p, ...MODELS[p.slug] }));
 ---
-<Layout title="Work — Court Granville" description="Selected projects by Court Granville — each presented as the product itself, in 3D.">
+<Layout title="Work - Court Granville" description="Selected projects by Court Granville - each presented as the product itself, in 3D.">
   <Nav />
   <main class="work-main">
     <Grid as="section" class="work" aria-label="Selected work">
@@ -59,14 +59,14 @@ const PROJECTS = [
   /* The island wrapper is a passthrough so .wg-grid lays out directly inside
      .work-gallery. Column count ramps with the viewport so the models stay
      dominant: 1-up on phones, then 2 / 3, reaching 4-up only on very wide /
-     4K displays — where the generous gaps spread the models across the screen.
+     4K displays - where the generous gaps spread the models across the screen.
      Both the gaps and (below) the type scale with vw, so nothing is fixed. */
   .work-gallery > astro-island { display: contents; }
   .wg-grid {
     display: grid;
     grid-template-columns: 1fr;
     /* Generous, viewport-scaled gaps so neighbouring models never crowd each
-       other — the row gap stays larger than the column gap at every size. */
+       other - the row gap stays larger than the column gap at every size. */
     gap: clamp(64px, 9vh, 160px) clamp(32px, 3.4vw, 104px);
   }
   @media (min-width: 600px)  { .wg-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -76,7 +76,7 @@ const PROJECTS = [
   .wg-cell { display: flex; flex-direction: column; }
 
   /* The stage: a tall box of plain ground, nothing around the object. The canvas
-     is alpha so the page white shows through — no frame, no card. It fills the
+     is alpha so the page white shows through - no frame, no card. It fills the
      column width and stands taller than wide, giving elongated products real
      vertical room so they read large yet never touch the edges (the fit binds on
      the narrower axis, leaving safe headroom top and bottom at any spin angle). */
@@ -90,7 +90,7 @@ const PROJECTS = [
   /* The atom cell (The Nuclear Question) is cursor-reactive, not grab-to-rotate. */
   .wg-stage--atom canvas { cursor: default; }
 
-  /* Caption — no rule, just air. Hierarchy is real now: a serif title, clearly
+  /* Caption - no rule, just air. Hierarchy is real now: a serif title, clearly
      larger, over quiet caps metadata and a fainter link. All three sizes scale
      with the viewport (vw clamps) so the caption grows with the models. */
   .wg-cap {

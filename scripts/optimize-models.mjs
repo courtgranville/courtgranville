@@ -1,14 +1,14 @@
 // Optimise the textured project GLBs for the web. For each model it:
 //   • resizes PBR textures to ≤2048px and re-encodes them as WebP
-//     (decoded natively by three via EXT_texture_webp — no extra loader),
-//   • meshopt-compresses geometry (EXT_meshopt_compression — decoded by drei's
+//     (decoded natively by three via EXT_texture_webp - no extra loader),
+//   • meshopt-compresses geometry (EXT_meshopt_compression - decoded by drei's
 //     bundled MeshoptDecoder, so NO runtime CDN dependency),
 //   • preserves geometry exactly (no --simplify decimation), so product shapes
 //     stay faithful.
 //
-// Source : assets/models/<slug>.glb  — raw Meshy textured exports (git-ignored,
+// Source : assets/models/<slug>.glb  - raw Meshy textured exports (git-ignored,
 //          ~30–40 MB each, kept locally as the re-optimisation source).
-// Output : public/models/<slug>.glb  — optimised + served + committed.
+// Output : public/models/<slug>.glb  - optimised + served + committed.
 //
 // Re-run after dropping a new textured export into assets/models:
 //   node scripts/optimize-models.mjs
@@ -24,7 +24,7 @@ const BIN = join('node_modules', '.bin', 'gltf-transform');
 const mb = (p) => (statSync(p).size / 1048576).toFixed(1);
 
 if (!existsSync(SRC)) {
-  console.error(`Missing ${SRC}/ — put the textured source GLBs there first.`);
+  console.error(`Missing ${SRC}/ - put the textured source GLBs there first.`);
   process.exit(1);
 }
 mkdirSync(OUT, { recursive: true });

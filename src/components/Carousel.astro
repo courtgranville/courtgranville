@@ -1,7 +1,7 @@
 ---
-// Selected-Work carousel — the homepage showcase. Each project is a textured GLB
+// Selected-Work carousel - the homepage showcase. Each project is a textured GLB
 // shown as a real 3D object you grab and spin (src/components/r3f/ProjectViewer
-// .tsx — R3F + drei + GSAP, hydrated client:visible). The editorial chrome
+// .tsx - R3F + drei + GSAP, hydrated client:visible). The editorial chrome
 // (index, name, meta, prev/next) stays static here and drives the island by
 // dispatching a `cg:project` CustomEvent with the new index. YourPAL has no model
 // (app design) and falls back to a flat cutout. Distinct from the /work/ index (a
@@ -29,7 +29,7 @@ const clientData = PROJECTS.map((p) => ({
 const N = PROJECTS.length;
 ---
 <Grid as="section" class="carousel" aria-labelledby="carousel-h">
-  <span class="label c-kicker reveal">01 &mdash; Selected Work</span>
+  <span class="label c-kicker reveal">01 - Selected Work</span>
   <h2 id="carousel-h" class="sr-only">Selected work</h2>
 
   <div class="c-text reveal" data-stagger="1">
@@ -76,7 +76,7 @@ const N = PROJECTS.length;
   }
   .c-btn:hover { border-color: var(--accent); color: var(--accent); }
 
-  /* Borderless stage — the object floats on the page ground, no field frame.
+  /* Borderless stage - the object floats on the page ground, no field frame.
      The R3F island mounts inside; Astro wraps it in <astro-island>, so that
      wrapper must fill the stage for the canvas's 100% height to resolve. */
   .c-stage {

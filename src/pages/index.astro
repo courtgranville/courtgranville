@@ -4,7 +4,7 @@
 // and re-forms into each product's REAL textured model (grab-and-spin), one after
 // the next, closing on a particle-text "Selected Work" divider. Below the narrative,
 // in normal flow: an "All work" link, the approach band (the "translation layer"
-// statement), then the Writing band — opaque, occluding the sticky canvas above.
+// statement), then the Writing band - opaque, occluding the sticky canvas above.
 
 import Layout from '../components/Layout.astro';
 import Nav from '../components/Nav.astro';
@@ -13,36 +13,36 @@ import ContactForm from '../components/ContactForm.astro';
 import Footer from '../components/Footer.astro';
 import Grid from '../components/Grid.astro';
 
-// What I do — disciplines in the deck's order (lead phrase + description each).
+// What I do - disciplines in the deck's order (lead phrase + description each).
 const disciplines: [string, string][] = [
-  ['Data Visualisation & Information Design', 'Making complex data navigable for people who aren’t specialists. Turning dense datasets and technical literature into visual systems you can read, explore and trust — drawn in Illustrator, then built interactive in code.'],
-  ['Web Design & AI-assisted Development', 'Designing and building interactive sites end to end — HTML, CSS and JavaScript, with AI as a collaborator rather than a crutch. The approach behind both this site and thenuclearquestion.com.'],
-  ['UX / UI & Interaction Design', 'Apps and interfaces built around how people actually move through them. User journeys, flows, wireframes and prototyping in Figma — from a productivity app to interactive data tools.'],
-  ['Product & Industrial Design', 'Where I trained, and still how I think. Physical objects from lamps to speaker enclosures — modelled in Rhino and Blender, then made real with CNC machining, 3D printing and hands-on fabrication.'],
-  ['Brand & Communication Strategy', 'The professional thread: positioning, narrative, market research and paid media, from brand-strategy work at Big Fish and others. The same instinct — shaping how something is understood — from a different angle.'],
+  ['Data Visualisation & Information Design', 'Making complex data navigable for people who aren’t specialists. Turning dense datasets and technical literature into visual systems you can read, explore and trust - drawn in Illustrator, then built interactive in code.'],
+  ['Web Design & AI-assisted Development', 'Designing and building interactive sites end to end - HTML, CSS and JavaScript, with AI as a collaborator rather than a crutch. The approach behind both this site and thenuclearquestion.com.'],
+  ['UX / UI & Interaction Design', 'Apps and interfaces built around how people actually move through them. User journeys, flows, wireframes and prototyping in Figma - from a productivity app to interactive data tools.'],
+  ['Product & Industrial Design', 'Where I trained, and still how I think. Physical objects from lamps to speaker enclosures - modelled in Rhino and Blender, then made real with CNC machining, 3D printing and hands-on fabrication.'],
+  ['Brand & Communication Strategy', 'The professional thread: positioning, narrative, market research and paid media, from brand-strategy work at Big Fish and others. The same instinct - shaping how something is understood - from a different angle.'],
 ];
 
-// Approach — four principles (term + line).
+// Approach - four principles (term + line).
 const principles: [string, string][] = [
   ['Research first', 'Understand the system before designing for it.'],
-  ['Build to learn', 'Prototype early with whatever the work needs — CNC, 3D printer, Figma, AI.'],
+  ['Build to learn', 'Prototype early with whatever the work needs - CNC, 3D printer, Figma, AI.'],
   ['Translate, don’t decorate', 'Make the technical legible, not just pretty.'],
   ['Add meaning, not clutter', 'Improve people’s lives rather than adding to them.'],
 ];
 ---
 <Layout
-  title="Court Granville — Multidisciplinary Designer"
-  description="Court Granville is a multidisciplinary designer working across product, interaction, data visualisation and the web — translating complex, contested subjects into things people can understand and use. London & Madrid."
+  title="Court Granville - Multidisciplinary Designer"
+  description="Court Granville is a multidisciplinary designer working across product, interaction, data visualisation and the web - translating complex, contested subjects into things people can understand and use. London & Madrid."
 >
   <Nav />
   <main>
-    <!-- Screen 1 onward — the scroll-driven particle narrative: CG hero (carrying the
+    <!-- Screen 1 onward - the scroll-driven particle narrative: CG hero (carrying the
          name + lead as the page h1) → the four featured products (each building from
          particles into its textured model) → a dispersal that hands off to the
          editorial body below. -->
     <ScrollHero />
 
-    <!-- Below the narrative — opaque, occludes the sticky canvas as it scrolls up.
+    <!-- Below the narrative - opaque, occludes the sticky canvas as it scrolls up.
          The identity unfolds across short, titled sections (kicker + title on the
          rail, content on the body), closing with the contact form. -->
     <div class="hp-below">
@@ -50,14 +50,14 @@ const principles: [string, string][] = [
         <a class="textlink hp-allwork reveal" href="/work/">All work &rarr;</a>
       </Grid>
 
-      <!-- In short (About) — the dispersal hands straight into this. -->
+      <!-- In short (About) - the dispersal hands straight into this. -->
       <Grid as="section" id="about" class="hp-sec" aria-label="About">
         <div class="hp-sec-head t-rail reveal">
           <span class="label hp-sec-kicker">About</span>
           <h2 class="hp-sec-title">In short.</h2>
         </div>
         <div class="hp-sec-body t-body reveal" data-stagger="1">
-          <p class="hp-prose">Curiosity about how things and systems work drives most of what I do. My instinct is technological &mdash; I reach for whatever lets me build solutions, from a CNC machine and a 3D printer to Figma and code &mdash; and I&rsquo;m as comfortable in the workshop as in the browser. Across every discipline, the aim is the same: take something complicated and make it make sense, and make it well.</p>
+          <p class="hp-prose">Curiosity about how things and systems work drives most of what I do. My instinct is technological - I reach for whatever lets me build solutions, from a CNC machine and a 3D printer to Figma and code - and I&rsquo;m as comfortable in the workshop as in the browser. Across every discipline, the aim is the same: take something complicated and make it make sense, and make it well.</p>
         </div>
       </Grid>
 
@@ -68,7 +68,7 @@ const principles: [string, string][] = [
           <h2 class="hp-sec-title">What I do.</h2>
         </div>
         <div class="hp-sec-body t-body reveal" data-stagger="1">
-          <p class="hp-lead">I work across disciplines rather than inside one. The common thread is a hands-on, technological approach &mdash; reaching for whatever tool builds the idea best.</p>
+          <p class="hp-lead">I work across disciplines rather than inside one. The common thread is a hands-on, technological approach - reaching for whatever tool builds the idea best.</p>
           <div class="hp-disciplines">
             {disciplines.map(([h, p]) => (
               <div class="hp-disc">
@@ -87,7 +87,7 @@ const principles: [string, string][] = [
           <h2 class="hp-sec-title">Approach.</h2>
         </div>
         <div class="hp-sec-body t-body reveal" data-stagger="1">
-          <p class="hp-lead">I start by understanding the thing itself &mdash; the system, the problem, how it works &mdash; before designing anything around it. Research first, opinions second. From there I dive in headfirst, reaching for whatever technology the problem demands: a CNC router, a 3D printer, Figma, an AI coding agent. I&rsquo;d rather build a rough prototype and learn from it than theorise, and a tool I&rsquo;ve never touched is a reason to start, not a reason to stop.</p>
+          <p class="hp-lead">I start by understanding the thing itself - the system, the problem, how it works - before designing anything around it. Research first, opinions second. From there I dive in headfirst, reaching for whatever technology the problem demands: a CNC router, a 3D printer, Figma, an AI coding agent. I&rsquo;d rather build a rough prototype and learn from it than theorise, and a tool I&rsquo;ve never touched is a reason to start, not a reason to stop.</p>
           <dl class="hp-principles">
             {principles.map(([t, d]) => (
               <div class="hp-principle">
@@ -106,7 +106,7 @@ const principles: [string, string][] = [
           <h2 class="hp-sec-title">Beginnings.</h2>
         </div>
         <div class="hp-sec-body t-body reveal" data-stagger="1">
-          <p class="hp-prose">I didn&rsquo;t arrive at design the usual way. I studied History, Art History and Maths, spent a foundation year at the City &amp; Guilds of London Art School, and only then found product design at IE University in Madrid. That detour is the point: it taught me to see design as something that sits inside the world &mdash; history, systems, people &mdash; rather than floating above it. Somewhere along the way, an interest in technology and AI turned a product designer into a multidisciplinary one.</p>
+          <p class="hp-prose">I didn&rsquo;t arrive at design the usual way. I studied History, Art History and Maths, spent a foundation year at the City &amp; Guilds of London Art School, and only then found product design at IE University in Madrid. That detour is the point: it taught me to see design as something that sits inside the world - history, systems, people - rather than floating above it. Somewhere along the way, an interest in technology and AI turned a product designer into a multidisciplinary one.</p>
         </div>
       </Grid>
 
@@ -117,7 +117,7 @@ const principles: [string, string][] = [
           <h2 class="hp-sec-title">Writing.</h2>
         </div>
         <div class="hp-sec-body t-body reveal" data-stagger="1">
-          <p class="hp-prose">Alongside design, I write about technology, communication and how complex subjects reach a wider audience &mdash; what makes a message clear, credible and honest. It started with my thesis on nuclear energy and is turning into something ongoing.</p>
+          <p class="hp-prose">Alongside design, I write about technology, communication and how complex subjects reach a wider audience - what makes a message clear, credible and honest. It started with my thesis on nuclear energy and is turning into something ongoing.</p>
           <a class="textlink hp-prose-link" href="/blog/">Read the writing &rarr;</a>
         </div>
       </Grid>
@@ -129,7 +129,7 @@ const principles: [string, string][] = [
           <h2 class="hp-sec-title">Colophon.</h2>
         </div>
         <div class="hp-sec-body t-body reveal" data-stagger="1">
-          <p class="hp-prose">This site was designed and built by me, with AI as a collaborator rather than a crutch. It&rsquo;s built with Astro &mdash; component by component, no template and no page builder &mdash; its WebGL hero and 3D work hand-written in three.js, the layout and interaction iterated through Claude, version-managed on GitHub and deployed on Cloudflare Pages. The images are my own work, served at full resolution.</p>
+          <p class="hp-prose">This site was designed and built by me, with AI as a collaborator rather than a crutch. It&rsquo;s built with Astro - component by component, no template and no page builder - its WebGL hero and 3D work hand-written in three.js, the layout and interaction iterated through Claude, version-managed on GitHub and deployed on Cloudflare Pages. The images are my own work, served at full resolution.</p>
           <p class="hp-prose">I built it this way on purpose. AI has lowered the barrier for designers working close to technology, and this site is one small proof of it: hand-built rather than dropped into a template, every decision still mine. That&rsquo;s exactly the point I&rsquo;d want a portfolio to make.</p>
         </div>
       </Grid>
@@ -159,11 +159,11 @@ const principles: [string, string][] = [
     background: var(--bg);
   }
 
-  /* "All work" — a quiet affordance straight after the Selected-Work narrative. */
+  /* "All work" - a quiet affordance straight after the Selected-Work narrative. */
   :global(.hp-allwork-row) { padding-block: clamp(28px, 5vh, 56px); }
   .hp-allwork { grid-column: 1 / -1; justify-self: start; }
 
-  /* ── Titled sections — kicker + title on t-rail, content on t-body, hairline-
+  /* ── Titled sections - kicker + title on t-rail, content on t-body, hairline-
         separated. Mirrors the About page's .ab-sec rhythm. Grid roots render inside
         <Grid> and miss this file's scope hash → :global for the section itself. ── */
   :global(.hp-sec) {
@@ -205,7 +205,7 @@ const principles: [string, string][] = [
     color: var(--text-quiet); margin: 0; max-width: 58ch;
   }
 
-  /* Approach — four principles */
+  /* Approach - four principles */
   .hp-principles { margin: 0; display: flex; flex-direction: column; gap: 18px; }
   .hp-principle { display: flex; flex-direction: column; gap: 4px; }
   .hp-principle-t {
@@ -220,7 +220,7 @@ const principles: [string, string][] = [
 
   /* Contact closes the page with a little more breathing room below the form. */
   :global(.hp-contact) { padding-bottom: clamp(72px, 14vh, 160px); }
-  /* Download CV — secondary action in label voice, below the form. */
+  /* Download CV - secondary action in label voice, below the form. */
   .hp-cv {
     display: inline-block; margin-top: clamp(24px, 3.2vh, 36px);
     color: var(--text-quiet); padding-bottom: 2px; border-bottom: 1px solid var(--rule);

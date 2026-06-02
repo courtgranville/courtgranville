@@ -1,11 +1,11 @@
-// Per-project 3D model + resting framing — the single source of truth shared by
+// Per-project 3D model + resting framing - the single source of truth shared by
 // the /work/ gallery (WorkGallery) and the individual project pages (the model
 // that now opens every project page). Tuning a model's pose happens here, once.
 //
 // `fill`   = how much of the frame the bounding sphere fills (≤1 → never clips).
 // `viewRY` / `viewRX` = the resting yaw / pitch the stage opens on.
 // Keyed by project slug. Projects absent here have no model (e.g. The Nuclear
-// Question — web/data work) and fall back to a text-forward header.
+// Question - web/data work) and fall back to a text-forward header.
 
 export interface ModelFraming {
   model: string;
@@ -15,7 +15,7 @@ export interface ModelFraming {
 }
 
 export const MODELS: Record<string, ModelFraming> = {
-  // The Nuclear Question has no GLB here — it is shown as the live nucleus atom
+  // The Nuclear Question has no GLB here - it is shown as the live nucleus atom
   // (NuclearAtom) on its project page and in the /work/ gallery, and as a
   // particle beat in the homepage ScrollHero. So it is intentionally absent.
   'mantis':               { model: '/models/mantis.glb',     fill: 0.9,  viewRY: 0.0,  viewRX: 0.28 },

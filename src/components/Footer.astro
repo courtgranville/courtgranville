@@ -1,5 +1,5 @@
 ---
-// Closing band. "Get in touch" is the surface (→ the homepage contact form) — no
+// Closing band. "Get in touch" is the surface (→ the homepage contact form) - no
 // raw email sits in the HTML for a harvester. London/Madrid coordinates, a live
 // London clock beside the availability status, then the motto + copyright. All caps
 // run through the .label / Raleway 500 / 0.22em system so the footer reads as one
@@ -10,13 +10,13 @@
     <div class="footer-contact reveal">
       <span class="label">Get in touch</span>
       <a class="footer-reach" href="/#contact">Drop me a line &rarr;</a>
-      <p class="footer-role">Court Granville &mdash; Multidisciplinary Designer</p>
+      <p class="footer-role">Court Granville - Multidisciplinary Designer</p>
     </div>
 
     <dl class="footer-locale">
       <div><dt>London</dt><dd>51.5074&deg; N, 0.1278&deg; W</dd></div>
       <div><dt>Madrid</dt><dd>40.4168&deg; N, 3.7038&deg; W</dd></div>
-      <div><dt>London time</dt><dd><time id="footer-clock">&mdash;&mdash;</time></dd></div>
+      <div><dt>London time</dt><dd><time id="footer-clock">--</time></dd></div>
       <div><dt>Status</dt><dd>Open to work</dd></div>
     </dl>
 
@@ -57,7 +57,7 @@
     color: var(--text-quiet); margin: 14px 0 0;
   }
 
-  /* Locale — London / Madrid coordinates, live London clock, status. */
+  /* Locale - London / Madrid coordinates, live London clock, status. */
   .footer-locale {
     grid-area: locale;
     margin: 0;
@@ -116,7 +116,7 @@
 </style>
 
 <script>
-  // Live London clock — updates the footer time every 30s.
+  // Live London clock - updates the footer time every 30s.
   const clockEl = document.getElementById('footer-clock');
   if (clockEl) {
     const fmt = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' });

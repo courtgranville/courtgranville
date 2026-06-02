@@ -7,34 +7,34 @@
   "group": true,
   "spec": {
     "Brief":  "design an app that helps students work better",
-    "Tools":  "Figma — wireframes, flows, prototype",
+    "Tools":  "Figma - wireframes, flows, prototype",
     "Status": "wireframes, user flows and a functional Figma mockup"
   },
   "blocks": [
-    { "type": "label", "text": "01 — The Problem" },
+    { "type": "label", "text": "01 - The Problem" },
     {
       "type": "text",
-      "body": "YourPAL is a productivity app built from the ground up around three problems students know well: procrastination, burnout and bad timekeeping. The concept is an AI-driven personal assistant that learns how you work — pinpointing your peak productivity hours and building bespoke schedules around them — and goes beyond task management to track wellness and surface insight into how you actually spend your time."
+      "body": "YourPAL is a productivity app built from the ground up around three problems students know well: procrastination, burnout and bad timekeeping. The concept is an AI-driven personal assistant that learns how you work - pinpointing your peak productivity hours and building bespoke schedules around them - and goes beyond task management to track wellness and surface insight into how you actually spend your time."
     },
-    { "type": "label", "text": "02 — Approach" },
+    { "type": "label", "text": "02 - Approach" },
     {
       "type": "text",
-      "body": "This was my introduction to Figma and to app design, and as much an exercise in user journey and mapping as in interface design. The organising question was temporal: how does a student move through the app over a day, a week, a term? I worked outward from those journeys — flows first, then screens — so the interface followed the behaviour rather than the other way round."
+      "body": "This was my introduction to Figma and to app design, and as much an exercise in user journey and mapping as in interface design. The organising question was temporal: how does a student move through the app over a day, a week, a term? I worked outward from those journeys - flows first, then screens - so the interface followed the behaviour rather than the other way round."
     },
     {
       "type": "imageGrid",
       "imageSlugs": ["01-process-1", "02-process-2", "03-process-3"],
-      "alt": "Iteration shots — flows and screen drafts"
+      "alt": "Iteration shots - flows and screen drafts"
     },
-    { "type": "label", "text": "03 — Resolved" },
+    { "type": "label", "text": "03 - Resolved" },
     {
       "type": "text",
-      "body": "The outcome is a complete set of wireframes and user flows and a functional Figma mockup — the dashboard, the schedule and the wellness view — the foundation an iterative build would refine. Not a shipped app, but a fully reasoned one."
+      "body": "The outcome is a complete set of wireframes and user flows and a functional Figma mockup - the dashboard, the schedule and the wellness view - the foundation an iterative build would refine. Not a shipped app, but a fully reasoned one."
     },
     {
       "type": "imageGrid",
       "imageSlugs": ["05-final-1", "06-final-2", "07-final-3"],
-      "alt": "Key screens — the dashboard, the schedule, the wellness view"
+      "alt": "Key screens - the dashboard, the schedule, the wellness view"
     }
   ]
 }

@@ -12,36 +12,36 @@
     "Made with":   "CNC'd solid wood, hand-finished · 3D-printed and machined internals"
   },
   "blocks": [
-    { "type": "label", "text": "01 — The Brief" },
+    { "type": "label", "text": "01 - The Brief" },
     {
       "type": "text",
-      "body": "Wave came out of an unusual group brief: ship ten different deliverables a week, for ten weeks. The deliverables compounded — each week built on the last — so the final object wasn't designed up front but accumulated, the culmination of a semester's range of work across electronics, woodworking, audio and product design."
+      "body": "Wave came out of an unusual group brief: ship ten different deliverables a week, for ten weeks. The deliverables compounded - each week built on the last - so the final object wasn't designed up front but accumulated, the culmination of a semester's range of work across electronics, woodworking, audio and product design."
     },
-    { "type": "label", "text": "02 — Process" },
+    { "type": "label", "text": "02 - Process" },
     {
       "type": "text",
-      "body": "Most of the semester was spent in materials rather than on screen — testing wood samples, CNC-machining, 3D-printing internal components — alongside research into sound and speaker design. We were learning the acoustics and the fabrication at the same time, and the build emerged from those weeks rather than preceding them."
+      "body": "Most of the semester was spent in materials rather than on screen - testing wood samples, CNC-machining, 3D-printing internal components - alongside research into sound and speaker design. We were learning the acoustics and the fabrication at the same time, and the build emerged from those weeks rather than preceding them."
     },
     {
       "type": "imageGrid",
       "imageSlugs": ["01-process-1", "02-process-2"],
       "alt": "Materials and CNC tests from the early weeks"
     },
-    { "type": "label", "text": "03 — Key Decision" },
+    { "type": "label", "text": "03 - Key Decision" },
     {
       "type": "text",
-      "body": "We started from a broken pair of Edifier desktop speakers. The drivers were salvageable; the housings weren't — so the project became one of repair and rehousing rather than building from nothing. We rebuilt the desktop drivers into a custom enclosure, CNC'd from solid wood and finished by hand, with the internal components 3D-printed and machined to fit. Wood was a deliberate choice as much as an aesthetic one: a rigid, solid cabinet limits the unwanted resonance a flimsy housing introduces, so it suits the driver as well as the eye."
+      "body": "We started from a broken pair of Edifier desktop speakers. The drivers were salvageable; the housings weren't - so the project became one of repair and rehousing rather than building from nothing. We rebuilt the desktop drivers into a custom enclosure, CNC'd from solid wood and finished by hand, with the internal components 3D-printed and machined to fit. Wood was a deliberate choice as much as an aesthetic one: a rigid, solid cabinet limits the unwanted resonance a flimsy housing introduces, so it suits the driver as well as the eye."
     },
-    { "type": "label", "text": "04 — Resolved" },
+    { "type": "label", "text": "04 - Resolved" },
     {
       "type": "text",
-      "body": "The result is a working desktop speaker — salvaged drivers in a hand-finished wooden body — built to sit on the same desk as Mantis. Two objects from the same instinct: keep what works, rebuild the rest."
+      "body": "The result is a working desktop speaker - salvaged drivers in a hand-finished wooden body - built to sit on the same desk as Mantis. Two objects from the same instinct: keep what works, rebuild the rest."
     },
     {
       "type": "image",
       "imageSlug": "04-final-side",
       "variant": "wide",
-      "alt": "Side detail — the wood grain and the driver mounting"
+      "alt": "Side detail - the wood grain and the driver mounting"
     },
     {
       "type": "image",

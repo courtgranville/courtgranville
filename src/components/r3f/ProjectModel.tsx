@@ -1,7 +1,7 @@
-// ProjectModel — the single grab-and-spin product model that now opens every
+// ProjectModel - the single grab-and-spin product model that now opens every
 // project page. One large Canvas carrying the project's textured GLB, the same
 // 3D handoff the /work/ gallery uses (fit-to-bounding-sphere, Meshy normalise,
-// in-engine studio IBL) so the object reads identically wherever it appears —
+// in-engine studio IBL) so the object reads identically wherever it appears -
 // kept self-contained so this island can't disturb WorkGallery or the hero.
 //
 // Restraint (per the brief): drag-to-rotate is the only interaction. Zoom and

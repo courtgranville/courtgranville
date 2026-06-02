@@ -6,56 +6,56 @@
   "heroImage": "07-final-hero",
   "group": true,
   "spec": {
-    "Client":     "Gravity Wave — recycled-plastic material",
+    "Client":     "Gravity Wave - recycled-plastic material",
     "Brief":      "increase the value of the sheet",
     "Constraint": "a single 1m × 1m sheet, one material only",
     "Insight":    "milled to 1–3mm, the material transmits light"
   },
   "blocks": [
-    { "type": "label", "text": "01 — The Brief" },
+    { "type": "label", "text": "01 - The Brief" },
     {
       "type": "text",
-      "body": "Gravity Wave, the company behind the recycled-plastic material, set the brief: take a single 1m × 1m sheet and increase its value. The challenge was as much conceptual as technical — what do you turn a flat sheet of recycled plastic into that someone would actually want, and pay for?"
+      "body": "Gravity Wave, the company behind the recycled-plastic material, set the brief: take a single 1m × 1m sheet and increase its value. The challenge was as much conceptual as technical - what do you turn a flat sheet of recycled plastic into that someone would actually want, and pay for?"
     },
-    { "type": "label", "text": "02 — Why Backgammon" },
+    { "type": "label", "text": "02 - Why Backgammon" },
     {
       "type": "text",
-      "body": "We chose to make a backgammon board, drawn by the material's visual character and by the quiet value of a good board — an object you'd happily look at for hours, on the table whether or not anyone's playing. It's the kind of everyday object that justifies being made well."
+      "body": "We chose to make a backgammon board, drawn by the material's visual character and by the quiet value of a good board - an object you'd happily look at for hours, on the table whether or not anyone's playing. It's the kind of everyday object that justifies being made well."
     },
-    { "type": "label", "text": "03 — The Key Decision" },
+    { "type": "label", "text": "03 - The Key Decision" },
     {
       "type": "text",
-      "body": "The rules left us one material and nothing else. A backgammon field is defined by alternating light and dark triangles — but with no inlays, no paint and no second material, we had no way to colour them. The board had to render its own pattern."
+      "body": "The rules left us one material and nothing else. A backgammon field is defined by alternating light and dark triangles - but with no inlays, no paint and no second material, we had no way to colour them. The board had to render its own pattern."
     },
     {
       "type": "text",
-      "body": "The answer was in the material itself. Milled down to between one and three millimetres, the recycled plastic lets varying amounts of light through it. By alternating the thickness across the surface and lighting it from behind, we used light alone to draw the entire backgammon pattern — the dark and light points rendered as differences in transmission, the playing surface left completely flat and smooth."
+      "body": "The answer was in the material itself. Milled down to between one and three millimetres, the recycled plastic lets varying amounts of light through it. By alternating the thickness across the surface and lighting it from behind, we used light alone to draw the entire backgammon pattern - the dark and light points rendered as differences in transmission, the playing surface left completely flat and smooth."
     },
     {
       "type": "imageGrid",
       "imageSlugs": ["01-cad-1", "02-cad-2", "03-cad-3"],
-      "alt": "3D model — the alternating-thickness backgammon grid"
+      "alt": "3D model - the alternating-thickness backgammon grid"
     },
-    { "type": "label", "text": "04 — Making" },
+    { "type": "label", "text": "04 - Making" },
     {
       "type": "text",
-      "body": "We prototyped in 3D and CNC'd early versions in wood — cheaper iterations to lock down the form and the playing-surface dimensions before committing the single 1m × 1m sheet we couldn't replace."
+      "body": "We prototyped in 3D and CNC'd early versions in wood - cheaper iterations to lock down the form and the playing-surface dimensions before committing the single 1m × 1m sheet we couldn't replace."
     },
     {
       "type": "imageGrid",
       "imageSlugs": ["04-prototype-1", "05-prototype-2", "06-prototype-3"],
       "alt": "Wood prototypes, before the final CNC pass"
     },
-    { "type": "label", "text": "05 — Resolved" },
+    { "type": "label", "text": "05 - Resolved" },
     {
       "type": "text",
-      "body": "The finished board hides its cleverness: a flat, recycled-plastic surface that turns out to be lit from within, the whole game drawn in light rather than ink. The constraint — one material, no additions — became the feature."
+      "body": "The finished board hides its cleverness: a flat, recycled-plastic surface that turns out to be lit from within, the whole game drawn in light rather than ink. The constraint - one material, no additions - became the feature."
     },
     {
       "type": "image",
       "imageSlug": "08-final-detail",
       "variant": "field",
-      "alt": "Detail — light passing through the thinned material"
+      "alt": "Detail - light passing through the thinned material"
     }
   ]
 }

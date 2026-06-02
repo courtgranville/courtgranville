@@ -17,7 +17,7 @@ export interface Props {
 
 const {
   title = 'Court Granville',
-  description = 'Court Granville is a multidisciplinary designer working across product, interaction, data visualisation and the web — translating complex, contested subjects into things people can understand and use. London & Madrid.',
+  description = 'Court Granville is a multidisciplinary designer working across product, interaction, data visualisation and the web - translating complex, contested subjects into things people can understand and use. London & Madrid.',
 } = Astro.props;
 
 // Absolute URLs for canonical + social cards (Astro.site is set in config).
@@ -27,7 +27,7 @@ const ogImage = new URL('/og.jpg', Astro.site);
 <!doctype html>
 <html lang="en-GB">
   <head>
-    <!-- Theme — apply the stored preference to <html> BEFORE the stylesheets
+    <!-- Theme - apply the stored preference to <html> BEFORE the stylesheets
          load, so there's no flash of the wrong theme. Default is DARK (the
          opening state of the site); an explicit stored 'light' choice opts out.
          (To respect the OS instead when there's no stored choice, swap the test
@@ -93,7 +93,7 @@ const ogImage = new URL('/og.jpg', Astro.site);
       //
       // The homepage's hero dispatches a `hero:loaded` CustomEvent on `window`
       // when the particle load-in finishes; we use that to fade the nav in.
-      // Pages without a hero (Work) have no such event — we detect the
+      // Pages without a hero (Work) have no such event - we detect the
       // absence of `.hero-section` and fade the nav in immediately, with the
       // scroll backdrop already on so it reads cleanly over content.
       // ─────────────────────────────────────────────────────────────────────
@@ -106,7 +106,7 @@ const ogImage = new URL('/og.jpg', Astro.site);
       const heroEl  = document.querySelector('.hero-section') || document.querySelector('.scroll-stage');
 
       // On pages without a hero, the nav comes in immediately with the
-      // backdrop on — there is no load-in moment to wait for.
+      // backdrop on - there is no load-in moment to wait for.
       if (navEl && !heroEl) {
         navEl.classList.add('in', 'scrolled');
       }
@@ -172,7 +172,7 @@ const ogImage = new URL('/og.jpg', Astro.site);
       if (lenis) lenis.on('scroll', onScroll);
       else window.addEventListener('scroll', onScroll, { passive: true });
 
-      // Reveal — IntersectionObserver, single trigger per element. Works for
+      // Reveal - IntersectionObserver, single trigger per element. Works for
       // any `.reveal` on the page, including elements added later (a fresh
       // observer is started for each).
       const revealObserver = new IntersectionObserver((entries) => {

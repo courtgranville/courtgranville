@@ -6,7 +6,7 @@ This file orients any Claude Code session working in this repository. Read it be
 
 The personal portfolio site of Court Granville — a product/design student at IE University, Madrid, with a professional background in brand strategy and digital marketing. The site presents Court's design work and, by being built well, doubles as evidence of Court's ability as an AI-assisted designer-developer.
 
-- Domain: **courtgranville.com** (to be deployed on Cloudflare Pages).
+- Domain: **courtgranville.com** (live on Cloudflare Pages, auto-deploying from `main`).
 - Repo: **https://github.com/courtgranville/courtgranville** (public).
 
 ## Current state — read before doing anything
@@ -138,8 +138,15 @@ Note: vanilla scripts use CDN `three@0.162`; React islands bundle npm `three@0.1
 
 ## Deploy (Cloudflare Pages)
 
-Fully static build — no adapter needed. Connect the GitHub repo in the
-Cloudflare Pages dashboard with:
+**The site is live and auto-deploying.** Cloudflare Pages is connected to the
+GitHub repo and rebuilds on every push to `main`; the build is served at both
+`courtgranville.pages.dev` and the custom domain **`courtgranville.com`** (DNS
+managed by Cloudflare). A push to `main` is therefore an outward-facing deploy —
+treat it as one. The settings below are the connected configuration (kept for
+reference / re-creation).
+
+Fully static build — no adapter needed. The Cloudflare Pages project is
+configured with:
 - **Framework preset:** Astro
 - **Build command:** `npm run build`
 - **Build output directory:** `dist`
@@ -147,13 +154,12 @@ Cloudflare Pages dashboard with:
 - **Env vars:** none required.
 
 The hero/3D-canvas three.js loads from jsDelivr (CDN import map) and fonts from
-Google Fonts at runtime — both work in production. After the first deploy, add
-the custom domain `courtgranville.com` in Pages → Custom domains (Cloudflare
-manages the DNS). `astro.config.mjs` `site` is already set for canonical URLs +
-sitemap. (Connecting the repo + DNS is a dashboard action on Court's account.)
+Google Fonts at runtime — both work in production (verified live). The custom
+domain `courtgranville.com` is added in Pages → Custom domains and Cloudflare
+manages the DNS. `astro.config.mjs` `site` is set for canonical URLs + sitemap.
 
 ## Roadmap
 
-Phases: (1) research — done; (2) design system + hero prototype — done; (3) framework build (Astro) — done; (4) GitHub version control — done; (5) iterate in Claude Code with full-resolution assets — **current**; (6) deploy to Cloudflare Pages — settings ready, awaiting dashboard connect.
+Phases: (1) research — done; (2) design system + hero prototype — done; (3) framework build (Astro) — done; (4) GitHub version control — done; (5) iterate in Claude Code with full-resolution assets — **current**; (6) deploy to Cloudflare Pages — **done & live** (connected, auto-deploying from `main`, serving on `courtgranville.com`).
 
 An **on-site Writing track now exists**: a `blog` content collection (`src/content/blog/*.md`) with a `/blog/` index and `/blog/[slug]/` post template, linked from the homepage's Writing section. Open question, not in scope now: courtgranville.com also has a separate Cargo-hosted blog/thesis track; whether that and the on-site `/blog/` are reconciled into one is undecided.

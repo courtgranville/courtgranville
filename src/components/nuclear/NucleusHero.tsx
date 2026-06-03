@@ -55,6 +55,23 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
   const inkRef = useRef<string>(ink ?? '#0d1a1e');
   inkRef.current = ink ?? '#0d1a1e';
 
+  // Live ref for the "is this beat active?" pause signal. This canvas-2D loop is
+  // full-viewport on the homepage and would otherwise redraw every frame even
+  // while the atom is invisible (it's the live beat on only one of six) - that
+  // continuous redraw measured as ~80% of homepage scroll CPU. The ScrollHero
+  // engine sets window.__cgAtomActive and dispatches `atom:active` as the nucleus
+  // enters/leaves the active beat (mirrors its window.__cgLenis / theme:change
+  // contracts). Where no engine drives the atom (the project page, the gallery)
+  // __cgAtomActive is undefined, so it defaults to always-active and nothing changes.
+  const activeRef = useRef<boolean>(
+    !(typeof window !== 'undefined' && (window as unknown as { __cgAtomActive?: boolean }).__cgAtomActive === false),
+  );
+  useEffect(() => {
+    const onActive = (e: Event) => { activeRef.current = !!(e as CustomEvent).detail?.active; };
+    window.addEventListener('atom:active', onActive);
+    return () => window.removeEventListener('atom:active', onActive);
+  }, []);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
@@ -198,6 +215,11 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
     let ftLastReport = performance.now();
 
     const frame = (now: number) => {
+      // Paused (homepage, nucleus is not the active beat): keep the rAF loop alive
+      // but skip the full-viewport clear + nucleus redraw + particle step. This is
+      // the dominant homepage scroll cost; resuming is instant (drawFrame fully
+      // repaints each frame, so one paused-then-active frame is clean).
+      if (!activeRef.current) { lastT = now; rafId = requestAnimationFrame(frame); return; }
       const dt = Math.max(0.001, Math.min(0.05, (now - lastT) / 1000));
       lastT = now;
       const t = (now - t0) / 1000;

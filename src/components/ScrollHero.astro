@@ -859,6 +859,20 @@ function updateOverlay(){
 const clock = new THREE.Clock(); clock.getDelta();
 let accumY=0, accumX=0;
 
+// Live-atom visibility contract (mirrors window.__cgLenis / theme:change): the
+// NuclearAtom island runs a full-viewport canvas-2D loop that would otherwise
+// redraw every frame even while the atom is invisible - measured as ~80% of the
+// homepage's scroll CPU. We flag when the nucleus is the active beat so the island
+// pauses its redraw the rest of the time. Set false up front so the island (which
+// hydrates later, on idle) reads "paused" until the nucleus beat is actually reached.
+let prevAtomActive = null;
+window.__cgAtomActive = false;
+function setAtomActive(on){
+  if(on === prevAtomActive) return;
+  prevAtomActive = on; window.__cgAtomActive = on;
+  dispatchEvent(new CustomEvent('atom:active', { detail:{ active:on } }));
+}
+
 let ready=false;
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 scrollTo(0,0);
@@ -902,6 +916,10 @@ function frame(ts){
   else { c=Math.round(clamp(state.p,0,N-1)); resolveMorph(state.p); formW=M.formW; }
   state.center = c; state.shapeW = formW;
   updateOverlay();
+  // Drive the live-atom pause: only animate the canvas-2D nucleus while it is the
+  // active beat (and the hero has loaded in). It warms up invisibly as the dust
+  // approaches, fades in via atomVis below, and pauses again once a model takes over.
+  setAtomActive(c === NUCLEUS_BEAT && !!(loadIn && loadIn.done));
 
   const activeModel = (BEATS[c]?.kind==='model' && models[c] && formW>0.85) ? c : -1;
 

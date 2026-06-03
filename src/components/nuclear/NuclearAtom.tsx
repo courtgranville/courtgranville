@@ -31,7 +31,7 @@ const readInk = () =>
 // where the link would clutter (e.g. the homepage hero, which has its own copy).
 // `viewportParticles` makes the fission explode across the whole screen while the
 // form stays in its box (the project-page hero; host fixes the canvas via CSS).
-export default function NuclearAtom({ compact = false, roomLink = true, viewportParticles = false }: { compact?: boolean; roomLink?: boolean; viewportParticles?: boolean }) {
+export default function NuclearAtom({ compact = false, roomLink = true, viewportParticles = false, lowDensity = false }: { compact?: boolean; roomLink?: boolean; viewportParticles?: boolean; lowDensity?: boolean }) {
   const [isotope, setIsotope] = useState<0 | 1>(0);
   const [hintVisible, setHintVisible] = useState(false);
   const [fissionFired, setFissionFired] = useState(false);
@@ -68,6 +68,7 @@ export default function NuclearAtom({ compact = false, roomLink = true, viewport
         isotope={isotope}
         ink={ink}
         viewportParticles={viewportParticles}
+        pointStride={lowDensity ? 2 : 1}
         onFissionFire={() => setFissionFired(true)}
       >
         {!compact && (

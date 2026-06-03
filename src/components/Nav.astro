@@ -178,7 +178,10 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
 
   function setTheme(next) {
     root.dataset.theme = next;
-    try { localStorage.setItem('cg-theme', next); } catch (e) {}
+    // Intentionally not persisted - the site always opens dark (see Layout.astro);
+    // the toggle is a session-only switch. Clear any legacy stored choice so an old
+    // 'light' from a previous visit can't linger in storage.
+    try { localStorage.removeItem('cg-theme'); } catch (e) {}
     // Keep the mobile browser chrome in step with the active ground.
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.content = getComputedStyle(root).getPropertyValue('--bg').trim();

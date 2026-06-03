@@ -27,20 +27,13 @@ const ogImage = new URL('/og.jpg', Astro.site);
 <!doctype html>
 <html lang="en-GB">
   <head>
-    <!-- Theme - apply the stored preference to <html> BEFORE the stylesheets
-         load, so there's no flash of the wrong theme. Default is DARK (the
-         opening state of the site); an explicit stored 'light' choice opts out.
-         (To respect the OS instead when there's no stored choice, swap the test
-         for `window.matchMedia('(prefers-color-scheme: dark)').matches`.) -->
+    <!-- Theme - set on <html> BEFORE the stylesheets load, so there's no flash.
+         The site ALWAYS opens in dark (its signature ground); the nav toggle still
+         switches within a session, but the choice is intentionally NOT persisted,
+         so every fresh load starts dark again. (To remember the choice instead,
+         restore the localStorage read here and the setItem in Nav.astro.) -->
     <script is:inline>
-      (function () {
-        try {
-          var stored = localStorage.getItem('cg-theme');     // 'light' | 'dark' | null
-          document.documentElement.dataset.theme = stored === 'light' ? 'light' : 'dark';
-        } catch (e) {
-          document.documentElement.dataset.theme = 'dark';
-        }
-      })();
+      document.documentElement.dataset.theme = 'dark';
     </script>
 
     <meta charset="UTF-8" />

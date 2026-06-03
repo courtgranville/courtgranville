@@ -124,14 +124,31 @@ export function parseD(d: string): number[] {
   return pts;
 }
 
-/** Convert an array of d-strings to polylines and the joint bounding box. */
-export function buildPolylines(dStrings: string[]): { polylines: Polyline[]; bbox: BBox } {
+/**
+ * Convert an array of d-strings to polylines and the joint bounding box.
+ *
+ * `stride` decimates each polyline to ~1/stride of its points (keeping first and
+ * last so endpoints stay put). drawFrame loops every point every frame applying
+ * magnetism, so this is a direct cut to the per-frame cost - used where the nucleus
+ * renders small (the homepage scroll beat), where the dropped points are invisible.
+ * stride 1 (default) is the full-fidelity path used everywhere else.
+ */
+export function buildPolylines(dStrings: string[], stride = 1): { polylines: Polyline[]; bbox: BBox } {
   const polylines: Polyline[] = [];
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  const s = Math.max(1, Math.floor(stride));
 
   for (const d of dStrings) {
-    const flat = parseD(d);
+    let flat = parseD(d);
     if (flat.length < 4) continue;
+    if (s > 1 && flat.length >= 8) {
+      const np = flat.length >> 1;
+      const keep: number[] = [];
+      for (let p = 0; p < np; p += s) { keep.push(flat[p * 2], flat[p * 2 + 1]); }
+      const lx = flat[(np - 1) * 2], ly = flat[(np - 1) * 2 + 1];
+      if (keep[keep.length - 2] !== lx || keep[keep.length - 1] !== ly) keep.push(lx, ly);
+      flat = keep;
+    }
     for (let k = 0; k < flat.length; k += 2) {
       const x = flat[k], y = flat[k + 1];
       if (x < minX) minX = x;

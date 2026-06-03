@@ -51,7 +51,7 @@ const PRODUCTS = [
          starts at 0, so deferring hydration to browser-idle keeps it off the
          critical path with no visible change. -->
     <div class="cg-atom-overlay" id="atomOverlay" aria-hidden="true">
-      <NuclearAtom client:idle roomLink={false} />
+      <NuclearAtom client:idle roomLink={false} lowDensity />
     </div>
 
     <!-- Overlay copy - phases in/out per beat, driven by the engine. -->
@@ -263,7 +263,7 @@ const CONFIG = {
   // Scroll is 1:1 with the timeline; section dispersals are longer than inter-model
   // morphs; the snap (directional, smootherstep, settle-gated) fires only once the
   // wheel stops AND the glide settles → smooth, no jolt, no mid-notch interruption.
-  scroll: { sectionVh: 2.4, modelVh: 1.3, exitVh: 1.6, snapDuration: 0.7, snapStopMs: 200, snapSettle: 0.0009, advanceThresh: 0.12 },
+  scroll: { sectionVh: 2.4, modelVh: 1.3, exitVh: 1.6, snapDuration: 0.5, snapStopMs: 200, snapSettle: 0.0009, advanceThresh: 0.12 },
   modelBase: '/models/',
   // Theme colours for the WebGL surface (the editorial body flips via CSS tokens).
   // Light keeps today's values exactly; dark turns the particles white on a
@@ -811,7 +811,9 @@ stage.style.height = (TOTAL_VH + 1) * 100 + 'vh';
 
 let lenis=null;
 if(!reducedMotion){
-  lenis = new Lenis({ lerp:0.1, smoothWheel:true, smoothTouch:false });
+  // lerp 0.15 (up from 0.1): the scroll tracks the wheel/trackpad more closely so it
+  // feels tighter and less "floaty / lagging behind" - still smoothed, just less drift.
+  lenis = new Lenis({ lerp:0.15, smoothWheel:true, smoothTouch:false });
   window.__cgLenis = lenis;   // Layout reads this and skips creating a second instance
 }
 

@@ -31,6 +31,10 @@ interface NucleusHeroProps {
    * on-screen box, so the fission particles explode across the whole screen while
    * the form stays put. Used by the project-page hero. */
   viewportParticles?: boolean;
+  /** Decimate the nucleus polylines to ~1/stride of their points. drawFrame loops
+   * every point every frame, so a higher stride is a direct per-frame saving where
+   * the nucleus renders small (the homepage beat). Default 1 = full fidelity. */
+  pointStride?: number;
 }
 
 /**
@@ -42,7 +46,7 @@ interface NucleusHeroProps {
  * same state machine, same magnetism math. The isotope prop is read through a
  * ref so toggling it never restarts the loop.
  */
-export function NucleusHero({ paths, isotope, children, onFissionFire, ink, viewportParticles = false }: NucleusHeroProps) {
+export function NucleusHero({ paths, isotope, children, onFissionFire, ink, viewportParticles = false, pointStride = 1 }: NucleusHeroProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   // Live ref so the loop reads the latest isotope without restarting.
@@ -143,7 +147,7 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
     ro.observe(container);
 
     // Parse paths once.
-    const { polylines, bbox } = buildPolylines(paths);
+    const { polylines, bbox } = buildPolylines(paths, pointStride);
 
     // Cursor state.
     const ptr = {

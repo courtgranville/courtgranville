@@ -16,7 +16,7 @@
 
     <ul class="footer-locale">
       <li>51.5074&deg; N, 0.1278&deg; W</li>
-      <li>GMT + 1</li>
+      <li><time id="footer-clock">--:--</time> &middot; GMT + 1</li>
       <li>Open to work</li>
     </ul>
 
@@ -101,3 +101,15 @@
     .footer-locale { text-align: left; }
   }
 </style>
+
+<script>
+  // Live London time shown beside the GMT + 1 label. (The static "+ 1" offset is
+  // correct for BST; swap to "GMT" in winter - see the footer copy.)
+  const clockEl = document.getElementById('footer-clock');
+  if (clockEl) {
+    const fmt = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' });
+    const tick = () => { clockEl.textContent = fmt.format(new Date()); };
+    tick();
+    setInterval(tick, 30000);
+  }
+</script>

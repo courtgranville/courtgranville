@@ -364,9 +364,11 @@ const nextName = nextProject?.data.name ?? '';
     font-size: var(--fs-body-s); line-height: var(--lh-body-s); color: var(--text);
   }
 
-  /* ── 3. Sections - the homepage's rail-kicker + body-prose rhythm. ── */
+  /* ── 3. Sections - the homepage's rail-kicker + body-prose rhythm. Sections
+        follow on closely (a block, not a full section gap) so the written story
+        reads as continuous prose rather than islands separated by big white gaps. ── */
   :global(.proj-sec) {
-    margin-top: var(--space-section);
+    margin-top: var(--space-block);
     row-gap: var(--space-block);
     align-items: start;
   }
@@ -431,7 +433,7 @@ const nextName = nextProject?.data.name ?? '';
   }
 
   /* ── 4. Closing hero shot ── */
-  :global(.proj-final) { margin-top: var(--space-section); }
+  :global(.proj-final) { margin-top: var(--space-block); }
 
   /* ── Footer nav ── */
   :global(.proj-foot) {

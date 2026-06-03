@@ -3,8 +3,9 @@
 // scroll-driven particle narrative (ScrollHero): the CG glyph builds, disperses,
 // and re-forms into each product's REAL textured model (grab-and-spin), one after
 // the next, closing on a particle-text "Selected Work" divider. Below the narrative,
-// in normal flow: an "All work" link, the approach band (the "translation layer"
-// statement), then the Writing band - opaque, occluding the sticky canvas above.
+// in normal flow: an "All work" link, then the titled identity sections (In short
+// → What I do → Approach → Background → Colophon → Contact) - opaque, occluding
+// the sticky canvas above.
 
 import Layout from '../components/Layout.astro';
 import Nav from '../components/Nav.astro';
@@ -50,10 +51,9 @@ const principles: [string, string][] = [
         <a class="textlink hp-allwork reveal" href="/work/">All work &rarr;</a>
       </Grid>
 
-      <!-- In short (About) - the dispersal hands straight into this. -->
-      <Grid as="section" id="about" class="hp-sec" aria-label="About">
+      <!-- In short - the dispersal hands straight into this. -->
+      <Grid as="section" id="about" class="hp-sec" aria-label="In short">
         <div class="hp-sec-head t-rail reveal">
-          <span class="label hp-sec-kicker">About</span>
           <h2 class="hp-sec-title">In short.</h2>
         </div>
         <div class="hp-sec-body t-body reveal" data-stagger="1">
@@ -61,10 +61,9 @@ const principles: [string, string][] = [
         </div>
       </Grid>
 
-      <!-- What I do (Disciplines) -->
+      <!-- What I do -->
       <Grid as="section" class="hp-sec" aria-label="What I do">
         <div class="hp-sec-head t-rail reveal">
-          <span class="label hp-sec-kicker">Disciplines</span>
           <h2 class="hp-sec-title">What I do.</h2>
         </div>
         <div class="hp-sec-body t-body reveal" data-stagger="1">
@@ -80,10 +79,9 @@ const principles: [string, string][] = [
         </div>
       </Grid>
 
-      <!-- Approach (Method) -->
+      <!-- Approach -->
       <Grid as="section" class="hp-sec" aria-label="Approach">
         <div class="hp-sec-head t-rail reveal">
-          <span class="label hp-sec-kicker">Method</span>
           <h2 class="hp-sec-title">Approach.</h2>
         </div>
         <div class="hp-sec-body t-body reveal" data-stagger="1">
@@ -99,33 +97,19 @@ const principles: [string, string][] = [
         </div>
       </Grid>
 
-      <!-- Beginnings (Background) -->
-      <Grid as="section" class="hp-sec" aria-label="Beginnings">
+      <!-- Background -->
+      <Grid as="section" class="hp-sec" aria-label="Background">
         <div class="hp-sec-head t-rail reveal">
-          <span class="label hp-sec-kicker">Background</span>
-          <h2 class="hp-sec-title">Beginnings.</h2>
+          <h2 class="hp-sec-title">Background.</h2>
         </div>
         <div class="hp-sec-body t-body reveal" data-stagger="1">
           <p class="hp-prose">I didn&rsquo;t arrive at design the usual way. I studied History, Art History and Maths, spent a foundation year at the City &amp; Guilds of London Art School, and only then found product design at IE University in Madrid. That detour is the point: it taught me to see design as something that sits inside the world - history, systems, people - rather than floating above it. Somewhere along the way, an interest in technology and AI turned a product designer into a multidisciplinary one.</p>
         </div>
       </Grid>
 
-      <!-- Writing -->
-      <Grid as="section" class="hp-sec" aria-label="Writing">
-        <div class="hp-sec-head t-rail reveal">
-          <span class="label hp-sec-kicker">Thesis &amp; essays</span>
-          <h2 class="hp-sec-title">Writing.</h2>
-        </div>
-        <div class="hp-sec-body t-body reveal" data-stagger="1">
-          <p class="hp-prose">Alongside design, I write about technology, communication and how complex subjects reach a wider audience - what makes a message clear, credible and honest. It started with my thesis on nuclear energy and is turning into something ongoing.</p>
-          <a class="textlink hp-prose-link" href="/blog/">Read the writing &rarr;</a>
-        </div>
-      </Grid>
-
       <!-- Colophon -->
       <Grid as="section" class="hp-sec" aria-label="Colophon">
         <div class="hp-sec-head t-rail reveal">
-          <span class="label hp-sec-kicker">Craft</span>
           <h2 class="hp-sec-title">Colophon.</h2>
         </div>
         <div class="hp-sec-body t-body reveal" data-stagger="1">
@@ -137,7 +121,6 @@ const principles: [string, string][] = [
       <!-- Contact -->
       <Grid as="section" id="contact" class="hp-sec hp-contact" aria-label="Contact">
         <div class="hp-sec-head t-rail reveal">
-          <span class="label hp-sec-kicker">Reach</span>
           <h2 class="hp-sec-title">Contact.</h2>
         </div>
         <div class="hp-sec-body t-body reveal" data-stagger="1">
@@ -174,7 +157,6 @@ const principles: [string, string][] = [
     scroll-margin-top: var(--nav-h);
   }
   .hp-sec-head { align-self: start; }
-  .hp-sec-kicker { display: block; color: var(--text-quiet); margin-bottom: 12px; }
   .hp-sec-title {
     font-family: var(--serif); font-weight: 400;
     font-size: var(--fs-heading-m); line-height: var(--lh-heading-m);

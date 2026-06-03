@@ -32,8 +32,8 @@ import '../styles/atom.css';
 const PRODUCTS = [
   { name: 'Mantis',                  year: 2026, discipline: 'Product Design', slug: 'mantis',     desc: 'A side table in need of repair, reborn as a standing lamp.' },
   { name: 'Wave',                    year: 2026, discipline: 'Product Design', slug: 'wave',       desc: 'A salvaged pair of speakers, rebuilt into a custom enclosure.' },
-  { name: 'Gravity Wave Backgammon', year: 2024, discipline: 'Product Design', slug: 'backgammon', desc: 'A sheet of recycled plastic turned into a backlit backgammon board.' },
-  { name: 'Spider-209',              year: 2022, discipline: 'Product Design', slug: 'spider-209', desc: 'A classic lamp, rebuilt from the streets of Madrid.' },
+  { name: 'Gravity Wave Backgammon', year: 2024, discipline: 'Product Design', slug: 'backgammon', desc: 'A sheet of recycled ocean plastic turned into a backlit backgammon board.' },
+  { name: 'Spider-209',              year: 2022, discipline: 'Product Design', slug: 'spider-209', desc: 'A classic lamp design reimagined as a desk lamp from materials found on the streets of Madrid.' },
 ];
 ---
 <div class="scroll-stage" id="cgStage">
@@ -67,7 +67,7 @@ const PRODUCTS = [
            h1 stays (screen-reader-only) to keep the homepage's page heading for SEO. -->
       <div class="ov-block ov-lead">
         <h1 class="sr-only">Court Granville - Multidisciplinary Designer, London &amp; Madrid</h1>
-        <p class="ov-lead-p">I&rsquo;m a multidisciplinary designer working across product, interaction, data and the web. I trained in product design, but a pull toward technology, AI and systems has taken me wider - toward the industries and problems where design is needed most, whatever shape they take.</p>
+        <p class="ov-lead-p">I&rsquo;m a multidisciplinary designer working across product, UX, data and the web. I trained in product design but am now pulled toward technology, heavy industries and AI - the industries, systems and problems where design solutions are needed most, whatever shape they take.</p>
       </div>
 
       <!-- Product beats - one block, contents swapped by the engine per product. A
@@ -339,11 +339,11 @@ const BEATS = [
   { id:'cg',     kind:'glyph', text:'CG' },
   // The flagship beat: the dust re-forms into the live-site atom (rendered as
   // particles, not a GLB - the interactive fission atom lives on the project page).
-  { id:'tnq',    kind:'nucleus', name:'The Nuclear Question',  year:2026, disc:'Data Visualisation · Web', slug:'the-nuclear-question', desc:'A thesis on nuclear energy, rebuilt as a public data-visualisation platform.' },
+  { id:'tnq',    kind:'nucleus', name:'The Nuclear Question',  year:2026, disc:'Data Visualisation · Web', slug:'the-nuclear-question', desc:'A thesis on nuclear energy, built as a public data-visualisation platform.' },
   { id:'mantis', kind:'model', name:'Mantis',                  year:2026, disc:'Product Design', slug:'mantis',     desc:'A side table in need of repair, reborn as a standing lamp.',          file:'mantis.glb',     fill:1.0,  viewRY:0.0,  viewRX:0.28 },
   { id:'wave',   kind:'model', name:'Wave',                    year:2026, disc:'Product Design', slug:'wave',       desc:'A salvaged pair of speakers, rebuilt into a custom enclosure.',        file:'speaker.glb',    fill:0.92, viewRY:0.0,  viewRX:0.0  },
-  { id:'bg',     kind:'model', name:'Gravity Wave Backgammon', year:2024, disc:'Product Design', slug:'backgammon', desc:'A sheet of recycled plastic turned into a backlit backgammon board.', file:'backgammon.glb', fill:0.92, viewRY:-0.7, viewRX:0.62 },
-  { id:'spider', kind:'model', name:'Spider-209',              year:2022, disc:'Product Design', slug:'spider-209', desc:'A classic lamp, rebuilt from the streets of Madrid.',                 file:'spider.glb',     fill:0.92, viewRY:0.3,  viewRX:0.15 },
+  { id:'bg',     kind:'model', name:'Gravity Wave Backgammon', year:2024, disc:'Product Design', slug:'backgammon', desc:'A sheet of recycled ocean plastic turned into a backlit backgammon board.', file:'backgammon.glb', fill:0.92, viewRY:-0.7, viewRX:0.62 },
+  { id:'spider', kind:'model', name:'Spider-209',              year:2022, disc:'Product Design', slug:'spider-209', desc:'A classic lamp design reimagined as a desk lamp from materials found on the streets of Madrid.', file:'spider.glb',     fill:0.92, viewRY:0.3,  viewRX:0.15 },
   // Spider is the final beat: it rests at the bottom of the stage, then scrolls straight
   // up into the editorial grid below (which opens with the In short section) - no
   // dispersal interstitial, no blank screen.

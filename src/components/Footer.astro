@@ -1,27 +1,26 @@
 ---
-// Closing band. "Get in touch" is the surface (→ the homepage contact form) - no
-// raw email sits in the HTML for a harvester. London/Madrid coordinates, a live
-// London clock beside the availability status, then the motto + copyright. All caps
-// run through the .label / Raleway 500 / 0.22em system so the footer reads as one
-// with the nav and the page kickers. (Social links omitted until real URLs exist.)
+// Closing band. A quiet sign-off (name + role) rather than a contact CTA - the
+// contact form is the canonical surface and sits just above on the homepage, so a
+// second "drop me a line" link here would be redundant. Beside it: London
+// coordinates, timezone and availability as plain right-aligned lines, then the
+// copyright. Caps run through the .label / Raleway 500 / 0.22em system so the
+// footer reads as one with the nav and the page kickers. (No raw email in the HTML
+// for a harvester; social links omitted until real URLs exist.)
 ---
 <footer aria-label="Site footer">
   <div class="footer-inner">
     <div class="footer-contact reveal">
-      <span class="label">Get in touch</span>
-      <a class="footer-reach" href="/#contact">Drop me a line &rarr;</a>
-      <p class="footer-role">Court Granville - Multidisciplinary Designer</p>
+      <p class="footer-name">Court Granville</p>
+      <p class="footer-role">Multidisciplinary Designer</p>
     </div>
 
-    <dl class="footer-locale">
-      <div><dt>London</dt><dd>51.5074&deg; N, 0.1278&deg; W</dd></div>
-      <div><dt>Madrid</dt><dd>40.4168&deg; N, 3.7038&deg; W</dd></div>
-      <div><dt>London time</dt><dd><time id="footer-clock">--</time></dd></div>
-      <div><dt>Status</dt><dd>Open to work</dd></div>
-    </dl>
+    <ul class="footer-locale">
+      <li>51.5074&deg; N, 0.1278&deg; W</li>
+      <li>GMT + 1</li>
+      <li>Open to work</li>
+    </ul>
 
     <div class="footer-baseline">
-      <span class="footer-motto">Designed and built with curiosity in London &amp; Madrid.</span>
       <span class="footer-copyright">&copy; 2026 Court Granville</span>
     </div>
   </div>
@@ -43,42 +42,36 @@
     align-items: start;
   }
   .footer-contact { grid-area: contact; }
-  .footer-contact .label { display: block; margin-bottom: 12px; color: var(--text-quiet); }
-  .footer-reach {
+  .footer-name {
     font-family: var(--serif); font-weight: 400;
     font-size: var(--fs-heading-s); line-height: var(--lh-heading-s);
-    color: var(--text);
-    transition: color var(--dur-hover) var(--ease-out);
+    color: var(--text); margin: 0;
   }
-  .footer-reach:hover { color: var(--accent); }
   .footer-role {
     font-family: var(--serif); font-weight: 400;
     font-size: var(--fs-body-s); line-height: var(--lh-body-s);
     color: var(--text-quiet); margin: 14px 0 0;
   }
 
-  /* Locale - London / Madrid coordinates, live London clock, status. */
+  /* Locale - London coordinates, timezone, status, as plain right-aligned lines. */
   .footer-locale {
     grid-area: locale;
-    margin: 0;
+    margin: 0; padding: 0; list-style: none;
     display: flex;
     flex-direction: column;
     gap: 12px;
     text-align: right;
   }
-  .footer-locale div { display: flex; gap: 16px; align-items: baseline; justify-content: flex-end; }
-  .footer-locale dt,
-  .footer-locale dd {
-    margin: 0;
+  .footer-locale li {
     font-family: var(--sans);
     font-weight: 500;
     font-size: var(--fs-label);
     line-height: var(--lh-label);
     letter-spacing: var(--ls-label);
     text-transform: uppercase;
+    color: var(--text-faint);
+    font-variant-numeric: tabular-nums;
   }
-  .footer-locale dt { color: var(--text-quiet); }
-  .footer-locale dd { color: var(--text-faint); font-variant-numeric: tabular-nums; }
 
   .footer-baseline {
     grid-area: baseline;
@@ -89,11 +82,6 @@
     flex-wrap: wrap;
     justify-content: space-between;
     gap: 12px 32px;
-  }
-  .footer-motto {
-    font-family: var(--serif); font-weight: 400; font-style: italic;
-    font-size: var(--fs-body-s); line-height: var(--lh-body-s);
-    color: var(--text-quiet);
   }
   .footer-copyright {
     font-family: var(--sans);
@@ -111,17 +99,5 @@
       gap: 36px;
     }
     .footer-locale { text-align: left; }
-    .footer-locale div { justify-content: flex-start; }
   }
 </style>
-
-<script>
-  // Live London clock - updates the footer time every 30s.
-  const clockEl = document.getElementById('footer-clock');
-  if (clockEl) {
-    const fmt = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' });
-    const tick = () => { clockEl.textContent = fmt.format(new Date()); };
-    tick();
-    setInterval(tick, 30000);
-  }
-</script>

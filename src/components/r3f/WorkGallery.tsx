@@ -152,7 +152,7 @@ function Cell({ p }: { p: Project }) {
           frameloop={active ? 'always' : 'never'}
           dpr={[1, 2]}
           camera={{ position: [1.0, 0.45, 3.0], fov: 32 }}
-          gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true, toneMapping: THREE.ACESFilmicToneMapping }}
+          gl={{ antialias: true, alpha: true, preserveDrawingBuffer: false, toneMapping: THREE.ACESFilmicToneMapping }}
           // Absolute (inline, so it overrides R3F's own inline position:relative)
           // pulls the canvas out of flow - its drawing-buffer height can't feed
           // back into the .wg-stage aspect box and inflate it frame-by-frame.

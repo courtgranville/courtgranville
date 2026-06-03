@@ -75,6 +75,12 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
     window.addEventListener('atom:active', onActive);
     return () => window.removeEventListener('atom:active', onActive);
   }, []);
+  // On-screen ref - pause the loop whenever the canvas is scrolled out of view.
+  // This is what stops the project page and the /work gallery cell from running
+  // their canvas-2D loop while off-screen (the homepage is already gated by the
+  // engine signal above; this is an additional, universal guard). Combined with
+  // activeRef so the loop only runs when it's BOTH the active beat AND visible.
+  const onScreenRef = useRef<boolean>(true);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -145,6 +151,14 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
 
     const ro = new ResizeObserver(resize);
     ro.observe(container);
+
+    // Pause the loop while the canvas is off-screen (project page / gallery cell
+    // scrolled away). 200px margin so it resumes just before re-entering view.
+    const io = new IntersectionObserver(
+      ([e]) => { onScreenRef.current = e.isIntersecting; },
+      { rootMargin: '200px 0px' },
+    );
+    io.observe(container);
 
     // Parse paths once.
     const { polylines, bbox } = buildPolylines(paths, pointStride);
@@ -223,7 +237,7 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
       // but skip the full-viewport clear + nucleus redraw + particle step. This is
       // the dominant homepage scroll cost; resuming is instant (drawFrame fully
       // repaints each frame, so one paused-then-active frame is clean).
-      if (!activeRef.current) { lastT = now; rafId = requestAnimationFrame(frame); return; }
+      if (!activeRef.current || !onScreenRef.current) { lastT = now; rafId = requestAnimationFrame(frame); return; }
       const dt = Math.max(0.001, Math.min(0.05, (now - lastT) / 1000));
       lastT = now;
       const t = (now - t0) / 1000;
@@ -309,6 +323,7 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
       window.removeEventListener('pointermove', onPointerMove);
       if (viewportParticles) window.removeEventListener('resize', resize);
       ro.disconnect();
+      io.disconnect();
     };
     // paths is stable across the page lifetime (imported JSON);
     // isotope is read through a ref so it never re-runs this effect.

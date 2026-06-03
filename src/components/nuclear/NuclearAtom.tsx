@@ -15,7 +15,12 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { NucleusHero } from './NucleusHero';
-import nucleusPaths from './nucleus-paths.json';
+// The nucleus contour paths (~271KB) are fetched at runtime from /nucleus-paths.json
+// rather than imported as a module, so they are NOT bundled into this island's JS
+// (which would bloat it ~271KB on every page that mounts the atom). On the homepage
+// ScrollHero already fetches the same URL, so the browser serves it from cache - one
+// download, shared. NucleusHero renders nothing until paths arrive (its frame loop
+// skips while polylines are empty), and rebuilds when they do (its effect deps on paths).
 
 const FISSION_ROOM_URL = 'https://thenuclearquestion.com/fission';
 const INK_LIGHT = '#0d1a1e';
@@ -36,7 +41,19 @@ export default function NuclearAtom({ compact = false, roomLink = true, viewport
   const [hintVisible, setHintVisible] = useState(false);
   const [fissionFired, setFissionFired] = useState(false);
   const [ink, setInk] = useState<string>(INK_LIGHT);
+  const [paths, setPaths] = useState<string[]>([]);
   const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Fetch the nucleus contour paths at runtime (see import note). Empty until then;
+  // NucleusHero simply draws nothing and rebuilds once they arrive.
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/nucleus-paths.json')
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled) setPaths(d as string[]); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   // Theme-aware stroke: read once on mount, then follow the toggle's event.
   useEffect(() => {
@@ -64,7 +81,7 @@ export default function NuclearAtom({ compact = false, roomLink = true, viewport
       data-fired={fissionFired ? '1' : '0'}
     >
       <NucleusHero
-        paths={nucleusPaths as string[]}
+        paths={paths}
         isotope={isotope}
         ink={ink}
         viewportParticles={viewportParticles}

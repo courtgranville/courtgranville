@@ -121,7 +121,7 @@ export default function ProjectModel({ model, fill = DEFAULT_FILL, viewRY = 0, v
         frameloop={active ? 'always' : 'never'}
         dpr={[1, 2]}
         camera={{ position: [1.0, 0.45, 3.0], fov: 32 }}
-        gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true, toneMapping: THREE.ACESFilmicToneMapping }}
+        gl={{ antialias: true, alpha: true, preserveDrawingBuffer: false, toneMapping: THREE.ACESFilmicToneMapping }}
         // Absolute (inline, overriding R3F's own inline position:relative) pulls the
         // canvas out of flow so its drawing-buffer height can't feed back into the
         // stage box's height and inflate it frame-by-frame.

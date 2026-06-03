@@ -18,3 +18,7 @@
 # Optimised project imagery and other static media (unhashed, content-stable).
 /assets/*
   Cache-Control: public, max-age=2592000
+
+# Nucleus contour paths - fetched at runtime by the hero + the atom island, stable.
+/nucleus-paths.json
+  Cache-Control: public, max-age=2592000

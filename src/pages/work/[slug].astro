@@ -79,10 +79,11 @@ interface ImageEntry { src: string; srcset: string; aspect: number; alt: string;
 interface FigRow { orient: 'landscape' | 'portrait'; items: ImageEntry[] }
 type TextBlock = Extract<Block, { type: 'text' }>;
 type QuoteBlock = Extract<Block, { type: 'quote' }>;
+type BookletBlock = Extract<Block, { type: 'booklet' }>;
 // A section's prose track is an ordered mix of text and pull-quotes, so quotes
 // land exactly where the copy places them. Existing projects use only text.
 type BodyBlock = TextBlock | QuoteBlock;
-interface Section { label: string | null; body: BodyBlock[]; rows: FigRow[] }
+interface Section { label: string | null; body: BodyBlock[]; rows: FigRow[]; booklets: BookletBlock[] }
 
 // Expand a visual block into its image entries (manifest data + alt/caption).
 function entriesOf(b: Block): ImageEntry[] {
@@ -138,11 +139,12 @@ function flushRows() { if (current) current.rows = rowsFor(pushVisuals.splice(0)
 for (const b of blocks) {
   if (b.type === 'label') {
     flushRows();
-    current = { label: b.text, body: [], rows: [] };
+    current = { label: b.text, body: [], rows: [], booklets: [] };
     sections.push(current);
   } else {
-    if (!current) { current = { label: null, body: [], rows: [] }; sections.push(current); }
+    if (!current) { current = { label: null, body: [], rows: [], booklets: [] }; sections.push(current); }
     if (b.type === 'text' || b.type === 'quote') current.body.push(b);
+    else if (b.type === 'booklet') current.booklets.push(b);
     else pushVisuals.push(...entriesOf(b));
   }
 }
@@ -267,6 +269,21 @@ const nextName = nextProject?.data.name ?? '';
               ))}
             </div>
           )}
+          {s.booklets.map((bk) => (
+            <div class="proj-booklet reveal">
+              <div class="booklet-frame">
+                <iframe
+                  class="booklet-embed"
+                  src={`${bk.pdf}#view=FitH`}
+                  title={bk.label ?? `${name} - booklet`}
+                  loading="lazy"
+                />
+              </div>
+              <a class="textlink booklet-dl" href={bk.pdf} download>
+                {bk.downloadText ?? 'Download the full booklet (PDF)'} &rarr;
+              </a>
+            </div>
+          ))}
         </Grid>
       ))}
 
@@ -431,6 +448,29 @@ const nextName = nextProject?.data.name ?? '';
     .fig-row { flex-direction: column; }
     .fig-row--portrait.fig-row--solo .fig { width: 100%; }
   }
+
+  /* ── The booklet - a designed PDF shown inline, full content width. A hairline
+        frame from the tokens keeps it part of the editorial space rather than raw
+        browser chrome; it inherits the page ground so it reads in light and dark.
+        Sized to a portrait-ish aspect because the booklet is a designed document. ── */
+  .proj-booklet {
+    grid-column: 1 / -1;
+    margin-top: var(--space-block);
+    display: flex; flex-direction: column; gap: 20px;
+  }
+  .booklet-frame {
+    border: 1px solid var(--rule);
+    background: var(--bg);
+    width: 100%;
+    aspect-ratio: 1 / 1.414;            /* A-series portrait, the booklet's own proportion */
+    max-height: 86vh;
+  }
+  @media (min-width: 768px) {
+    /* A spread-shaped document reads better wider than tall on larger screens. */
+    .booklet-frame { aspect-ratio: 1.414 / 1; }
+  }
+  .booklet-embed { width: 100%; height: 100%; border: 0; display: block; }
+  .booklet-dl { width: fit-content; }
 
   /* ── 4. Closing hero shot ── */
   :global(.proj-final) { margin-top: var(--space-block); }

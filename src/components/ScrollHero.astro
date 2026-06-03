@@ -205,9 +205,25 @@ const PRODUCTS = [
      then drops to the lower half, full-width. */
   .cg-overlay.stacked .ov-lead,
   .cg-overlay.stacked .ov-product {
-    top: auto; bottom: clamp(48px, 12vh, 140px); transform: none;
-    left: var(--outer); right: var(--outer); width: auto; max-width: min(88vw, 36ch);
+    top: 57vh; bottom: auto; transform: none;
+    left: var(--outer); right: var(--outer); width: auto; max-width: min(92vw, 40ch);
   }
+  /* The scroll cue overlaps the (taller) stacked copy and is least useful on touch
+     - drop it on narrow screens; the beat dots already signal there's more below. */
+  @media (max-width: 768px) { .cg-cue { display: none; } }
+
+  /* Stacked (mobile) atom: the isotope control + shake hint sit CENTRED below the
+     atom form rather than tucked in its corner (engine sets --atom-ctl-top). The
+     control becomes a single compact row so it reads as a caption under the viz. */
+  .cg-atom-overlay.stacked :global(.atom-control) {
+    top: var(--atom-ctl-top, auto); bottom: auto;
+    /* Span the full width and centre the row, rather than left:50% (which would
+       shrink the box to the right half and wrap the U-235 / U-238 labels). */
+    left: 0; right: 0; transform: none;
+    flex-direction: row; align-items: center; justify-content: center; gap: 14px;
+  }
+  /* Keep the isotope labels on one line whatever the layout. */
+  .cg-atom-overlay.stacked :global(.atom-switch button) { white-space: nowrap; }
   @media (max-width: 600px) { .cg-beats { right: 16px; } }
   @media (prefers-reduced-motion: reduce) {
     .cg-arrow { animation: none; }
@@ -255,7 +271,12 @@ const CONFIG = {
   rotation:{ speed: reducedMotion ? 0 : 0.06 },
   loadIn:  { duration: 1.6, stagger: 0.7, startVolume: 7 },
   morph: {
-    shapeRadius: 2.7, disperseRadius: 9.0,
+    // disperseRadius is bumped on mobile: the camera sits further back to fit the
+    // 3D into the narrow viewport, so a desktop-sized cloud would project as a small
+    // central circle. A larger world radius makes the fully-dispersed cloud fill the
+    // whole phone screen (as it does on desktop), while still erupting OUT from the
+    // model as a growing sphere. Desktop is unchanged.
+    shapeRadius: 2.7, disperseRadius: isMobile ? 12.0 : 9.0,
     formIn: 0.12, formOut: 0.38, texAt: 0.62, dividerHeight: 2.4,
   },
   play: { springK: 16, damping: 0.985, maxDisp: 3.0 },
@@ -579,10 +600,15 @@ function fitCamera(){
     y = 0;
     cx = cxPx; cy = H / 2;
   } else {
-    D = Math.max(CONFIG.scene.cameraDistance, HW * H / (tanV * 0.42 * W), HW / (tanV * 0.5));
+    // Mobile / narrow: stack the 3D ABOVE the copy. Fill most of the WIDTH (the
+    // narrow axis) so the glyph + models read large - the desktop-only 0.42 fit
+    // left them tiny - but cap the HEIGHT so the content stays in the upper region
+    // with room for the copy (and, on the nucleus beat, the isotope control) below.
+    const fillW = 0.82, fillH = 0.52;
+    D = Math.max(CONFIG.scene.cameraDistance, HW * H / (tanV * fillW * W), HW / (tanV * fillH));
     x = 0;
-    y = -0.22 * (2 * D * tanV);                     // lift content into the upper half
-    cx = W / 2; cy = 0.28 * H;                      // …so it sits in the upper area on screen
+    cx = W / 2; cy = 0.30 * H;                       // upper third, clear of the fixed nav
+    y = ((cy - H / 2) / H) * (2 * D * tanV);         // lift content so it centres on cy
   }
   camera.position.set(x, y, D);
   const ovl = document.querySelector('.cg-overlay');
@@ -592,20 +618,30 @@ function fitCamera(){
   // sphere (HW projected); the form field radius ~matches the dust nucleus it
   // crossfades from. Controls/hint anchor to the form box, not the screen corner.
   if (atomOverlay) {
+    atomOverlay.classList.toggle('stacked', stacked);
     const half = HW * H / (2 * D * tanV);
     const formR = 0.95 * half;
     atomOverlay.style.setProperty('--form-cx', cx + 'px');
     atomOverlay.style.setProperty('--form-cy', cy + 'px');
     atomOverlay.style.setProperty('--form-r', formR + 'px');
-    // Isotope control anchored to the form box's BOTTOM-RIGHT corner - in the
-    // square box's corner dead-space, clear of the circular form even as it
-    // bulges toward the cursor. (right/bottom = distance from the viewport edges.)
-    atomOverlay.style.setProperty('--atom-ctl-right', (W - (cx + formR)) + 'px');
-    atomOverlay.style.setProperty('--atom-ctl-bottom', (H - (cy + formR)) + 'px');
-    // Shake hint centred just below the form box - below the toggle's row, so the
-    // two never overlap while the U-238 hint is showing.
-    atomOverlay.style.setProperty('--atom-hint-x', cx + 'px');
-    atomOverlay.style.setProperty('--atom-hint-y', (cy + formR + 16) + 'px');
+    if (stacked) {
+      // Narrow screen: the wide isotope pill can't sit in the form box's corner
+      // without covering the visualisation, so stack the control + hint CENTRED
+      // directly below the atom (CSS reads --atom-ctl-top in the .stacked rule).
+      atomOverlay.style.setProperty('--atom-ctl-top', (cy + formR + 12) + 'px');
+      atomOverlay.style.setProperty('--atom-hint-x', cx + 'px');
+      atomOverlay.style.setProperty('--atom-hint-y', (cy + formR + 66) + 'px');
+    } else {
+      // Wide screen: isotope control anchored to the form box's BOTTOM-RIGHT corner
+      // - in the square box's corner dead-space, clear of the circular form even as
+      // it bulges toward the cursor. (right/bottom = distance from the viewport edges.)
+      atomOverlay.style.setProperty('--atom-ctl-right', (W - (cx + formR)) + 'px');
+      atomOverlay.style.setProperty('--atom-ctl-bottom', (H - (cy + formR)) + 'px');
+      // Shake hint centred just below the form box - below the toggle's row, so the
+      // two never overlap while the U-238 hint is showing.
+      atomOverlay.style.setProperty('--atom-hint-x', cx + 'px');
+      atomOverlay.style.setProperty('--atom-hint-y', (cy + formR + 16) + 'px');
+    }
   }
 }
 fitCamera();

@@ -41,7 +41,43 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
       </svg>
     </button>
   </div>
+
+  <!-- Burger - shown only below 900px (where the inline links don't fit). Two thin
+       rules that cross into an X when the panel opens; deliberately understated to
+       match the nav's restraint, not a generic 3-bar glyph. -->
+  <button type="button" class="nav-burger" aria-controls="navPanel" aria-expanded="false" aria-label="Open menu">
+    <span class="nav-burger-box" aria-hidden="true">
+      <span class="nav-burger-line"></span>
+      <span class="nav-burger-line"></span>
+    </span>
+  </button>
 </nav>
+
+<!-- Mobile menu - a slide-in panel from the right with the page dimmed behind it.
+     Inner content is padded to the page outer margin so the links sit on the same
+     rail as everything else (the grid governs placement here too). Hidden on >=900px. -->
+<div class="nav-scrim" id="navScrim" hidden></div>
+<aside class="nav-panel" id="navPanel" role="dialog" aria-modal="true" aria-label="Menu" aria-hidden="true" hidden>
+  <button type="button" class="nav-panel-close" aria-label="Close menu">
+    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+      <path d="M4 4 L16 16 M16 4 L4 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+    </svg>
+  </button>
+  <nav class="nav-panel-links" aria-label="Mobile">
+    {links.map((l) => (
+      <a class="nav-panel-link" href={l.href} aria-current={isCurrent(l.href) ? 'page' : undefined}>{l.label}</a>
+    ))}
+  </nav>
+  <div class="nav-panel-foot">
+    <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Switch to dark theme">
+      <svg class="theme-glyph" width="18" height="18" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+        <circle cx="10" cy="10" r="8.25" fill="none" stroke="currentColor" stroke-width="1.5" />
+        <path d="M10 1.75 A8.25 8.25 0 0 1 10 18.25 Z" fill="currentColor" />
+      </svg>
+    </button>
+    <span class="nav-panel-theme-label label" id="navThemeLabel">Light theme</span>
+  </div>
+</aside>
 
 <style>
   .site-nav {
@@ -153,10 +189,96 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
   .theme-glyph { transition: transform var(--dur-hover) var(--ease-out); }
   .theme-toggle[aria-pressed='true'] .theme-glyph { transform: rotate(180deg); }
 
+  /* ── Burger + slide-in panel - the mobile / small-tablet nav (< 900px) ──────
+     The inline links can't fit a phone width, so below 900px they're replaced by
+     a burger that opens a panel sliding in from the right, page dimmed behind. */
+  .nav-burger {
+    display: none;            /* shown < 900px (below) */
+    align-items: center; justify-content: center;
+    width: 40px; height: 40px; margin-right: -8px;   /* optical: pull to the edge */
+    color: var(--text); opacity: 0.9;
+    transition: opacity var(--dur-hover) var(--ease-out);
+  }
+  .nav-burger:hover { opacity: 1; color: var(--accent); }
+  .nav-burger-box { position: relative; width: 22px; height: 12px; }
+  .nav-burger-line {
+    position: absolute; left: 0; right: 0; height: 1.5px; background: currentColor;
+    transition: transform var(--dur-hover) var(--ease-out), opacity var(--dur-hover) var(--ease-out);
+  }
+  .nav-burger-line:nth-child(1) { top: 0; }
+  .nav-burger-line:nth-child(2) { bottom: 0; }
+  /* When the menu is open the two rules cross into an X. */
+  .nav-burger[aria-expanded='true'] .nav-burger-line:nth-child(1) { transform: translateY(5.25px) rotate(45deg); }
+  .nav-burger[aria-expanded='true'] .nav-burger-line:nth-child(2) { transform: translateY(-5.25px) rotate(-45deg); }
+
+  /* Scrim - dims and covers the page behind the panel. */
+  .nav-scrim {
+    position: fixed; inset: 0; z-index: 110;
+    background: rgba(0,0,0,0.5);
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--dur-frame) var(--ease-out);
+  }
+  .nav-scrim.open { opacity: 1; pointer-events: auto; }
+
+  /* Panel - slides in from the right on the page's outer margin (the rail), so the
+     links align to the same grid as the rest of the site. */
+  .nav-panel {
+    position: fixed; inset: 0 0 0 auto; z-index: 120;
+    width: min(78vw, 360px); height: 100dvh;
+    background: var(--bg);
+    border-left: 1px solid var(--rule);
+    padding: var(--nav-h) var(--outer) clamp(28px, 5vh, 48px);
+    display: flex; flex-direction: column;
+    transform: translateX(100%);
+    transition: transform var(--dur-frame) var(--ease-out);
+    will-change: transform;
+  }
+  .nav-panel.open { transform: translateX(0); }
+
+  .nav-panel-close {
+    position: absolute; top: clamp(20px, 3.2vw, 32px); right: var(--outer);
+    width: 40px; height: 40px; margin-right: -8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--text); opacity: 0.85;
+    transition: opacity var(--dur-hover) var(--ease-out), color var(--dur-hover) var(--ease-out);
+  }
+  .nav-panel-close:hover { opacity: 1; color: var(--accent); }
+
+  /* Links - Playfair, editorial scale, left on the rail; mirrors the section titles. */
+  .nav-panel-links {
+    margin-top: clamp(24px, 6vh, 64px);
+    display: flex; flex-direction: column; align-items: flex-start;
+    gap: clamp(18px, 3.2vh, 32px);
+  }
+  .nav-panel-link {
+    font-family: var(--serif); font-weight: 400;
+    font-size: clamp(28px, 8vw, 40px); line-height: 1.05;
+    color: var(--text);
+    transition: color var(--dur-hover) var(--ease-out);
+  }
+  .nav-panel-link:hover,
+  .nav-panel-link[aria-current='page'] { color: var(--accent); }
+
+  /* Foot - the theme switch with a written label, pinned to the bottom of the panel. */
+  .nav-panel-foot {
+    margin-top: auto;
+    display: flex; align-items: center; gap: 14px;
+    padding-top: clamp(24px, 4vh, 40px);
+  }
+  .nav-panel-theme-label { color: var(--text-quiet); }
+
+  /* ── Breakpoint: swap inline links ↔ burger at 900px ── */
+  @media (max-width: 899px) {
+    .nav-links { display: none; }
+    .nav-burger { display: inline-flex; }
+  }
+  @media (min-width: 900px) {
+    /* Desktop keeps the inline nav exactly as before - panel/scrim never render. */
+    .nav-scrim, .nav-panel { display: none; }
+  }
   @media (max-width: 720px) {
     .site-nav { padding: 0 20px; }
-    .nav-links { gap: 22px; }
-    .brand { font-size: 15px; }
+    .brand { font-size: 16px; }
   }
 </style>
 
@@ -167,13 +289,19 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
   // `theme:change` CustomEvent is the contract with the hero (ScrollHero.astro)
   // - mirrors the existing `hero:loaded` pattern, keeps the two decoupled.
   const root = document.documentElement;
-  const btn  = document.querySelector('.theme-toggle');
+  // There are now up to two toggles: the inline one in the bar (desktop) and the
+  // one in the mobile panel. Both reflect + drive the single <html data-theme>.
+  const toggles = [...document.querySelectorAll('.theme-toggle')];
+  const themeLabel = document.getElementById('navThemeLabel');
 
   function syncButton(theme) {
-    if (!btn) return;
     const dark = theme === 'dark';
-    btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
-    btn.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
+    for (const btn of toggles) {
+      btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+      btn.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
+    }
+    // The panel label names the theme you'd switch TO (matches the aria-label voice).
+    if (themeLabel) themeLabel.textContent = dark ? 'Light theme' : 'Dark theme';
   }
 
   function setTheme(next) {
@@ -189,12 +317,54 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
     window.dispatchEvent(new CustomEvent('theme:change', { detail: { theme: next } }));
   }
 
-  // Sync the button's aria state to whatever the head script applied.
+  // Sync the buttons' aria state to whatever the head script applied.
   syncButton(root.dataset.theme === 'dark' ? 'dark' : 'light');
 
-  if (btn) {
+  for (const btn of toggles) {
     btn.addEventListener('click', () => {
       setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark');
     });
+  }
+
+  // ── Mobile menu - the slide-in panel ──────────────────────────────────────
+  const burger = document.querySelector('.nav-burger');
+  const panel  = document.getElementById('navPanel');
+  const scrim  = document.getElementById('navScrim');
+  const closeBtn = panel && panel.querySelector('.nav-panel-close');
+
+  function setMenu(open) {
+    if (!burger || !panel || !scrim) return;
+    if (open) { panel.hidden = false; scrim.hidden = false; }
+    // Force a reflow so the un-hidden panel animates from its off-screen transform.
+    void panel.offsetWidth;
+    burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    burger.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    panel.setAttribute('aria-hidden', open ? 'false' : 'true');
+    panel.classList.toggle('open', open);
+    scrim.classList.toggle('open', open);
+    // Lock the page behind the panel: stop the shared Lenis (homepage) and the
+    // native overflow, so the background can't scroll while the menu is up.
+    root.style.overflow = open ? 'hidden' : '';
+    try { open ? window.__cgLenis?.stop() : window.__cgLenis?.start(); } catch (e) {}
+    if (open) { closeBtn && closeBtn.focus(); }
+    else {
+      burger.focus();
+      // Wait out the slide-out before re-hiding, so it animates closed.
+      setTimeout(() => { if (burger.getAttribute('aria-expanded') === 'false') { panel.hidden = true; scrim.hidden = true; } }, 450);
+    }
+  }
+
+  if (burger && panel && scrim) {
+    burger.addEventListener('click', () => setMenu(panel.getAttribute('aria-hidden') !== 'false'));
+    closeBtn && closeBtn.addEventListener('click', () => setMenu(false));
+    scrim.addEventListener('click', () => setMenu(false));
+    // A link tap closes the menu - same-page hash links (/#about) don't navigate,
+    // so they'd otherwise leave the panel open over the section.
+    panel.querySelectorAll('.nav-panel-link').forEach((a) => a.addEventListener('click', () => setMenu(false)));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && panel.getAttribute('aria-hidden') === 'false') setMenu(false);
+    });
+    // If the viewport grows past the burger breakpoint while open, close cleanly.
+    matchMedia('(min-width: 900px)').addEventListener('change', (e) => { if (e.matches) setMenu(false); });
   }
 </script>

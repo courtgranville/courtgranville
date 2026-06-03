@@ -69,6 +69,18 @@ const ogImage = new URL('/og.jpg', Astro.site);
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Every page loads Lenis (and the homepage three.js + addons) from
+         jsDelivr via the importmap below; warm the connection at first parse
+         so the heaviest critical resource isn't waiting on DNS/TLS. -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <!-- Fonts as a parallel <link> (not a CSS @import in the bundle), so the
+         request starts at first HTML parse instead of chaining behind the
+         bundle CSS. display=swap avoids flash-of-invisible-text; the hero's
+         document.fonts.ready gate is unaffected. See src/styles/fonts.css. -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Raleway:wght@400;500;600&display=swap"
+    />
 
     <script type="importmap" is:inline>
       {

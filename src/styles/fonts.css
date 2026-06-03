@@ -6,7 +6,15 @@
  * It is not exposed in the editorial type scale (§4 of site-v2-build-spec-rev2);
  * editorial display uses Regular only.
  *
- * `display=block` keeps glyph rendering deferred until the typeface is ready,
- * which the hero's `document.fonts.ready` gate also relies on.
+ * The Google Fonts request is NOT loaded here via @import. A CSS @import sits
+ * at the top of the bundled stylesheet, so the browser only discovers it after
+ * the bundle CSS arrives - a render-blocking waterfall (HTML -> bundle CSS ->
+ * Google CSS -> woff2). Instead the request is a parallel <link> in the
+ * <head> of Layout.astro (preconnected), so it starts at first HTML parse.
+ *
+ * `font-display: swap` (set in that link's URL) lets editorial text paint
+ * immediately in the fallback face and swap when the webfont arrives, rather
+ * than the previous `block` (flash of invisible text up to 3s). The hero is
+ * unaffected: it gates on `document.fonts.ready`, which resolves when the
+ * faces finish loading regardless of the font-display strategy.
  */
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Raleway:wght@400;500;600&display=block');

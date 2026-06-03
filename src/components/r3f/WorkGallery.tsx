@@ -71,11 +71,15 @@ function StudioEnv() {
   return null;
 }
 
-function Model({ url, fill, viewRY, viewRX }: { url: string; fill: number; viewRY: number; viewRX: number }) {
+function Model({ url, fill, viewRY, viewRX, onReady }: { url: string; fill: number; viewRY: number; viewRX: number; onReady?: () => void }) {
   const { scene } = useGLTF(url);
   const maxAniso = useThree((s) => s.gl.capabilities.getMaxAnisotropy());
   const invalidate = useThree((s) => s.invalidate);
   const inner = useRef<THREE.Group>(null!);
+
+  // useGLTF suspends until the GLB is decoded, so this component only mounts once the
+  // model is ready - tell the cell to fade its loading skeleton out.
+  useEffect(() => { onReady?.(); }, [onReady]);
 
   // Clone (so the cached gltf isn't mutated across StrictMode / re-mounts),
   // normalise Meshy output (ensure normals, sRGB + anisotropy on maps), recentre
@@ -120,6 +124,7 @@ function Cell({ p }: { p: Project }) {
   // seen - no blank pre-load frame, no compositor-cleared buffer.
   const wrapRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(true);
+  const [loaded, setLoaded] = useState(false);
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
@@ -148,6 +153,9 @@ function Cell({ p }: { p: Project }) {
   return (
     <article className="wg-cell">
       <div className="wg-stage" ref={wrapRef}>
+        {/* Faint placeholder behind the transparent canvas so the cell never flashes
+            empty while the GLB streams; fades out once the model is ready. */}
+        <div className={`wg-skeleton${loaded ? ' is-loaded' : ''}`} aria-hidden="true" />
         <Canvas
           frameloop={active ? 'always' : 'never'}
           dpr={[1, 2]}
@@ -162,7 +170,7 @@ function Cell({ p }: { p: Project }) {
           <directionalLight position={[2, 3, 2]} intensity={1.1} />
           <directionalLight position={[-2, 0.5, -1.5]} intensity={0.35} />
           <Suspense fallback={null}>
-            <Model url={p.model!} fill={p.fill ?? DEFAULT_FILL} viewRY={p.viewRY ?? 0} viewRX={p.viewRX ?? 0} />
+            <Model url={p.model!} fill={p.fill ?? DEFAULT_FILL} viewRY={p.viewRY ?? 0} viewRX={p.viewRX ?? 0} onReady={() => setLoaded(true)} />
           </Suspense>
           <OrbitControls
             makeDefault

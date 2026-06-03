@@ -40,6 +40,12 @@ const PRODUCTS = [
   <div class="cg-sticky">
     <canvas id="c" aria-hidden="true"></canvas>
 
+    <!-- Static fallback, shown only if WebGL is unavailable or its context is lost: the
+         particle hero cannot run, so we present the CG monogram as plain type. The real
+         project links + page heading live in the sr-only block below, so content and SEO
+         are unaffected either way. -->
+    <div class="cg-fallback" id="cgFallback" aria-hidden="true">CG</div>
+
     <!-- The live nucleus atom - the homepage's TNQ beat. The dust builds the
          nucleus, then crossfades to this real interactive atom (engine drives its
          position + opacity per beat). Sits above the canvas, below the copy.
@@ -101,6 +107,20 @@ const PRODUCTS = [
   #c { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
   #c.grabbable { cursor: grab; }
   #c.grabbing  { cursor: grabbing; }
+
+  /* WebGL-unavailable fallback - the CG monogram as plain type, in the hero's place.
+     Hidden until the engine reveals it (.show); respects the theme via --text. */
+  .cg-fallback {
+    position: absolute; inset: 0; z-index: 0; display: none;
+    align-items: center; justify-content: center;
+    font-family: var(--serif); font-weight: 700; color: var(--text);
+    font-size: clamp(120px, 22vw, 340px); line-height: 1; letter-spacing: -0.02em;
+    user-select: none; pointer-events: none;
+  }
+  .cg-fallback.show { display: flex; }
+  /* On wide screens sit it to the right (where the live glyph normally is) so it clears
+     the left-hand intro copy rather than overlapping it. */
+  @media (min-width: 900px) { .cg-fallback { justify-content: flex-end; padding-right: max(48px, 7vw); } }
 
   /* The live atom overlay - full-screen so the fission particles can fly across
      the whole stage, while the nucleus FORM is drawn small at the model region
@@ -477,10 +497,17 @@ function sampleMesh(scene, count, fit, seed=17){
 // ── Particle system - the hero's shader, morph-friendly buffers. ──
 const VERT = `
   attribute float aSizeMul;
-  uniform float uBaseSize; uniform float uSizeScale;
+  uniform float uBaseSize; uniform float uSizeScale; uniform float uDisperse;
   void main(){
     vec4 mv = modelViewMatrix * vec4(position,1.0);
-    gl_PointSize = uBaseSize * aSizeMul * (uSizeScale / -mv.z);
+    // While the dust is in a screen-filling DISPERSAL (uDisperse->1) it covers the whole
+    // viewport - the heaviest overdraw / fill-rate moment on a retina/ProMotion display.
+    // The particles are spread thin then, so a slightly smaller point reads the same
+    // density but cuts fill-rate by ~point-size squared. uDisperse is 0 when the dust is
+    // formed (glyph/models) and during the compact model->model morphs, so those stay
+    // crisp and byte-for-byte unchanged.
+    float shrink = mix(1.0, 0.84, uDisperse);
+    gl_PointSize = uBaseSize * aSizeMul * shrink * (uSizeScale / -mv.z);
     gl_Position = projectionMatrix * mv;
   }`;
 const FRAG = `
@@ -505,7 +532,7 @@ class Particles {
     this.geometry.setAttribute('position', new THREE.BufferAttribute(positions,3));
     this.geometry.setAttribute('aSizeMul', new THREE.BufferAttribute(sizeMul,1));
     this.material = new THREE.ShaderMaterial({
-      uniforms:{ uBaseSize:{value:CONFIG.particles.baseSize}, uSizeScale:{value:1},
+      uniforms:{ uBaseSize:{value:CONFIG.particles.baseSize}, uSizeScale:{value:1}, uDisperse:{value:0},
                  uInk:{value:new THREE.Color(CONFIG.theme[themeKey()].ink)}, uOpacity:{value:1} },
       vertexShader:VERT, fragmentShader:FRAG,
       transparent:true, depthWrite:false, depthTest:false, blending:THREE.NormalBlending,
@@ -563,7 +590,32 @@ const canvas = document.getElementById('c');
 // The live-atom overlay (the TNQ beat). fitCamera positions it over the model
 // region; the frame loop drives its opacity. Sized to ~match the dust nucleus.
 const atomOverlay = document.getElementById('atomOverlay');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false });
+
+// Graceful degradation when WebGL is unavailable or its context is lost: hide the dead
+// canvas, reveal the static CG monogram + the intro copy (the engine normally fades the
+// copy in per beat, so we must show it here), let the nav in, and pause the atom island.
+// The crawlable project links + h1 in the sr-only block are unaffected, so content/SEO
+// survive. We do not attempt full context restoration (complex) - the monogram is enough.
+function showHeroFallback(){
+  const fb = document.getElementById('cgFallback'); if(fb) fb.classList.add('show');
+  if(canvas) canvas.style.display = 'none';
+  const lead = document.querySelector('.ov-lead'); if(lead) lead.style.opacity = '1';
+  const navEl = document.querySelector('.site-nav'); if(navEl) navEl.classList.add('in');
+  const cue = document.getElementById('scrollCue'); if(cue) cue.style.display = 'none';
+  window.__cgAtomActive = false;
+  try { window.dispatchEvent(new CustomEvent('atom:active', { detail:{ active:false } })); } catch(e){}
+  try { window.dispatchEvent(new CustomEvent('hero:loaded')); } catch(e){}
+}
+
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false });
+} catch(err){
+  showHeroFallback();
+  throw err;   // WebGL is required for everything below - abort the engine cleanly
+}
+// If the GPU drops the context later, fall back rather than freeze on a blank canvas.
+canvas.addEventListener('webglcontextlost', (e)=>{ e.preventDefault(); visible = false; showHeroFallback(); }, false);
 renderer.setPixelRatio(Math.min(lowEnd ? 1.5 : 2, window.devicePixelRatio));
 renderer.setSize(innerWidth, innerHeight, false);
 renderer.setClearColor(new THREE.Color(CONFIG.theme[themeKey()].bg));
@@ -737,10 +789,29 @@ function applyDPR(r){
   renderer.setPixelRatio(r); renderer.setSize(innerWidth, innerHeight, false); sizeScale();
   if(composer){ composer.setPixelRatio(r); composer.setSize(innerWidth, innerHeight); }
 }
+// Estimate the display's frame budget so the jank threshold scales to the refresh rate.
+// A 26ms (sub-40fps) threshold is right for 60Hz but far too lax for a 120Hz ProMotion
+// panel, where 16.7ms is already a dropped frame. Sampled once from the first stable
+// frames (median ~8.3ms => high refresh). We still only step DOWN after a sustained run,
+// so a brief dispersal spike never downscales the crisp hero - only a genuinely weak GPU
+// holding sub-60fps does.
+let refreshHz = 60, refreshSampled = false; const refreshSamples = [];
+function estimateRefresh(dtMs){
+  if(refreshSampled) return;
+  refreshSamples.push(dtMs);
+  if(refreshSamples.length >= 50){
+    const s = refreshSamples.slice(10).sort((a,b)=>a-b);
+    refreshHz = (s[s.length>>1] || 16.7) < 11 ? 120 : 60;
+    refreshSampled = true;
+  }
+}
 function adaptQuality(frameMs){
-  // ~26ms ≈ below 40fps. Need ~24 consecutive slow frames (~0.5s) before stepping,
-  // so a single GLB-upload / lazy-composer hitch never trips it.
-  if(frameMs > 26){
+  if(!refreshSampled) estimateRefresh(frameMs);
+  // 120Hz: a sustained run below 60fps (>16.7ms) steps down; 60Hz: below 40fps (>26ms),
+  // as before. ~24 consecutive slow frames (~0.4s) are still required, so a one-off
+  // GLB-upload / lazy-composer hitch or the brief dispersal never trips it.
+  const slowMs = refreshHz >= 120 ? 16.7 : 26;
+  if(frameMs > slowMs){
     if(++slowRun >= 24 && curDPR > DPR_FLOOR){ curDPR = Math.max(DPR_FLOOR, curDPR - 0.5); applyDPR(curDPR); slowRun = 0; }
   } else slowRun = 0;
 }
@@ -1033,6 +1104,16 @@ function frame(ts){
   else { c=Math.round(clamp(state.p,0,N-1)); resolveMorph(state.p); formW=M.formW; }
   state.center = c; state.shapeW = formW;
   updateOverlay();
+
+  // Fill-rate relief during the screen-filling dispersal (the single section gap):
+  // shrink the points (uDisperse->1 at full disperse) so the whole-viewport overdraw
+  // costs less on retina/ProMotion. 1-formW peaks mid-dispersal; it is 0 at the formed
+  // ends AND during the compact model->model morphs (GAP_DISPERSE false there), which
+  // never fill the screen - so only the dispersal is affected. Look-preserving.
+  {
+    const gi = Math.floor(clamp(state.p, 0, N-2));
+    ps.material.uniforms.uDisperse.value = (loadIn && loadIn.done && GAP_DISPERSE[gi]) ? (1 - formW) : 0;
+  }
 
   // How fully the current beat's SOLID form (the GLB skin, or the live atom) has
   // taken over from the dust. Mirrors the per-beat `vis` computed in the loop below.

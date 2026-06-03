@@ -87,6 +87,22 @@ const PROJECTS = [
   .wg-stage { position: relative; width: 100%; aspect-ratio: 4 / 5; min-height: 0; }
   .wg-stage canvas { width: 100% !important; height: 100% !important; display: block; cursor: grab; touch-action: pan-y; }
   .wg-stage canvas:active { cursor: grabbing; }
+  /* Loading placeholder behind the transparent canvas - a faint, slow tonal pulse in the
+     cell centre (no generic spinner), fading out once the model is ready. The pulse runs
+     on ::before so the wrapper's own opacity stays free for the load fade-out (a keyframe
+     animation would otherwise override opacity:0). */
+  .wg-skeleton {
+    position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    opacity: 1; transition: opacity 0.5s var(--ease-out);
+  }
+  .wg-skeleton::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle at 50% 46%, color-mix(in srgb, var(--text) 7%, transparent), transparent 62%);
+    animation: wg-skel 1.7s ease-in-out infinite;
+  }
+  .wg-skeleton.is-loaded { opacity: 0; }
+  @keyframes wg-skel { 0%, 100% { opacity: 0.45; } 50% { opacity: 0.9; } }
+  @media (prefers-reduced-motion: reduce) { .wg-skeleton::before { animation: none; } }
   /* The atom cell (The Nuclear Question) is cursor-reactive, not grab-to-rotate. */
   .wg-stage--atom canvas { cursor: default; }
 

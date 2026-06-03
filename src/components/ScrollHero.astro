@@ -42,9 +42,16 @@ const PRODUCTS = [
 
     <!-- The live nucleus atom - the homepage's TNQ beat. The dust builds the
          nucleus, then crossfades to this real interactive atom (engine drives its
-         position + opacity per beat). Sits above the canvas, below the copy. -->
+         position + opacity per beat). Sits above the canvas, below the copy.
+         Hydrated with client:idle, not client:visible: the overlay is full-screen
+         and so technically "visible" from first paint, which would hydrate this
+         React island during the load window - exactly when ScrollHero's three.js
+         init is already saturating the main thread. The atom isn't the first beat
+         (the user must scroll past the CG glyph to reach it) and its overlay opacity
+         starts at 0, so deferring hydration to browser-idle keeps it off the
+         critical path with no visible change. -->
     <div class="cg-atom-overlay" id="atomOverlay" aria-hidden="true">
-      <NuclearAtom client:visible roomLink={false} />
+      <NuclearAtom client:idle roomLink={false} />
     </div>
 
     <!-- Overlay copy - phases in/out per beat, driven by the engine. -->
@@ -227,6 +234,15 @@ import Lenis from 'lenis';
 const TAU = Math.PI * 2;
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const isMobile = window.matchMedia('(max-width: 768px)').matches;
+// Low-end heuristic - few logical cores OR little RAM. deviceMemory is undefined
+// on Safari/Firefox, so it falls back to "capable" (|| 8) and never downgrades a
+// desktop browser that simply doesn't report it. On a flagged device we drop the
+// particle budget and cap DPR (see renderer.setPixelRatio below); capable hardware
+// is untouched, so the look is byte-for-byte identical there. This targets only the
+// scroll-fps floor on contended / low-power machines.
+const cpuCores = navigator.hardwareConcurrency || 8;
+const deviceMem = navigator.deviceMemory || 8;
+const lowEnd = cpuCores <= 4 || deviceMem <= 4;
 
 const CONFIG = {
   scene:  { bg: '#FFFFFF', cameraDistance: 15, fov: 32 },
@@ -234,7 +250,7 @@ const CONFIG = {
   // The nucleus beat - the dust re-forms into the atom (The Nuclear Question),
   // sampled from its SVG contour paths the same way the glyph is sampled from text.
   nucleus: { worldHeight: 3.4, depth: 0.6, pathsUrl: '/nucleus-paths.json' },
-  particles: { count: isMobile ? 55000 : 140000, baseSize: 0.032, sizeVariance: 0.22, inkColor: '#161616' },
+  particles: { count: isMobile ? (lowEnd ? 36000 : 55000) : (lowEnd ? 80000 : 140000), baseSize: 0.032, sizeVariance: 0.22, inkColor: '#161616' },
   pointer: { radius: 0.5, strength: 22, smoothing: 0.55 },
   rotation:{ speed: reducedMotion ? 0 : 0.06 },
   loadIn:  { duration: 1.6, stagger: 0.7, startVolume: 7 },
@@ -503,7 +519,7 @@ const canvas = document.getElementById('c');
 // region; the frame loop drives its opacity. Sized to ~match the dust nucleus.
 const atomOverlay = document.getElementById('atomOverlay');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false });
-renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+renderer.setPixelRatio(Math.min(lowEnd ? 1.5 : 2, window.devicePixelRatio));
 renderer.setSize(innerWidth, innerHeight, false);
 renderer.setClearColor(new THREE.Color(CONFIG.theme[themeKey()].bg));
 renderer.outputColorSpace = THREE.SRGBColorSpace;

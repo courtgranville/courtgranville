@@ -660,6 +660,31 @@ applyTheme(themeKey());
 // contract, keeps the toggle and the engine decoupled.
 addEventListener('theme:change', (e)=> applyTheme((e.detail && e.detail.theme) || themeKey()));
 
+// ── Adaptive resolution ─────────────────────────────────────────────────────
+// The look-preserving version of the low-end cap. The static core/RAM heuristic
+// (lowEnd) can't see a weak GPU - and the heaviest path here is fill-rate (140k
+// translucent points + dark-mode bloom, both at DPR 2 over a full-screen canvas).
+// So we also adapt at RUNTIME: a device that holds the frame budget renders at full
+// DPR exactly as before (capable hardware is untouched); a device that can't keep up
+// steps the hero's pixel ratio down instead of dropping frames. The renderer AND the
+// bloom composer share the ratio, so dark mode gets cheaper too. Step DOWN only, and
+// only after a sustained slow run (not a one-off model-upload spike), so it settles
+// rather than oscillates.
+const baseDPR = Math.min(lowEnd ? 1.5 : 2, window.devicePixelRatio);
+const DPR_FLOOR = 1.0;
+let curDPR = baseDPR, slowRun = 0;
+function applyDPR(r){
+  renderer.setPixelRatio(r); renderer.setSize(innerWidth, innerHeight, false); sizeScale();
+  if(composer){ composer.setPixelRatio(r); composer.setSize(innerWidth, innerHeight); }
+}
+function adaptQuality(frameMs){
+  // ~26ms ≈ below 40fps. Need ~24 consecutive slow frames (~0.5s) before stepping,
+  // so a single GLB-upload / lazy-composer hitch never trips it.
+  if(frameMs > 26){
+    if(++slowRun >= 24 && curDPR > DPR_FLOOR){ curDPR = Math.max(DPR_FLOOR, curDPR - 0.5); applyDPR(curDPR); slowRun = 0; }
+  } else slowRun = 0;
+}
+
 // ── Targets: text/glyph/disperse up front; models async. ──
 const DISPERSE = sampleDisperse(COUNT, CONFIG.morph.disperseRadius);
 const targets = new Array(N).fill(null);
@@ -907,9 +932,9 @@ function frame(ts){
   requestAnimationFrame(frame);
   if(lenis) lenis.raf(ts);
   if(!ready || !visible) return;
-  const dt=Math.min(clock.getDelta(),1/30), time=clock.elapsedTime;
+  const rawDt=clock.getDelta(), dt=Math.min(rawDt,1/30), time=clock.elapsedTime;
   readScroll();
-  if(loadIn && loadIn.done) maybeSnap(time*1000);
+  if(loadIn && loadIn.done){ maybeSnap(time*1000); adaptQuality(rawDt*1000); }
 
   let c, formW;
   if(loadIn && !loadIn.done){ c=0; formW=1; M.formW=1; }

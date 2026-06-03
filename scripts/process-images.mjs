@@ -110,6 +110,16 @@ const MANIFEST = {
       { src: 'lampshade.jpg',  slug: '02-lampshade', role: 'final', priority: 'inline' },
       { src: 'component2.jpg', slug: '03-base',      role: 'final', priority: 'inline' },
       { src: 'hero.jpg',       slug: '04-final-hero', role: 'final', priority: 'hero'  },
+      // Process imagery (June 2026): the design sketches, the salvaged timber,
+      // the joint worked out and 3D-printed, and the printed base + assembly.
+      { src: 'sketch.jpg',           slug: '05-sketch',           role: 'process', priority: 'inline' },
+      { src: 'timber-salvaged.jpg',  slug: '06-timber-salvaged',  role: 'process', priority: 'inline' },
+      { src: 'joint-marked.jpg',     slug: '07-joint-marked',     role: 'process', priority: 'inline' },
+      { src: 'joint-printed.jpg',    slug: '08-joint-printed',    role: 'process', priority: 'inline' },
+      { src: 'joint-iterations.jpg', slug: '09-joint-iterations', role: 'process', priority: 'inline' },
+      { src: 'timber-ruler.jpg',     slug: '10-timber-ruler',     role: 'process', priority: 'inline' },
+      { src: 'base-printed.jpg',     slug: '11-base-printed',     role: 'process', priority: 'inline' },
+      { src: 'assembly.jpg',         slug: '12-assembly',         role: 'process', priority: 'inline' },
     ],
   },
 };

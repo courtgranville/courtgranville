@@ -25,16 +25,21 @@
       "type": "text",
       "body": "A side table is horizontal, low and passive - something you put things on. A standing lamp is vertical, tall and active - something that changes a room. Mantis is the move between the two: the same salvaged timber, reconfigured into an object with a completely different posture and purpose. Nothing was bought in to replace what already worked. The design is in the reassembly, not the replacement - and the angular, poised stance the timber ends up in is where the name comes from."
     },
+    {
+      "type": "image",
+      "imageSlug": "05-sketch",
+      "variant": "wide",
+      "alt": "Dimensioned design sketches - the standing-lamp elevation and the joint studies"
+    },
     { "type": "label", "text": "03 - The joint was the project" },
     {
       "type": "text",
       "body": "The salvaged timber could not be rejoined at the angles the new form needed using the joinery it came with, so the real design problem became the connectors. I designed a set of custom 3D-printed joints, iterated through several printed versions, engineered to grip the timber and hold it at the new angles - and it is those joints that give the lamp its articulated, mantis-like stance. This is the heart of the project: not the timber and not the shade, but the small printed parts that let a failing table stand up as something else."
     },
     {
-      "type": "image",
-      "imageSlug": "01-joint",
-      "variant": "wide",
-      "alt": "A custom 3D-printed joint holding the salvaged timber at its new angle"
+      "type": "imageGrid",
+      "imageSlugs": ["07-joint-marked", "08-joint-printed", "09-joint-iterations"],
+      "alt": "The joint worked out in pen, a 3D-printed connector gripping the salvaged timber, and the printed iterations"
     },
     { "type": "label", "text": "04 - Making" },
     {
@@ -43,8 +48,8 @@
     },
     {
       "type": "imageGrid",
-      "imageSlugs": ["03-base", "02-lampshade"],
-      "alt": "The 3D-printed base and the sourced shade"
+      "imageSlugs": ["06-timber-salvaged", "10-timber-ruler", "11-base-printed", "12-assembly"],
+      "alt": "Salvaged curved timber, a bored four-centimetre section against a ruler, the 3D-printed base seating the stem, and assembly"
     },
     { "type": "label", "text": "05 - Exhibited" },
     {

@@ -284,7 +284,10 @@ const CONFIG = {
   // Scroll is 1:1 with the timeline; section dispersals are longer than inter-model
   // morphs; the snap (directional, smootherstep, settle-gated) fires only once the
   // wheel stops AND the glide settles → smooth, no jolt, no mid-notch interruption.
-  scroll: { sectionVh: 2.4, modelVh: 1.3, exitVh: 1.6, snapDuration: 0.5, snapStopMs: 200, snapSettle: 0.0009, advanceThresh: 0.12 },
+  // followTau = the morph's own follow time-constant (seconds): the timeline tracks the
+  // scroll INTENT with this (small = tight/direct, larger = floatier). It is independent
+  // of Lenis's page-scroll lerp - see readScroll.
+  scroll: { sectionVh: 2.4, modelVh: 1.3, exitVh: 1.6, snapDuration: 0.5, snapStopMs: 200, snapSettle: 0.0009, advanceThresh: 0.12, followTau: 0.055 },
   modelBase: '/models/',
   // Theme colours for the WebGL surface (the editorial body flips via CSS tokens).
   // Light keeps today's values exactly; dark turns the particles white on a
@@ -322,9 +325,15 @@ const FEATURED_COUNT = BEATS.filter(b=>b.kind==='model' || b.kind==='nucleus').l
 const NUCLEUS_BEAT = BEATS.findIndex(b=>b.kind==='nucleus');
 const COUNT = CONFIG.particles.count;
 
-// Disperse only across SECTION boundaries (different kinds); model→model morphs directly.
+// A full-screen DISPERSAL belongs only at a SECTION boundary - either side of a
+// structural beat (the CG glyph, or a text/disperse divider). Everything WITHIN the
+// "selected work" run - the nucleus AND the GLB models alike - morphs DIRECTLY into the
+// next (the dust shape-shifts from one to the next). So glyph → nucleus still explodes,
+// but nucleus → Mantis is now a subtle morph, matching the model → model hand-offs,
+// rather than the screen-filling dispersal it used to be.
+const isStructural = (k)=> k==='glyph' || k==='text' || k==='disperse';
 const GAP_DISPERSE = [];
-for(let i=0;i<N-1;i++) GAP_DISPERSE[i] = BEATS[i].kind !== BEATS[i+1].kind;
+for(let i=0;i<N-1;i++) GAP_DISPERSE[i] = isStructural(BEATS[i].kind) || isStructural(BEATS[i+1].kind);
 // Per-gap scroll length (vh): section dispersals span more scroll than model morphs.
 const GAP_VH = [];
 for(let i=0;i<N-1;i++) GAP_VH[i] = GAP_DISPERSE[i] ? CONFIG.scroll.sectionVh : CONFIG.scroll.modelVh;
@@ -861,10 +870,17 @@ function scrollFracToP(f){
   return i + clamp((f-STOP_F[i])/span, 0, 1);
 }
 function pToScrollY(p){ const max=stage.scrollHeight-innerHeight; return STOP_F[clamp(Math.round(p),0,N-1)]*max; }
+// pTarget = where the timeline WANTS to be, from the scroll. state.p eases to it in the
+// frame loop (followTau). Driving this from Lenis's TARGET (the immediate wheel/trackpad
+// intent) rather than its eased scroll position is what makes the dispersal track the
+// wheel 1:1 with no lag - the sticky canvas never moves, so the morph need only follow
+// intent. During a programmatic snap we read the eased scroll instead, so the settle
+// still honours snapDuration rather than jumping.
+let pTarget = 0;
 function readScroll(){
   const max = stage.scrollHeight - innerHeight;
-  const y = (scrollY||pageYOffset);
-  state.p = scrollFracToP(max>0 ? y/max : 0);
+  const y = (lenis && !snapping) ? lenis.targetScroll : (scrollY||pageYOffset);
+  pTarget = scrollFracToP(max>0 ? y/max : 0);
   const cue = Math.max(0, 1 - y/90); scrollCue.style.opacity = String(cue*0.5);
 }
 let lastWheelT=-1e9, snapping=false, prevSnapP=0, scrollDir=1;
@@ -972,6 +988,11 @@ function frame(ts){
   if(!ready || !visible) return;
   const rawDt=clock.getDelta(), dt=Math.min(rawDt,1/30), time=clock.elapsedTime;
   readScroll();
+  // Ease the timeline to the scroll intent with a tight, frame-rate-independent follow
+  // (same settle at 60 and 120 Hz). Small followTau = glued to the wheel; the gentle
+  // smoothing absorbs per-notch stepping a raw target would show. No Lenis lerp lag.
+  const fk = lenis ? (1 - Math.exp(-dt / CONFIG.scroll.followTau)) : 1;
+  state.p += (pTarget - state.p) * fk;
   if(loadIn && loadIn.done){ maybeSnap(time*1000); adaptQuality(rawDt*1000); }
 
   let c, formW;
@@ -979,10 +1000,23 @@ function frame(ts){
   else { c=Math.round(clamp(state.p,0,N-1)); resolveMorph(state.p); formW=M.formW; }
   state.center = c; state.shapeW = formW;
   updateOverlay();
-  // Drive the live-atom pause: only animate the canvas-2D nucleus while it is the
-  // active beat (and the hero has loaded in). It warms up invisibly as the dust
-  // approaches, fades in via atomVis below, and pauses again once a model takes over.
-  setAtomActive(c === NUCLEUS_BEAT && !!(loadIn && loadIn.done));
+
+  // How fully the current beat's SOLID form (the GLB skin, or the live atom) has
+  // taken over from the dust. Mirrors the per-beat `vis` computed in the loop below.
+  // When it is essentially complete the dust is invisible (particleOpacity ~ 0), so
+  // we can skip the per-particle sim + buffer upload + points draw for the frame -
+  // look-free, and it frees main-thread + fill budget at every rest state (notably
+  // while resting on the visible atom, which is itself redrawing).
+  const skinnable = !!(BEATS[c] && ((BEATS[c].kind==='model' && models[c]) || BEATS[c].kind==='nucleus'));
+  const skinVis = skinnable ? smootherstep(CONFIG.morph.texAt, 1.0, formW) : 0;
+  const cloudHidden = !!(loadIn && loadIn.done) && skinVis > 0.99;
+
+  // Drive the live-atom pause: only animate the canvas-2D nucleus once it is about to
+  // be VISIBLE (formW past a hair before the atomVis fade-in at texAt=0.62), not for
+  // the whole nucleus beat. Below the threshold the atom is both invisible and far
+  // from formed, so its full-viewport redraw would only compete with the particle
+  // dispersal on the main thread for nothing. The island resumes in one clean frame.
+  setAtomActive(c === NUCLEUS_BEAT && !!(loadIn && loadIn.done) && formW > 0.55);
 
   const activeModel = (BEATS[c]?.kind==='model' && models[c] && formW>0.85) ? c : -1;
 
@@ -1001,7 +1035,7 @@ function frame(ts){
 
   probeUpdate();
   if(loadIn && !loadIn.done) stepLoadIn(time);
-  else stepParticles(dt, probe);
+  else if(!cloudHidden) stepParticles(dt, probe);   // skip the sim while the dust is fully hidden behind a skinned form
 
   let particleOpacity = 1;
   for(let i=0;i<N;i++){
@@ -1026,6 +1060,11 @@ function frame(ts){
     particleOpacity = Math.min(particleOpacity, 1 - atomVis);
   }
   ps.material.uniforms.uOpacity.value = particleOpacity;
+  // Skip the 140k-point draw call entirely when the dust is invisible (a fully
+  // skinned model/atom is covering it) - look-free, saves fill-rate at every rest.
+  // Gate on !cloudHidden too so we never draw a frame whose positions we just
+  // skipped simming (keeps the buffer and the draw in lockstep).
+  ps.points.visible = !cloudHidden && particleOpacity > 0.002;
 
   canvas.classList.toggle('grabbable', activeModel>=0 && !drag.on);
   // Light mode: the original direct render (unchanged). Dark mode: the lazy

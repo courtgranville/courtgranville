@@ -17,6 +17,12 @@
       "type": "text",
       "body": "Wabi Sabi was my first design project, from Design Skills - the introductory studio where I learned Rhino and the basics of the discipline. The brief was to design a product the Japanese brand MUJI could sell, addressing a problem related to technology. We named the project after the Japanese idea of finding beauty in serenity, simplicity and imperfection - a fitting frame for MUJI, and a discipline to design against."
     },
+    {
+      "type": "booklet",
+      "pdf": "/wabi-sabi-booklet.pdf",
+      "label": "Wabi Sabi - the MUJI project booklet",
+      "downloadText": "Download the full booklet (PDF)"
+    },
     { "type": "label", "text": "02 - The client, distilled to three values" },
     {
       "type": "text",
@@ -66,17 +72,6 @@
       "type": "imageGrid",
       "imageSlugs": ["04-final-1", "05-final-2", "06-final-3"],
       "alt": "The finished case across the phone range"
-    },
-    { "type": "label", "text": "10 - The booklet" },
-    {
-      "type": "text",
-      "body": "We documented the whole project as a booklet, written in MUJI's own restrained voice - the brief, the research, the dead ends and the prototypes that subtract toward the answer. The full thing is here:"
-    },
-    {
-      "type": "booklet",
-      "pdf": "/wabi-sabi-booklet.pdf",
-      "label": "Wabi Sabi - the MUJI project booklet",
-      "downloadText": "Download the full booklet (PDF)"
     }
   ]
 }

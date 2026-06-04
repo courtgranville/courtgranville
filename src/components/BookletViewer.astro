@@ -1,0 +1,274 @@
+---
+// BookletViewer - the interactive 3D booklet (a CSS-3D book, no WebGL).
+//
+// Closed, it is a solid book you grab-and-spin (leather-grained cover carrying
+// the PDF's own cover, rounded board, real thickness, toned spine + back).
+// Click the cover and it opens to a flat two-page spread you can flip (click an
+// edge / drag a page / arrows); an X (or Esc) closes back to the spinnable book.
+//
+// The pages are the real PDF, rasterised on the client with pdf.js (CDN, loaded
+// lazily the first time the book scrolls into view, then windowed so only a few
+// pages are decoded at once). The book sizes itself to its grid cell, so it
+// drops onto the column grid like any other block. Theme rides the site tokens.
+//
+// Props: pdf (public path), label (accessible title), downloadText.
+export interface Props { pdf: string; label?: string; downloadText?: string; }
+const { pdf, label = 'Booklet', downloadText = 'Download the full booklet (PDF)' } = Astro.props;
+---
+<div class="cg-booklet" data-pdf={pdf} aria-label={label}>
+  <div class="cg-stage">
+    <div class="cg-book cg-spinnable">
+      <div class="cg-shell">
+        <div class="cg-sf cg-sf-front cg-art cg-cover"></div>
+        <div class="cg-sf cg-sf-back cg-art cg-cover"></div>
+        <div class="cg-sf cg-sf-edge cg-sf-right"></div>
+        <div class="cg-sf cg-sf-left"></div>
+        <div class="cg-sf cg-sf-edge cg-sf-top"></div>
+        <div class="cg-sf cg-sf-edge cg-sf-bottom"></div>
+      </div>
+      <div class="cg-block cg-block-l"></div>
+      <div class="cg-block cg-block-r"></div>
+      <div class="cg-spine-line"></div>
+      <div class="cg-pages"></div>
+      <div class="cg-desk"></div>
+    </div>
+    <button class="cg-close" type="button" aria-label="Close booklet">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 5l14 14M19 5L5 19"/></svg>
+    </button>
+  </div>
+
+  <div class="cg-controls">
+    <button class="cg-return" type="button">&#8634; Return to start</button>
+    <div class="cg-row">
+      <button class="cg-prev" type="button" disabled>&larr; Prev</button>
+      <span class="cg-ind label">Cover</span>
+      <button class="cg-next" type="button">Open &rarr;</button>
+    </div>
+  </div>
+
+  <a class="textlink cg-dl" href={pdf} download>{downloadText} &rarr;</a>
+</div>
+
+<style is:global>
+  /* Global (not scoped) because the page leaves are created in JS and Astro's
+     scoping only tags server-rendered elements. Everything is namespaced under
+     .cg-booklet so it cannot leak. */
+  .cg-booklet {
+    --paper: #ffffff; --paper-2: #f1ece2; --edge-a: #f5f0e8; --edge-b: #e3dbcc; --board: #cfcabf;
+    --bturn: cubic-bezier(0.23, 1, 0.32, 1);
+    display: flex; flex-direction: column; gap: 18px; align-items: flex-start;
+  }
+  :root[data-theme="dark"] .cg-booklet {
+    --paper: #faf8f4; --paper-2: #d8d2c6; --edge-a: #e8e2d6; --edge-b: #c4bcab; --board: #2c2c2c;
+  }
+
+  .cg-booklet .cg-stage { position: relative; width: 100%; aspect-ratio: 1.409 / 1; perspective: 2400px; perspective-origin: 50% 46%; }
+  .cg-booklet .cg-book {
+    --bt: 30px; position: absolute; inset: 0; transform-style: preserve-3d; transform-origin: var(--orig, 75%) center;
+    transform: translateX(var(--tx, -50%)) rotateX(var(--rx, 7deg)) rotateY(var(--ry, -16deg));
+    transition: transform 0.95s var(--bturn), transform-origin 0s;
+  }
+  .cg-booklet .cg-spinnable { cursor: grab; } .cg-booklet .cg-grabbing { cursor: grabbing; transition: none; }
+
+  .cg-booklet .cg-sf, .cg-booklet .cg-block, .cg-booklet .cg-pages, .cg-booklet .cg-leaf, .cg-booklet .cg-leaf .cg-face { position: absolute; }
+  .cg-booklet .cg-art { background-position: center; background-size: contain; background-repeat: no-repeat; background-color: var(--paper); }
+  .cg-booklet .cg-sf, .cg-booklet .cg-leaf .cg-face { backface-visibility: hidden; }
+
+  .cg-booklet .cg-cover { border-radius: 3px 8px 8px 3px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.28), 0 26px 70px -28px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.5), inset -2px 0 7px rgba(0,0,0,0.11), inset 0 -2px 5px rgba(0,0,0,0.07); }
+  .cg-booklet .cg-cover::before { content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='l'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.4' numOctaves='6' seed='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23l)'/%3E%3C/svg%3E");
+    background-size:180px 180px; opacity:0.12; mix-blend-mode:overlay; }
+  .cg-booklet .cg-cover::after { content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    background:linear-gradient(118deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.03) 26%, transparent 52%, rgba(0,0,0,0.05) 100%); }
+
+  .cg-booklet .cg-shell { position:absolute; top:0; left:50%; width:50%; height:100%; transform-style:preserve-3d; }
+  .cg-booklet .cg-shell .cg-sf { top:50%; left:50%; }
+  .cg-booklet .cg-sf-front  { width:100%; height:100%; transform: translate(-50%,-50%) translateZ(calc(var(--bt)/2)); }
+  .cg-booklet .cg-sf-back   { width:100%; height:100%; transform: translate(-50%,-50%) translateZ(calc(var(--bt)/-2)) rotateY(180deg);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), inset 2px 0 6px rgba(0,0,0,0.10); }
+  .cg-booklet .cg-sf-edge { background: repeating-linear-gradient(var(--dir, to bottom), var(--edge-a) 0, var(--edge-a) 1.4px, var(--edge-b) 1.4px, var(--edge-b) 2.6px); box-shadow: inset 0 0 8px rgba(0,0,0,0.10); }
+  .cg-booklet .cg-sf-right { width:var(--bt); height:calc(100% + 4px); --dir: to bottom; transform: translate(-50%,-50%) rotateY(90deg) translateZ(calc(var(--pw)/2)); }
+  .cg-booklet .cg-sf-left  { width:var(--bt); height:calc(100% + 4px); transform: translate(-50%,-50%) rotateY(-90deg) translateZ(calc(var(--pw)/2));
+    background: linear-gradient(90deg, color-mix(in srgb, var(--board) 84%, #000 16%), var(--board) 45%, color-mix(in srgb, var(--board) 84%, #000 16%)); box-shadow: inset 0 0 10px rgba(0,0,0,0.18); }
+  .cg-booklet .cg-sf-top    { width:calc(100% + 4px); height:var(--bt); --dir: to right; transform: translate(-50%,-50%) rotateX(90deg)  translateZ(calc(var(--ph)/2)); }
+  .cg-booklet .cg-sf-bottom { width:calc(100% + 4px); height:var(--bt); --dir: to right; transform: translate(-50%,-50%) rotateX(-90deg) translateZ(calc(var(--ph)/2)); }
+
+  .cg-booklet .cg-block { top:6px; bottom:6px; transform-style:preserve-3d; background: repeating-linear-gradient(to bottom, var(--edge-a) 0, var(--edge-a) 1.4px, var(--edge-b) 1.4px, var(--edge-b) 2.6px); }
+  .cg-booklet .cg-block-r { right:-3px; border-radius:0 3px 3px 0; box-shadow: 2px 0 5px rgba(0,0,0,0.10); transform-origin:right center; transform: rotateY(90deg); }
+  .cg-booklet .cg-block-l { left:-3px; border-radius:3px 0 0 3px; box-shadow:-2px 0 5px rgba(0,0,0,0.10); transform-origin:left center; transform: rotateY(-90deg); }
+  .cg-booklet .cg-spine-line { position:absolute; top:0; left:50%; height:100%; width:3px; transform:translateX(-1.5px) translateZ(0.5px); background:linear-gradient(90deg, transparent, rgba(0,0,0,0.12), transparent); }
+  .cg-booklet .cg-pages { inset:0; transform-style:preserve-3d; }
+  .cg-booklet .cg-leaf { top:0; left:50%; width:50%; height:100%; transform-style:preserve-3d; transform-origin:left center; transition: transform 0.92s var(--bturn); will-change: transform; }
+  .cg-booklet .cg-leaf .cg-face { inset:0; border-radius: 2px 8px 8px 2px; }
+  .cg-booklet .cg-leaf .cg-pf { transform: translateZ(0.3px); box-shadow: inset 9px 0 16px -12px rgba(0,0,0,0.22); }
+  .cg-booklet .cg-leaf .cg-pb { transform: translateZ(-0.3px) rotateY(180deg); border-radius:8px 2px 2px 8px; box-shadow: inset -9px 0 16px -12px rgba(0,0,0,0.22); }
+
+  .cg-booklet .cg-desk { position:absolute; left:75%; bottom:-9%; width:42%; height:9%; transform: translateX(-50%) translateZ(calc(var(--bt)/-2 - 2px)) rotateX(90deg);
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0.20) 0%, transparent 72%); filter: blur(11px); transition: opacity 500ms ease; }
+  :root[data-theme="dark"] .cg-booklet .cg-desk { background: radial-gradient(ellipse at center, rgba(0,0,0,0.55) 0%, transparent 72%); }
+
+  .cg-booklet .cg-close { position:absolute; top:6px; right:6px; z-index:6; width:36px; height:36px; border-radius:50%; border:1px solid var(--rule); background:var(--bg); color:var(--text-quiet); cursor:pointer; display:grid; place-items:center; opacity:0; pointer-events:none; transition: opacity 300ms ease, color 200ms, border-color 200ms; }
+  .cg-booklet.is-open .cg-close { opacity:1; pointer-events:auto; }
+  .cg-booklet .cg-close:hover { color:var(--text); border-color:var(--text-quiet); } .cg-booklet .cg-close svg { width:14px; height:14px; }
+
+  .cg-booklet .cg-controls { display:flex; flex-direction:column; align-items:center; gap:10px; width:100%; }
+  .cg-booklet .cg-row { display:flex; align-items:center; justify-content:center; gap:24px; }
+  .cg-booklet .cg-prev, .cg-booklet .cg-next { background:none; border:0; cursor:pointer; color:var(--text-quiet); font-family:var(--sans); font-weight:500; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; padding:6px 4px; transition:color 200ms ease; }
+  .cg-booklet .cg-prev:hover, .cg-booklet .cg-next:hover { color:var(--text); } .cg-booklet .cg-prev[disabled], .cg-booklet .cg-next[disabled] { opacity:.3; cursor:default; pointer-events:none; }
+  .cg-booklet .cg-ind { min-width:88px; text-align:center; color:var(--text-faint); }
+  .cg-booklet .cg-return { font-family:var(--sans); font-weight:500; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--text); background:none; border:1px solid transparent; border-radius:999px; padding:0 16px; height:0; cursor:pointer; opacity:0; pointer-events:none; transition: opacity 300ms ease; }
+  .cg-booklet .cg-return.show { opacity:1; height:auto; padding:8px 16px; border-color:var(--rule); pointer-events:auto; }
+
+  .cg-booklet .cg-dl { width: fit-content; }
+</style>
+
+<script is:inline>
+  (() => {
+    const root = document.querySelector('.cg-booklet');
+    if (!root) return;
+    const PDF = root.getAttribute('data-pdf');
+    const stage = root.querySelector('.cg-stage');
+    const book = root.querySelector('.cg-book');
+    const shellEl = root.querySelector('.cg-shell');
+    const shellFront = root.querySelector('.cg-sf-front');
+    const shellBack = root.querySelector('.cg-sf-back');
+    const pagesEl = root.querySelector('.cg-pages');
+    const blockL = root.querySelector('.cg-block-l');
+    const blockR = root.querySelector('.cg-block-r');
+    const spineLine = root.querySelector('.cg-spine-line');
+    const desk = root.querySelector('.cg-desk');
+    const closeX = root.querySelector('.cg-close');
+    const prevBtn = root.querySelector('.cg-prev');
+    const nextBtn = root.querySelector('.cg-next');
+    const indEl = root.querySelector('.cg-ind');
+    const returnBtn = root.querySelector('.cg-return');
+
+    const REST = { rx: 7, ry: -16 }, OPEN = { rx: 9, ry: 0 };
+    let pageURL = [], numPages = 0, leafCount = 0, maxSpread = 0, spread = 0, leaves = [];
+    let ryFree = REST.ry, rxFree = REST.rx, started = false, busy = false;
+
+    // Size --pw / --ph (px) from the stage so the cuboid transforms are correct.
+    function size(){
+      const w = stage.clientWidth; if (!w) return;
+      const pw = w / 2, ph = pw / 0.7047;
+      book.style.setProperty('--pw', pw + 'px'); book.style.setProperty('--ph', ph + 'px');
+      book.style.setProperty('--bt', Math.max(Math.min(pw * 0.085, 34), 14) + 'px');
+    }
+    new ResizeObserver(size).observe(stage);
+
+    const imgFor = i => pageURL[i] ? `url(${pageURL[i]})` : '';
+    function setWindow(){
+      if (pageURL[0]) shellFront.style.backgroundImage = imgFor(0);
+      if (pageURL[numPages - 1]) shellBack.style.backgroundImage = imgFor(numPages - 1);
+      const lo = Math.max(0, spread - 2), hi = Math.min(leafCount - 1, spread + 2), back = numPages - 1;
+      const face = (k, i) => (k >= lo && k <= hi && i !== back) ? imgFor(i) : '';
+      leaves.forEach((leaf, k) => {
+        const pf = leaf.querySelector('.cg-pf'), pb = leaf.querySelector('.cg-pb');
+        const wf = face(k, 2*k), wb = face(k, 2*k+1);
+        if (pf.style.backgroundImage !== wf) pf.style.backgroundImage = wf;
+        if (pb.style.backgroundImage !== wb) pb.style.backgroundImage = wb;
+      });
+    }
+    function buildLeaves(){
+      pagesEl.innerHTML = ''; leaves = []; leafCount = Math.ceil(numPages / 2); maxSpread = Math.floor(numPages / 2);
+      for (let k = 0; k < leafCount; k++){
+        const leaf = document.createElement('div'); leaf.className = 'cg-leaf';
+        const cov = k === 0 ? ' cg-cover' : '';
+        leaf.innerHTML = `<div class="cg-face cg-pf cg-art${cov}"></div><div class="cg-face cg-pb cg-art"></div>`;
+        pagesEl.appendChild(leaf); leaves.push(leaf);
+      }
+    }
+
+    function render(active){
+      const open = spread >= 1;
+      root.classList.toggle('is-open', open);
+      book.classList.toggle('cg-spinnable', !open);
+      shellEl.style.display = open ? 'none' : '';
+      pagesEl.style.display = open ? '' : 'none';
+      blockL.style.display = blockR.style.display = spineLine.style.display = open ? '' : 'none';
+      desk.style.opacity = open ? '0' : '1';
+      if (open){
+        const bt = parseFloat(getComputedStyle(book).getPropertyValue('--bt')) || 30;
+        leaves.forEach((leaf, k) => {
+          let f = k < spread ? 1 : 0; if (active && active.k === k) f = active.f;
+          leaf.style.transform = `rotateY(${(-f*180).toFixed(2)}deg)`;
+          leaf.style.zIndex = k < spread ? (100 + k) : (1000 - k);
+        });
+        if (active) leaves[active.k].style.zIndex = 2000;
+        const rN = leafCount - spread, lN = spread;
+        blockR.style.width = Math.max(bt * rN / leafCount, 4) + 'px';
+        blockL.style.width = Math.max(bt * lN / leafCount, 4) + 'px';
+        blockR.style.opacity = rN > 0 ? 1 : 0; blockL.style.opacity = lN > 0 ? 1 : 0;
+        book.style.setProperty('--orig', '50%'); book.style.setProperty('--tx', '0%');
+        book.style.setProperty('--rx', OPEN.rx + 'deg'); book.style.setProperty('--ry', OPEN.ry + 'deg');
+      } else {
+        book.style.setProperty('--orig', '75%'); book.style.setProperty('--tx', '-50%');
+        book.style.setProperty('--rx', rxFree + 'deg'); book.style.setProperty('--ry', ryFree + 'deg');
+      }
+      setWindow(); refreshUI();
+    }
+    function refreshUI(){
+      prevBtn.disabled = spread <= 0; nextBtn.disabled = spread >= maxSpread;
+      nextBtn.innerHTML = spread === 0 ? 'Open &rarr;' : 'Next &rarr;';
+      indEl.textContent = spread === 0 ? 'Cover' : `${2*spread}–${Math.min(2*spread+1, numPages)} / ${numPages}`;
+      returnBtn.classList.toggle('show', spread >= 1 && spread >= maxSpread);
+    }
+    function turnTo(s){ s = Math.max(1, Math.min(maxSpread, s)); if (busy || s === spread || spread === 0) return; busy = true; spread = s; render(); setTimeout(() => busy = false, 540); }
+    const next = () => turnTo(spread + 1), prev = () => turnTo(spread - 1);
+    function openBook(){ if (spread !== 0 || busy || !numPages) return; busy = true; spread = 1; render(); setTimeout(() => busy = false, 700); }
+    function closeBook(){ if (spread === 0) return; busy = true; spread = 0; ryFree = REST.ry; rxFree = REST.rx; render(); setTimeout(() => busy = false, 700); }
+
+    nextBtn.addEventListener('click', () => spread === 0 ? openBook() : next());
+    prevBtn.addEventListener('click', prev);
+    closeX.addEventListener('click', closeBook);
+    returnBtn.addEventListener('click', () => turnTo(1));
+    document.addEventListener('keydown', e => { if (!root.classList.contains('is-open')) return; if (e.key === 'Escape') closeBook(); if (e.key === 'ArrowRight') next(); if (e.key === 'ArrowLeft') prev(); });
+
+    // Spin shut, flip pages open.
+    let mode = null, sx = 0, sy = 0, moved = 0, velY = 0, dragK = -1, dragDir = 1, dragW = 0, dragLive = 0, raf = 0;
+    book.addEventListener('pointerdown', e => {
+      if (busy || !numPages) return; cancelAnimationFrame(raf); sx = e.clientX; sy = e.clientY; moved = 0; velY = 0;
+      if (spread === 0){ mode = 'spin'; book.classList.add('cg-grabbing'); }
+      else { const r = book.getBoundingClientRect(); const x = (e.clientX - r.left) / r.width;
+        if (x >= 0.5 && spread < maxSpread){ mode = 'page'; dragK = spread; dragDir = 1; dragW = r.width; }
+        else if (x < 0.5 && spread > 0){ mode = 'page'; dragK = spread - 1; dragDir = -1; dragW = r.width; } else mode = null;
+        if (mode === 'page') leaves[dragK].style.transition = 'none'; }
+      if (mode) book.setPointerCapture?.(e.pointerId);
+    });
+    window.addEventListener('pointermove', e => {
+      if (!mode) return; const dx = e.clientX - sx, dy = e.clientY - sy; moved += Math.abs(e.clientX - sx) + Math.abs(e.clientY - sy);
+      if (mode === 'spin'){ ryFree += dx * 0.45; rxFree = Math.max(-34, Math.min(34, rxFree - dy * 0.35)); velY = dx * 0.45; sx = e.clientX; sy = e.clientY;
+        book.style.setProperty('--ry', ryFree + 'deg'); book.style.setProperty('--rx', rxFree + 'deg'); }
+      else { let f = dragDir === 1 ? (-dx / (dragW * 0.5)) : 1 - (dx / (dragW * 0.5)); f = Math.max(0, Math.min(1, f)); dragLive = f; render({ k: dragK, f }); }
+    });
+    window.addEventListener('pointerup', () => {
+      if (!mode) return; const wasMoved = moved > 6, m = mode; mode = null; book.classList.remove('cg-grabbing');
+      if (m === 'spin'){ if (!wasMoved) openBook(); else { const d = () => { velY *= 0.94; ryFree += velY; book.style.setProperty('--ry', ryFree + 'deg'); if (Math.abs(velY) > 0.04 && spread === 0) raf = requestAnimationFrame(d); }; raf = requestAnimationFrame(d); } }
+      else { leaves[dragK].style.transition = ''; if (!wasMoved) (dragDir === 1 ? next() : prev()); else if (dragDir === 1) (dragLive > 0.4 ? turnTo(spread + 1) : render()); else (dragLive < 0.6 ? turnTo(spread - 1) : render()); }
+    });
+
+    // Lazy: load pdf.js + rasterise pages the first time the book is near view.
+    async function start(){
+      if (started) return; started = true; size();
+      const pdfjs = await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/pdf.min.mjs');
+      pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/pdf.worker.min.mjs';
+      const doc = await pdfjs.getDocument(PDF).promise;
+      numPages = doc.numPages; pageURL = new Array(numPages).fill(null);
+      buildLeaves(); render();
+      const dpr = window.devicePixelRatio || 1;
+      const targetH = Math.min(2400, Math.round((stage.clientHeight || 600) * dpr * 1.7));
+      const renderPage = async (n) => {
+        const page = await doc.getPage(n); const sc = targetH / page.getViewport({ scale: 1 }).height; const vp = page.getViewport({ scale: sc });
+        const cv = document.createElement('canvas'); cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+        const ctx = cv.getContext('2d', { alpha: false }); ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,cv.width,cv.height);
+        await page.render({ canvasContext: ctx, viewport: vp }).promise; pageURL[n-1] = cv.toDataURL('image/jpeg', 0.9);
+      };
+      for (const n of [1, 2, 3, numPages]) if (n >= 1 && n <= numPages) await renderPage(n);
+      setWindow();
+      for (let n = 4; n < numPages; n++){ await renderPage(n); if (Math.abs(Math.floor((n-1)/2) - spread) <= 2) setWindow(); }
+    }
+    const io = new IntersectionObserver((ents) => { ents.forEach(e => { if (e.isIntersecting){ start(); io.disconnect(); } }); }, { rootMargin: '300px' });
+    io.observe(root);
+  })();
+</script>

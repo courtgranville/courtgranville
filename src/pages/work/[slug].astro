@@ -29,6 +29,7 @@ import Footer from '../../components/Footer.astro';
 import Grid from '../../components/Grid.astro';
 import ProjectModel from '../../components/r3f/ProjectModel.tsx';
 import NuclearAtom from '../../components/nuclear/NuclearAtom.tsx';
+import BookletViewer from '../../components/BookletViewer.astro';
 import { MODELS } from '../../data/models';
 
 import imageManifest from '../../content/projects-images.json';
@@ -271,17 +272,7 @@ const nextName = nextProject?.data.name ?? '';
           )}
           {s.booklets.map((bk) => (
             <div class="proj-booklet reveal">
-              <div class="booklet-frame">
-                <iframe
-                  class="booklet-embed"
-                  src={`${bk.pdf}#view=FitH`}
-                  title={bk.label ?? `${name} - booklet`}
-                  loading="lazy"
-                />
-              </div>
-              <a class="textlink booklet-dl" href={bk.pdf} download>
-                {bk.downloadText ?? 'Download the full booklet (PDF)'} &rarr;
-              </a>
+              <BookletViewer pdf={bk.pdf} label={bk.label} downloadText={bk.downloadText} />
             </div>
           ))}
         </Grid>
@@ -453,28 +444,19 @@ const nextName = nextProject?.data.name ?? '';
     .fig-row--portrait.fig-row--solo .fig { width: 100%; }
   }
 
-  /* ── The booklet - a designed PDF shown inline, full content width. A hairline
-        frame from the tokens keeps it part of the editorial space rather than raw
-        browser chrome; it inherits the page ground so it reads in light and dark.
-        Sized to a portrait-ish aspect because the booklet is a designed document. ── */
+  /* ── The booklet - the interactive 3D book (BookletViewer). It sits below its
+        section's text, left-aligned on the body track so its left edge lines up
+        with the prose; the closed book sits at that left edge and the open
+        two-page spread fills rightward from it. ── */
   .proj-booklet {
     grid-column: 1 / -1;
     margin-top: var(--space-block);
-    display: flex; flex-direction: column; gap: 20px;
+    display: flex;
+    justify-content: flex-start;
   }
-  .booklet-frame {
-    border: 1px solid var(--rule);
-    background: var(--bg);
-    width: 100%;
-    aspect-ratio: 1 / 1.414;            /* A-series portrait, the booklet's own proportion */
-    max-height: 86vh;
-  }
-  @media (min-width: 768px) {
-    /* A spread-shaped document reads better wider than tall on larger screens. */
-    .booklet-frame { aspect-ratio: 1.414 / 1; }
-  }
-  .booklet-embed { width: 100%; height: 100%; border: 0; display: block; }
-  .booklet-dl { width: fit-content; }
+  .proj-booklet > :global(.cg-booklet) { width: 100%; align-items: flex-start; }
+  @media (min-width: 768px)  { .proj-booklet { grid-column: 3 / 9; } }
+  @media (min-width: 1200px) { .proj-booklet { grid-column: 3 / 12; } }
 
   /* ── 4. Closing hero shot ── */
   :global(.proj-final) { margin-top: var(--space-block); }

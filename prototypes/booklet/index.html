@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Booklet study - Court Granville</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Raleway:wght@400;500&display=block" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FFFFFF; --text: #161616; --text-quiet: rgba(22,22,22,0.55); --text-faint: rgba(22,22,22,0.32); --rule: rgba(22,22,22,0.10);
+    --serif: 'Playfair Display', Georgia, serif; --sans: 'Raleway', ui-sans-serif, system-ui, sans-serif;
+    --ease-out: cubic-bezier(0.16, 1, 0.30, 1); --turn: cubic-bezier(0.23, 1, 0.32, 1);
+    --paper: #ffffff; --paper-2: #f1ece2; --edge-a: #f5f0e8; --edge-b: #e3dbcc; --board: #cfcabf;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0E0E0E; --text: #F4F3EF; --text-quiet: rgba(244,243,239,0.60); --text-faint: rgba(244,243,239,0.38); --rule: rgba(244,243,239,0.14);
+    --paper: #faf8f4; --paper-2: #d8d2c6; --edge-a: #e8e2d6; --edge-b: #c4bcab; --board: #2c2c2c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13px; line-height: 1.6; -webkit-font-smoothing: antialiased; overflow: hidden; transition: background 400ms var(--ease-out); }
+  .label { font-family: var(--sans); font-weight: 500; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-quiet); }
+
+  .bar { position: fixed; top: 0; left: 0; right: 0; z-index: 20; display: flex; align-items: baseline; justify-content: space-between; padding: 22px max(28px, 3vw); pointer-events: none; }
+  .bar > * { pointer-events: auto; }
+  .study-title { font-family: var(--serif); font-size: 17px; font-weight: 400; }
+  .study-title small { display:block; font-family: var(--sans); font-size: 11px; letter-spacing:.14em; text-transform:uppercase; color: var(--text-quiet); margin-top: 4px; }
+  .theme-btn { background:none; border:0; cursor:pointer; }
+
+  .stage { position: fixed; inset: 0; display: grid; place-items: center; perspective: 2600px; perspective-origin: 50% 45%; }
+
+  /* Book footprint = two pages wide (a spread); closed book lives in the right half. */
+  .book {
+    --ph: 72vh; --pw: calc(var(--ph) * 0.7047); --bt: 40px;
+    position: relative; width: calc(var(--pw) * 2); height: var(--ph);
+    transform-style: preserve-3d; transform-origin: var(--orig, 75%) center;
+    transform: translateX(var(--tx, -25%)) rotateX(var(--rx, 7deg)) rotateY(var(--ry, -16deg));
+    transition: transform 0.95s var(--turn), transform-origin 0s;
+  }
+  .book.spinnable { cursor: grab; } .book.grabbing { cursor: grabbing; transition: none; }
+
+  .face { position: absolute; inset: 0; backface-visibility: hidden; }
+  .art  { background-position: center; background-size: contain; background-repeat: no-repeat; background-color: var(--paper); }
+
+  /* Cover material (Omma): layered depth shadows, leather grain, sheen, rounded fore-edge. */
+  .cover-art { border-radius: 3px 8px 8px 3px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.30), 0 30px 80px -30px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.5), inset -2px 0 8px rgba(0,0,0,0.12), inset 0 -2px 6px rgba(0,0,0,0.08); }
+  .cover-art::before { content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='l'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.4' numOctaves='6' seed='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23l)'/%3E%3C/svg%3E");
+    background-size:200px 200px; opacity:var(--leather,0.12); mix-blend-mode:overlay; }
+  .cover-art::after { content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    background:linear-gradient(118deg, rgba(255,255,255,0.20) 0%, rgba(255,255,255,0.03) 26%, transparent 52%, rgba(0,0,0,0.05) 100%); }
+
+  /* ── Closed book: a centred cuboid in the RIGHT half ── */
+  .shell { position:absolute; top:0; left:50%; width:50%; height:100%; transform-style:preserve-3d; }
+  .shell .sf { position:absolute; top:50%; left:50%; }
+  .sf-front  { width:100%; height:100%; transform: translate(-50%,-50%) translateZ(calc(var(--bt)/2)); }
+  /* Back cover: the booklet's own back page, with the same cover material as the
+     front; only a soft bevel (no big drop - the front already casts the shadow). */
+  .sf-back   { width:100%; height:100%; transform: translate(-50%,-50%) translateZ(calc(var(--bt)/-2)) rotateY(180deg);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), inset 2px 0 6px rgba(0,0,0,0.10), inset 0 -2px 5px rgba(0,0,0,0.06); }
+  /* Edges run a touch long so they tuck behind the rounded cover corners (no gap). */
+  .sf-edge { background: repeating-linear-gradient(var(--dir, to bottom), var(--edge-a) 0, var(--edge-a) 1.4px, var(--edge-b) 1.4px, var(--edge-b) 2.6px); box-shadow: inset 0 0 8px rgba(0,0,0,0.10); }
+  .sf-right { width:var(--bt); height:calc(100% + 4px); --dir: to bottom; transform: translate(-50%,-50%) rotateY(90deg) translateZ(calc(var(--pw)/2)); }
+  .sf-left  { width:var(--bt); height:calc(100% + 4px); transform: translate(-50%,-50%) rotateY(-90deg) translateZ(calc(var(--pw)/2));
+    background: linear-gradient(90deg, color-mix(in srgb, var(--board) 84%, #000 16%), var(--board) 45%, color-mix(in srgb, var(--board) 84%, #000 16%)); box-shadow: inset 0 0 10px rgba(0,0,0,0.18); }
+  .sf-top    { width:calc(100% + 4px); height:var(--bt); --dir: to right; transform: translate(-50%,-50%) rotateX(90deg)  translateZ(calc(var(--ph)/2)); }
+  .sf-bottom { width:calc(100% + 4px); height:var(--bt); --dir: to right; transform: translate(-50%,-50%) rotateX(-90deg) translateZ(calc(var(--ph)/2)); }
+
+  /* ── Open: two-page spread ── */
+  .block { position:absolute; top:6px; bottom:6px; transform-style:preserve-3d;
+    background: repeating-linear-gradient(to bottom, var(--edge-a) 0, var(--edge-a) 1.4px, var(--edge-b) 1.4px, var(--edge-b) 2.6px); }
+  .block-r { right:-3px; border-radius:0 3px 3px 0; box-shadow: 2px 0 5px rgba(0,0,0,0.10); transform-origin:right center; transform: rotateY(90deg); }
+  .block-l { left:-3px; border-radius:3px 0 0 3px; box-shadow:-2px 0 5px rgba(0,0,0,0.10); transform-origin:left center; transform: rotateY(-90deg); }
+  .open-spine { position:absolute; top:0; left:50%; height:100%; width:3px; transform:translateX(-1.5px) translateZ(0.5px); background:linear-gradient(90deg, transparent, rgba(0,0,0,0.12), transparent); }
+
+  .pages { position:absolute; inset:0; transform-style:preserve-3d; }
+  .leaf { position:absolute; top:0; left:50%; width:50%; height:100%; transform-style:preserve-3d; transform-origin:left center; transition: transform 0.92s var(--turn); will-change: transform; }
+  .leaf .face { border-radius: 2px 8px 8px 2px; }
+  .leaf .pf { transform: translateZ(0.3px); box-shadow: inset 9px 0 16px -12px rgba(0,0,0,0.22); }                       /* right page: gutter on left */
+  .leaf .pb { transform: translateZ(-0.3px) rotateY(180deg); border-radius:8px 2px 2px 8px; box-shadow: inset -9px 0 16px -12px rgba(0,0,0,0.22); }  /* left page: gutter on right */
+
+  .desk-shadow { position:absolute; left:75%; bottom:-9%; width:42%; height:9%; transform: translateX(-50%) translateZ(calc(var(--bt)/-2 - 2px)) rotateX(90deg);
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0.22) 0%, transparent 72%); filter: blur(11px); transition: opacity 500ms var(--ease-out); }
+  :root[data-theme="dark"] .desk-shadow { background: radial-gradient(ellipse at center, rgba(0,0,0,0.6) 0%, transparent 72%); }
+
+  .close-x { position:fixed; top:86px; right:max(28px,3vw); z-index:25; width:40px; height:40px; border-radius:50%; border:1px solid var(--rule); background:none; color:var(--text-quiet); cursor:pointer; display:grid; place-items:center; opacity:0; pointer-events:none; transition: opacity 350ms var(--ease-out), color 200ms, border-color 200ms; }
+  .close-x.show { opacity:1; pointer-events:auto; } .close-x:hover { color:var(--text); border-color:var(--text-quiet); } .close-x svg { width:15px; height:15px; }
+
+  .controls { position:fixed; bottom:0; left:0; right:0; z-index:20; display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 26px; pointer-events:none; }
+  .controls > * { pointer-events:auto; }
+  .ctl-row { display:flex; align-items:center; justify-content:center; gap:28px; }
+  .pg-btn { background:none; border:0; cursor:pointer; color:var(--text-quiet); font-family:var(--sans); font-weight:500; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; padding:8px 6px; transition:color 200ms var(--ease-out); }
+  .pg-btn:hover { color:var(--text); } .pg-btn[disabled] { opacity:.3; cursor:default; pointer-events:none; }
+  .pg-ind { font-family:var(--sans); font-size:11px; letter-spacing:.2em; color:var(--text-faint); min-width:96px; text-align:center; }
+  .return-btn { font-family:var(--sans); font-weight:500; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--text); background:none; border:1px solid var(--rule); border-radius:999px; padding:9px 18px; cursor:pointer; opacity:0; transform:translateY(6px); pointer-events:none; transition: opacity 350ms var(--ease-out), transform 350ms var(--ease-out), border-color 200ms; }
+  .return-btn.show { opacity:1; transform:none; pointer-events:auto; } .return-btn:hover { border-color:var(--text-quiet); }
+
+  .hint { position:fixed; left:0; right:0; bottom:96px; z-index:15; text-align:center; color:var(--text-faint); font-size:11px; letter-spacing:.16em; text-transform:uppercase; opacity:0; transition:opacity 600ms var(--ease-out); pointer-events:none; }
+  .hint.show { opacity:1; }
+  .loading { position:fixed; inset:0; z-index:30; display:grid; place-items:center; background:var(--bg); transition:opacity 600ms var(--ease-out); }
+  .loading.gone { opacity:0; pointer-events:none; }
+  .l-mark { font-family:var(--serif); font-weight:700; font-size:34px; letter-spacing:.04em; text-align:center; } .l-sub { margin-top:14px; text-align:center; }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <div class="study-title">The booklet<small>3D page-turn study</small></div>
+    <button class="theme-btn label" id="themeBtn">Dark</button>
+  </div>
+
+  <button class="close-x" id="closeX" title="Close (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+
+  <div class="stage">
+    <div class="book spinnable" id="book">
+      <div class="shell" id="shell">
+        <div class="sf sf-front art cover-art" id="shellFront"></div>
+        <div class="sf sf-back art cover-art" id="shellBack"></div>
+        <div class="sf sf-edge sf-right"></div>
+        <div class="sf sf-left"></div>
+        <div class="sf sf-edge sf-top"></div>
+        <div class="sf sf-edge sf-bottom"></div>
+      </div>
+      <div class="block block-l" id="blockL"></div>
+      <div class="block block-r" id="blockR"></div>
+      <div class="open-spine" id="openSpine"></div>
+      <div class="pages" id="pages"></div>
+      <div class="desk-shadow" id="deskShadow"></div>
+    </div>
+  </div>
+
+  <div class="hint" id="hint">Drag to spin &middot; click the cover to open</div>
+
+  <div class="controls">
+    <button class="return-btn" id="returnBtn">&#8634; Return to start</button>
+    <div class="ctl-row">
+      <button class="pg-btn" id="prev" disabled>&larr; Prev</button>
+      <div class="pg-ind label" id="ind">Cover</div>
+      <button class="pg-btn" id="next">Open &rarr;</button>
+    </div>
+  </div>
+
+  <div class="loading" id="loading"><div><div class="l-mark">CG</div><div class="l-sub label">Rendering the booklet&hellip;</div></div></div>
+
+  <script type="module">
+  import * as pdfjs from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/pdf.min.mjs';
+  pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/pdf.worker.min.mjs';
+
+  const CONFIG = { pdf: '../../public/wabi-sabi-booklet.pdf', quality: 0.92, superSample: 1.6, maxRenderH: 2600,
+    restClosed: { rx: 7, ry: -16 }, openTilt: { rx: 9, ry: 0 } };
+  const $ = id => document.getElementById(id);
+  const bookEl = $('book'), shellEl = $('shell'), shellFront = $('shellFront'), shellBack = $('shellBack'), pagesEl = $('pages'),
+        blockL = $('blockL'), blockR = $('blockR'), openSpine = $('openSpine'),
+        prevBtn = $('prev'), nextBtn = $('next'), indEl = $('ind'), closeX = $('closeX'), returnBtn = $('returnBtn');
+
+  let pageURL = [], numPages = 0, leafCount = 0, maxSpread = 0, spread = 0, theme = 'light', leaves = [];
+  let ryFree = CONFIG.restClosed.ry, rxFree = CONFIG.restClosed.rx;
+
+  // leaf k: front = right page = pageURL[2k] (leaf0 front = cover); back = left page = pageURL[2k+1]
+  function buildLeaves(){
+    pagesEl.innerHTML = ''; leaves = []; leafCount = Math.ceil(numPages / 2); maxSpread = Math.floor(numPages / 2);
+    for (let k = 0; k < leafCount; k++){
+      const leaf = document.createElement('div'); leaf.className = 'leaf';
+      const cov = k === 0 ? ' cover-art' : '';
+      leaf.innerHTML = `<div class="face pf art${cov}"></div><div class="face pb art"></div>`;
+      pagesEl.appendChild(leaf); leaves.push(leaf);
+    }
+  }
+  const imgFor = i => pageURL[i] ? `url(${pageURL[i]})` : '';
+  function setWindow(){
+    if (pageURL[0]) shellFront.style.backgroundImage = imgFor(0);
+    if (pageURL[numPages - 1]) shellBack.style.backgroundImage = imgFor(numPages - 1);   // booklet's back page
+    const lo = Math.max(0, spread - 2), hi = Math.min(leafCount - 1, spread + 2);
+    const back = numPages - 1;                 // the outside back cover lives on the shell, not a flat page
+    const faceImg = (k, i) => (k >= lo && k <= hi && i !== back) ? imgFor(i) : '';
+    leaves.forEach((leaf, k) => {
+      const pf = leaf.querySelector('.pf'), pb = leaf.querySelector('.pb');
+      const wf = faceImg(k, 2*k), wb = faceImg(k, 2*k + 1);
+      if (pf.style.backgroundImage !== wf) pf.style.backgroundImage = wf;
+      if (pb.style.backgroundImage !== wb) pb.style.backgroundImage = wb;
+    });
+  }
+
+  function render(active){
+    const open = spread >= 1;
+    bookEl.classList.toggle('spinnable', !open);
+    shellEl.style.display = open ? 'none' : '';
+    pagesEl.style.display = open ? '' : 'none';
+    blockL.style.display = blockR.style.display = openSpine.style.display = open ? '' : 'none';
+    closeX.classList.toggle('show', open);
+    $('deskShadow').style.opacity = open ? '0' : '1';
+
+    if (open){
+      leaves.forEach((leaf, k) => {
+        let f = k < spread ? 1 : 0; if (active && active.k === k) f = active.f;
+        leaf.style.transform = `rotateY(${(-f*180).toFixed(2)}deg)`;
+        leaf.style.zIndex = k < spread ? (100 + k) : (1000 - k);
+      });
+      if (active) leaves[active.k].style.zIndex = 2000;
+      const bt = parseFloat(getComputedStyle(bookEl).getPropertyValue('--bt')) || 40;
+      const rN = leafCount - spread, lN = spread;
+      blockR.style.width = Math.max(bt * rN / leafCount, 4) + 'px';
+      blockL.style.width = Math.max(bt * lN / leafCount, 4) + 'px';
+      blockR.style.opacity = rN > 0 ? 1 : 0; blockL.style.opacity = lN > 0 ? 1 : 0;
+      bookEl.style.setProperty('--orig', '50%'); bookEl.style.setProperty('--tx', '0%');
+      bookEl.style.setProperty('--rx', CONFIG.openTilt.rx + 'deg'); bookEl.style.setProperty('--ry', CONFIG.openTilt.ry + 'deg');
+    } else {
+      bookEl.style.setProperty('--orig', '75%'); bookEl.style.setProperty('--tx', '-25%');
+      bookEl.style.setProperty('--rx', rxFree + 'deg'); bookEl.style.setProperty('--ry', ryFree + 'deg');
+    }
+    setWindow(); refreshUI();
+  }
+  function refreshUI(){
+    prevBtn.disabled = spread <= 0; nextBtn.disabled = spread >= maxSpread;
+    nextBtn.innerHTML = spread === 0 ? 'Open &rarr;' : 'Next &rarr;';
+    indEl.textContent = spread === 0 ? 'Cover' : `${2*spread}–${Math.min(2*spread+1, numPages)} / ${numPages}`;
+    returnBtn.classList.toggle('show', spread >= 1 && spread >= maxSpread);
+  }
+
+  let busy = false;
+  function turnTo(s){ s = Math.max(1, Math.min(maxSpread, s)); if (busy || s === spread || spread === 0) return; busy = true; spread = s; render(); setTimeout(() => busy = false, 540); }
+  const next = () => turnTo(spread + 1), prev = () => turnTo(spread - 1);
+  function openBook(){ if (spread !== 0 || busy) return; busy = true; spread = 1; render(); setTimeout(() => busy = false, 700); }
+  function closeBook(){ if (spread === 0) return; busy = true; spread = 0; ryFree = CONFIG.restClosed.ry; rxFree = CONFIG.restClosed.rx; render(); setTimeout(() => busy = false, 700); }
+
+  nextBtn.addEventListener('click', () => spread === 0 ? openBook() : next());
+  prevBtn.addEventListener('click', prev);
+  closeX.addEventListener('click', closeBook);
+  returnBtn.addEventListener('click', () => turnTo(1));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && spread >= 1) closeBook(); if (spread >= 1){ if (e.key === 'ArrowRight') next(); if (e.key === 'ArrowLeft') prev(); } });
+
+  let mode = null, sx = 0, sy = 0, moved = 0, velY = 0, dragK = -1, dragDir = 1, dragW = 0, dragLive = 0, raf = 0;
+  bookEl.addEventListener('pointerdown', e => {
+    if (busy) return; cancelAnimationFrame(raf); sx = e.clientX; sy = e.clientY; moved = 0; velY = 0;
+    if (spread === 0){ mode = 'spin'; bookEl.classList.add('grabbing'); }
+    else { const r = bookEl.getBoundingClientRect(); const x = (e.clientX - r.left) / r.width;
+      if (x >= 0.5 && spread < maxSpread){ mode = 'page'; dragK = spread; dragDir = 1; dragW = r.width; }
+      else if (x < 0.5 && spread > 0){ mode = 'page'; dragK = spread - 1; dragDir = -1; dragW = r.width; } else mode = null;
+      if (mode === 'page') leaves[dragK].style.transition = 'none'; }
+    if (mode) bookEl.setPointerCapture?.(e.pointerId);
+  });
+  window.addEventListener('pointermove', e => {
+    if (!mode) return; const dx = e.clientX - sx, dy = e.clientY - sy; moved += Math.abs(e.clientX - sx) + Math.abs(e.clientY - sy);
+    if (mode === 'spin'){ ryFree += dx * 0.45; rxFree = Math.max(-34, Math.min(34, rxFree - dy * 0.35)); velY = dx * 0.45; sx = e.clientX; sy = e.clientY;
+      bookEl.style.setProperty('--ry', ryFree + 'deg'); bookEl.style.setProperty('--rx', rxFree + 'deg'); }
+    else { let f = dragDir === 1 ? (-dx / (dragW * 0.5)) : 1 - (dx / (dragW * 0.5)); f = Math.max(0, Math.min(1, f)); dragLive = f; render({ k: dragK, f }); }
+  });
+  window.addEventListener('pointerup', () => {
+    if (!mode) return; const wasMoved = moved > 6, m = mode; mode = null; bookEl.classList.remove('grabbing');
+    if (m === 'spin'){ if (!wasMoved) openBook(); else { const d = () => { velY *= 0.94; ryFree += velY; bookEl.style.setProperty('--ry', ryFree + 'deg'); if (Math.abs(velY) > 0.04 && spread === 0) raf = requestAnimationFrame(d); }; raf = requestAnimationFrame(d); } }
+    else { leaves[dragK].style.transition = ''; if (!wasMoved) (dragDir === 1 ? next() : prev()); else if (dragDir === 1) (dragLive > 0.4 ? turnTo(spread + 1) : render()); else (dragLive < 0.6 ? turnTo(spread - 1) : render()); }
+  });
+
+  function applyTheme(t){ theme = t; document.documentElement.setAttribute('data-theme', t); $('themeBtn').textContent = t === 'dark' ? 'Light' : 'Dark'; }
+  $('themeBtn').addEventListener('click', () => applyTheme(theme === 'dark' ? 'light' : 'dark'));
+
+  async function load(){
+    const pdf = await pdfjs.getDocument(CONFIG.pdf).promise; numPages = pdf.numPages; pageURL = new Array(numPages).fill(null);
+    buildLeaves(); render();
+    const dpr = window.devicePixelRatio || 1, targetH = Math.min(CONFIG.maxRenderH, Math.round(window.innerHeight * 0.72 * dpr * CONFIG.superSample));
+    const renderPage = async (n) => {
+      const page = await pdf.getPage(n); const scale = targetH / page.getViewport({ scale: 1 }).height; const vp = page.getViewport({ scale });
+      const cv = document.createElement('canvas'); cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+      const ctx = cv.getContext('2d', { alpha: false }); ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,cv.width,cv.height);
+      await page.render({ canvasContext: ctx, viewport: vp }).promise; pageURL[n-1] = cv.toDataURL('image/jpeg', CONFIG.quality);
+    };
+    for (const n of [1,2,3]) if (n <= numPages) await renderPage(n);
+    setWindow(); $('loading').classList.add('gone');
+    setTimeout(() => $('hint').classList.add('show'), 700); setTimeout(() => $('hint').classList.remove('show'), 5600);
+    for (let n = 4; n <= numPages; n++){ await renderPage(n); if (Math.abs(Math.floor((n-1)/2) - spread) <= 2) setWindow(); }
+    setWindow();
+  }
+  load().catch(err => { console.error(err); document.querySelector('.l-sub').textContent = 'Could not load the PDF'; });
+  </script>
+</body>
+</html>

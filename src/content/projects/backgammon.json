@@ -56,6 +56,12 @@
       "imageSlug": "08-final-detail",
       "variant": "field",
       "alt": "Detail - light passing through the thinned material"
+    },
+    {
+      "type": "image",
+      "imageSlug": "09-studio-detail",
+      "variant": "field",
+      "alt": "Close detail of the finished board - the recycled-plastic surface and its raised edge"
     }
   ]
 }

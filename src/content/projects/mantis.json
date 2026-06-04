@@ -55,6 +55,12 @@
     {
       "type": "text",
       "body": "Mantis was selected for IE University's exhibition of the School of Architecture and Design's best projects, and shown externally at the Meyrit Biennale in Madrid. It is the clearest statement of an idea that runs through much of my product work: the most interesting brief is usually a constraint, the most sustainable material is the one that already exists, and the design often lives in the joint."
+    },
+    { "type": "label", "text": "06 - The finished lamp" },
+    {
+      "type": "imageGrid",
+      "imageSlugs": ["01-joint", "02-lampshade", "03-base"],
+      "alt": "The finished Mantis - the metal-clad joint, the lit shade, and the base"
     }
   ]
 }

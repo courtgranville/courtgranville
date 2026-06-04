@@ -15,27 +15,32 @@
     { "type": "label", "text": "01 - The Brief" },
     {
       "type": "text",
-      "body": "Wave came out of an unusual group brief: ship ten different deliverables a week, for ten weeks. The deliverables compounded - each week built on the last - so the final object wasn't designed up front but accumulated, the culmination of a semester's range of work across electronics, woodworking, audio and product design."
+      "body": "Wave came out of a brief called Process Porn, from a Processes and Design Theory studio. Its whole object was to develop a methodology of your own by celebrating the process of making over any finished product - design as play, graded seventy percent on process and thirty on result. The instruction, almost literally, was to forget the outcome and document the journey: ten deliverables a week, for ten weeks."
     },
-    { "type": "label", "text": "02 - Process" },
+    { "type": "label", "text": "02 - Ten weeks of process, not one product" },
     {
       "type": "text",
-      "body": "Most of the semester was spent in materials rather than on screen - testing wood samples, CNC-machining, 3D-printing internal components - alongside research into sound and speaker design. We were learning the acoustics and the fabrication at the same time, and the build emerged from those weeks rather than preceding them."
+      "body": "So we did not set out to design a speaker. Over the term the team - Mansour, Anya and I - worked through a sequence of experiments: deconstructing and reconstructing found furniture into chairs, testing wood stains and finishes, repurposing offcuts. The brief rewarded the exploration itself, so the work was a string of outcomes rather than a march toward one. The speaker was where it finally settled - the most resolved thing the process produced."
+    },
+    { "type": "label", "text": "03 - The key decision" },
+    {
+      "type": "text",
+      "body": "When the process found its object, it found a constraint to work against. We started from a broken pair of Edifier desktop speakers - the drivers were salvageable, the housings were not - so the speaker became a job of repair and rehousing rather than building from nothing. We rebuilt the salvaged drivers into a custom enclosure, CNC'd from solid wood and finished by hand, with the crossover, amplifier, port and wiring mounted inside and Bluetooth and a twelve-volt supply driving it. Wood was a functional choice as much as an aesthetic one: a rigid, solid cabinet limits the unwanted resonance a flimsy housing introduces, so it suits the driver as well as the eye."
     },
     {
       "type": "imageGrid",
       "imageSlugs": ["01-process-1", "02-process-2"],
       "alt": "Materials and CNC tests from the early weeks"
     },
-    { "type": "label", "text": "03 - Key Decision" },
+    { "type": "label", "text": "04 - The manual" },
     {
       "type": "text",
-      "body": "We started from a broken pair of Edifier desktop speakers. The drivers were salvageable; the housings weren't - so the project became one of repair and rehousing rather than building from nothing. We rebuilt the desktop drivers into a custom enclosure, CNC'd from solid wood and finished by hand, with the internal components 3D-printed and machined to fit. Wood was a deliberate choice as much as an aesthetic one: a rigid, solid cabinet limits the unwanted resonance a flimsy housing introduces, so it suits the driver as well as the eye."
+      "body": "The most unusual deliverable was a thing in its own right: a full, illustrated build manual - \"Build a Speaker\" - documenting the entire assembly step by step, from gluing and clamping the cabinet, through populating and soldering the crossover and mounting the electronics, to first power-up, testing and troubleshooting. Writing it turned a one-off object into something repeatable and shareable, which is the truest expression of what the course was about: the method is the work, made open enough for someone else to follow."
     },
-    { "type": "label", "text": "04 - Resolved" },
+    { "type": "label", "text": "05 - What the process left behind" },
     {
       "type": "text",
-      "body": "The result is a working desktop speaker - salvaged drivers in a hand-finished wooden body - built to sit on the same desk as Mantis. Two objects from the same instinct: keep what works, rebuild the rest."
+      "body": "The result is a working Bluetooth desktop speaker - salvaged drivers in a hand-finished wooden body - and a manual that lets someone rebuild it. But the real deliverable was the methodology the brief was after, and it is one that recurs across my product work: let the making lead, document everything, keep what works, and rebuild the rest."
     },
     {
       "type": "image",

@@ -47,6 +47,14 @@ const blockSchema = z.discriminatedUnion('type', [
     type: z.literal('specList'),
     entries: z.record(z.string(), z.string()),
   }),
+  // A designed PDF document (e.g. a project booklet or build manual) shown
+  // inline on the page, with a download link. Reusable across projects.
+  z.object({
+    type: z.literal('booklet'),
+    pdf: z.string(),                       // public path, e.g. "/wabi-sabi-booklet.pdf"
+    label: z.string().optional(),          // accessible title for the embedded viewer
+    downloadText: z.string().optional(),   // defaults to "Download the full booklet (PDF)"
+  }),
 ]);
 
 const projects = defineCollection({

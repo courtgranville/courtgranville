@@ -14,27 +14,37 @@
     { "type": "label", "text": "01 - The Brief" },
     {
       "type": "text",
-      "body": "This was my first fully 3D-modelled project, built entirely from 3D-printed parts and electronics. The brief was a critical one - design a product that encourages responsible social-media use and questions our addiction to it. Mine became a lamp: an object for people living with ADHD, anxiety, social-media addiction, or some combination of the three."
+      "body": "My first fully 3D-modelled project, built entirely from 3D-printed parts and electronics - and my first taste of critical design. The brief was deliberately provocative: design a product that encourages responsible social-media use and raises questions about our addiction to it. Mine became a lamp, made for people living with ADHD, anxiety, social-media addiction, or some combination of the three."
     },
-    { "type": "label", "text": "02 - The Idea" },
+    { "type": "label", "text": "02 - Why critical design" },
     {
       "type": "text",
-      "body": "As critical design, LUMI is meant to provoke as much as to function. The premise is simple: the antidote to a screen shouldn't be another screen. A lamp is ambient, physical and already in the room - so rather than an app nagging you from the same device that's the problem, LUMI is designed to answer your screen time in the space around you, a quiet light-based nudge instead of another notification. The point isn't the gadget; it's the question it asks about how we'd actually want technology to intervene."
+      "body": "Critical design - the practice Anthony Dunne and Fiona Raby describe as critical thought translated into materiality - uses speculative objects to question the role technology plays in everyday life rather than simply serving it. That framing gave me licence to design an object that argues a point. The research underneath it was behavioural: ADHD heightens the pull of social media through dopamine and a constant stream of new stimuli; FOMO sharpens it further; and anxiety and connectivity feed each other in a loop, where the relief of checking is exactly what keeps you checking. Running through the symptoms - impulsivity, restlessness, poor concentration, mood swings - one stood out as physical and addressable: sleep disturbance."
     },
-    { "type": "label", "text": "03 - Making" },
+    { "type": "label", "text": "03 - The idea: a social battery you can see" },
     {
       "type": "text",
-      "body": "I modelled and 3D-printed a set of threaded components that screw together, and designed the internal housing to hold LED lighting strips - built to be driven by an app or custom software. It was where I learned to model for manufacture rather than just for the screen: parts that have to thread, align and genuinely fit together."
+      "body": "The premise is simple, and it is the whole design: the antidote to a screen should not be another screen. So instead of an app nagging you from the very device that is the problem, LUMI answers your screen time in the space around you. You set a daily screen-time goal. The lamp starts at full brightness and dims as you spend that allowance down - your remaining light is your remaining healthy time. Cross eighty percent of it and the lamp flashes red: get off your phone. It pairs over Bluetooth, and it asks its question ambiently, in the room, rather than as one more notification."
+    },
+    { "type": "label", "text": "04 - Modelling for the real world" },
+    {
+      "type": "text",
+      "body": "I modelled the lamp in Rhino as three threaded parts that screw together: a base holding the electronics, power and a rubber grip; a ring carrying the touch-sensitive power switch and supporting the housing; and a semi-opaque cylindrical housing for the LED strips. Designing parts that actually have to thread, align and seat together was where I learned to model for manufacture rather than just for a render - tolerances, wall thicknesses and threading pitches that hold up off the screen."
     },
     {
       "type": "imageGrid",
       "imageSlugs": ["01-cad-base", "02-cad-component", "03-cad-threaded"],
       "alt": "Threaded-part details from the 3D model"
     },
-    { "type": "label", "text": "04 - Resolved" },
+    { "type": "label", "text": "05 - Rendering and the scene" },
     {
       "type": "text",
-      "body": "What exists is the artefact - a working lamp object, designed for the screen-time-responsive behaviour but not yet running it. The software side is deliberately left open: the next stage of the project rather than this one. I'd rather show the honest state of it - a finished object and an unfinished system - than pretend the hard part is done."
+      "body": "I took the model into Blender to light it, build a small set and animate it - the warm palette and the slow reveal that sell the object before you understand what it does. The render stage was as much about communicating the idea as testing the form."
+    },
+    { "type": "label", "text": "06 - The prototype, honestly" },
+    {
+      "type": "text",
+      "body": "What exists is a working, 3D-printed object, lit - including the red warning state the concept turns on. The screen-time tracking and the Bluetooth link are deliberately the unbuilt next stage. I would rather show the honest state of it - a finished object and an unfinished system - than pretend the hard, software half is done. As a critical-design piece, the object already does its job: it asks how we would actually want technology to intervene, and answers in light."
     },
     {
       "type": "image",

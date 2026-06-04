@@ -14,22 +14,27 @@
     { "type": "label", "text": "01 - The Problem" },
     {
       "type": "text",
-      "body": "YourPAL is a productivity app built from the ground up around three problems students know well: procrastination, burnout and bad timekeeping. The concept is an AI-driven personal assistant that learns how you work - pinpointing your peak productivity hours and building bespoke schedules around them - and goes beyond task management to track wellness and surface insight into how you actually spend your time."
+      "body": "YourPAL is a productivity app built around three problems students know well: procrastination, burnout and bad timekeeping. The concept is an AI study companion that learns how you work - pinpointing your peak productivity hours and building bespoke schedules around them - and goes beyond task management to track wellness and show you how you actually spend your time."
     },
-    { "type": "label", "text": "02 - Approach" },
+    { "type": "label", "text": "02 - The brief, and why it is a concept" },
     {
       "type": "text",
-      "body": "This was my introduction to Figma and to app design, and as much an exercise in user journey and mapping as in interface design. The organising question was temporal: how does a student move through the app over a day, a week, a term? I worked outward from those journeys - flows first, then screens - so the interface followed the behaviour rather than the other way round."
+      "body": "It was the final project of Interactive and Digital Tools, a second-year studio about emerging digital tools, and it followed two earlier briefs in the same course - a printed design-card deck and a piece of time-based media. The app brief asked for a fully reasoned concept: a narrative, a context it fits into, an account of how it works, and proposals for where it could go. Not a shipped product - a thought-through one. That is exactly why the deliverable is a complete set of flows and a working Figma prototype rather than code: the thinking was the point."
+    },
+    { "type": "label", "text": "03 - Approach: journeys before screens" },
+    {
+      "type": "text",
+      "body": "This was my introduction to Figma and to app design, and as much an exercise in user journeys and mapping as in interface. The organising question was temporal: how does a student move through the app over a day, a week, a term? I worked outward from those journeys - flows first, then screens - so the interface followed the behaviour rather than the other way round."
     },
     {
       "type": "imageGrid",
       "imageSlugs": ["01-process-1", "02-process-2", "03-process-3"],
       "alt": "Iteration shots - flows and screen drafts"
     },
-    { "type": "label", "text": "03 - Resolved" },
+    { "type": "label", "text": "04 - Resolved" },
     {
       "type": "text",
-      "body": "The outcome is a complete set of wireframes and user flows and a functional Figma mockup - the dashboard, the schedule and the wellness view - the foundation an iterative build would refine. Not a shipped app, but a fully reasoned one."
+      "body": "The outcome is a complete set of wireframes and user flows and a functional Figma mockup - the dashboard, the schedule and the wellness view - the foundation an iterative build would refine. Not a shipped app, but a fully reasoned one, which is what the brief asked for."
     },
     {
       "type": "imageGrid",

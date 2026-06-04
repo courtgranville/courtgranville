@@ -103,6 +103,15 @@
         "width": 1200,
         "height": 1600,
         "aspect": 0.75
+      },
+      {
+        "slug": "06-studio-3",
+        "role": "studio",
+        "src": "/assets/projects/spider-209/06-studio-3-2400.webp",
+        "srcset": "/assets/projects/spider-209/06-studio-3-1200.webp 1200w, /assets/projects/spider-209/06-studio-3-2400.webp 2400w",
+        "width": 1200,
+        "height": 1600,
+        "aspect": 0.75
       }
     ]
   },
@@ -219,6 +228,15 @@
         "width": 7008,
         "height": 4672,
         "aspect": 1.5
+      },
+      {
+        "slug": "06-poster",
+        "role": "final",
+        "src": "/assets/projects/lumi/06-poster-2400.webp",
+        "srcset": "/assets/projects/lumi/06-poster-1200.webp 1200w, /assets/projects/lumi/06-poster-2400.webp 2400w",
+        "width": 3392,
+        "height": 4888,
+        "aspect": 0.694
       }
     ]
   },
@@ -362,6 +380,15 @@
         "width": 3024,
         "height": 4032,
         "aspect": 0.75
+      },
+      {
+        "slug": "09-studio-detail",
+        "role": "final",
+        "src": "/assets/projects/backgammon/09-studio-detail-2400.webp",
+        "srcset": "/assets/projects/backgammon/09-studio-detail-1200.webp 1200w, /assets/projects/backgammon/09-studio-detail-2400.webp 2400w",
+        "width": 2768,
+        "height": 4160,
+        "aspect": 0.665
       }
     ]
   },

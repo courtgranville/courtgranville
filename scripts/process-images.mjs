@@ -44,6 +44,7 @@ const MANIFEST = {
       { src: 'photographs/prototype/prototype_1.jpg', slug: '03-prototype', role: 'prototype', priority: 'hero'  },
       { src: 'photographs/studio/hero.jpg',           slug: '04-final',     role: 'studio',   priority: 'hero'   },
       { src: 'photographs/studio/studio_2.jpg',       slug: '05-studio-2',  role: 'studio',   priority: 'inline' },
+      { src: 'photographs/studio/studio_3.jpg',       slug: '06-studio-3',  role: 'studio',   priority: 'inline' },
     ],
   },
   'universal-phone-case': {
@@ -66,6 +67,8 @@ const MANIFEST = {
       { src: 'rhino/rhino-threaded-insert.png',  slug: '03-cad-threaded', role: 'cad',   priority: 'inline' },
       { src: 'final/hero.JPG',                   slug: '04-final-hero',   role: 'final', priority: 'hero'   },
       { src: 'final/detail.JPG',                 slug: '05-final-detail', role: 'final', priority: 'inline' },
+      // The lit-in-the-warning-state product poster (cutout, transparent bg).
+      { src: 'poster.png',                       slug: '06-poster',       role: 'final', priority: 'hero'   },
     ],
   },
   'yourpal': {
@@ -91,6 +94,7 @@ const MANIFEST = {
       { src: 'prototype/prototype_detail2.JPG', slug: '06-prototype-3', role: 'prototype', priority: 'inline' },
       { src: 'studio/hero.JPG',                 slug: '07-final-hero', role: 'final',     priority: 'hero'   },
       { src: 'home/lighting-detail-1.jpeg',     slug: '08-final-detail', role: 'final',   priority: 'inline' },
+      { src: 'studio/studio-detail.JPG',        slug: '09-studio-detail', role: 'final',  priority: 'inline' },
     ],
   },
   'wave': {

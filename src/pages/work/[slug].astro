@@ -440,7 +440,11 @@ const nextName = nextProject?.data.name ?? '';
      width. A lone landscape keeps the full width. */
   .fig-row--portrait.fig-row--solo { justify-content: flex-start; }
   .fig-row--portrait.fig-row--solo .fig {
-    flex-grow: 0 !important; width: clamp(280px, 42vw, 480px); max-width: 100%;
+    /* flex-basis must be auto so the width below governs the main size - the base
+       .fig sets flex-basis:0, which (with flex-grow:0) would otherwise collapse a
+       lone portrait to zero width. */
+    flex-grow: 0 !important; flex-basis: auto !important;
+    width: clamp(280px, 42vw, 480px); max-width: 100%;
   }
 
   /* Mobile - one photograph at a time, each at full width. */

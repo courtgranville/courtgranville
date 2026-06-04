@@ -43,10 +43,9 @@
       "body": "The finished piece is Colombo's form, reproduced from what we could find - a desk lamp that reads as the original at a glance and is, underneath, entirely salvage. It's the first of a recurring theme in my work: building something considered out of materials that were headed for the bin."
     },
     {
-      "type": "image",
-      "imageSlug": "05-studio-2",
-      "variant": "field",
-      "alt": "The finished Spider-209 desk lamp"
+      "type": "imageGrid",
+      "imageSlugs": ["05-studio-2", "06-studio-3"],
+      "alt": "The finished Spider-209 desk lamp, studio shots"
     }
   ]
 }

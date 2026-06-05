@@ -16,7 +16,7 @@
 
     <ul class="footer-locale">
       <li>51.5074&deg; N, 0.1278&deg; W</li>
-      <li><time id="footer-clock">--:--</time> &middot; GMT + 1</li>
+      <li><time id="footer-clock">--:--</time> &middot; <span id="footer-tz">GMT</span></li>
       <li>Open to work</li>
     </ul>
 
@@ -103,12 +103,21 @@
 </style>
 
 <script>
-  // Live London time shown beside the GMT + 1 label. (The static "+ 1" offset is
-  // correct for BST; swap to "GMT" in winter - see the footer copy.)
+  // Live London time. The offset label is derived from the same zone as the
+  // clock, so it reads GMT in winter and GMT + 1 under BST without manual swaps.
   const clockEl = document.getElementById('footer-clock');
+  const tzEl = document.getElementById('footer-tz');
   if (clockEl) {
     const fmt = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' });
-    const tick = () => { clockEl.textContent = fmt.format(new Date()); };
+    const off = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', timeZoneName: 'shortOffset' });
+    const tick = () => {
+      const now = new Date();
+      clockEl.textContent = fmt.format(now);
+      if (tzEl) {
+        const name = off.formatToParts(now).find((p) => p.type === 'timeZoneName')?.value || 'GMT';
+        tzEl.textContent = name.replace('GMT+1', 'GMT + 1'); // match the footer's spaced style
+      }
+    };
     tick();
     setInterval(tick, 30000);
   }

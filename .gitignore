@@ -39,3 +39,8 @@ pnpm-debug.log*
 
 # local Claude Code settings (personal, machine-specific)
 .claude/settings.local.json
+
+# local tooling artifacts + working docs (never deployed)
+.specstory/
+portfolio-copy-deepened.md
+audit/

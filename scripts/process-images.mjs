@@ -161,6 +161,13 @@ async function processOne(srcAbs, outDir, slug, priority) {
 }
 
 async function main() {
+  // Guard: never wipe the committed output unless the raw sources are actually
+  // present - running this without assets/projects/ would leave the site imageless.
+  const srcOk = await fs.stat(SRC).then((s) => s.isDirectory()).catch(() => false);
+  if (!srcOk) {
+    console.error(`process-images: source dir not found (${SRC}) - aborting before touching ${OUT}.`);
+    process.exit(1);
+  }
   await fs.rm(OUT, { recursive: true, force: true });
   await fs.mkdir(OUT, { recursive: true });
 

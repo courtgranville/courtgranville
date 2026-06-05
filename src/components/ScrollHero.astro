@@ -74,7 +74,7 @@ const PRODUCTS = [
            "Selected Work" kicker labels them all as such. -->
       <div class="ov-block ov-product" id="ovProduct">
         <span class="ov-kicker label">Selected Work</span>
-        <span class="ov-index" id="ovIndex">01 / 04</span>
+        <span class="ov-index" id="ovIndex">01 / 05</span>
         <h2 class="ov-name" id="ovName">{PRODUCTS[0].name}</h2>
         <div class="ov-meta" id="ovMeta">{PRODUCTS[0].year} &middot; {PRODUCTS[0].discipline}</div>
         <p class="ov-desc" id="ovDesc">{PRODUCTS[0].desc}</p>
@@ -87,8 +87,11 @@ const PRODUCTS = [
     <div class="cg-beats" id="beatDots"></div>
   </div>
 
-  <!-- Real, crawlable links to every featured project (work-first; present without JS). -->
+  <!-- Real, crawlable links to every featured project (work-first; present without JS).
+       The Nuclear Question is a featured beat but not in PRODUCTS (it has no GLB), so
+       it gets its own entry here. -->
   <ul class="sr-only">
+    <li><a href="/work/the-nuclear-question/">The Nuclear Question - 2026, Data Visualisation</a></li>
     {PRODUCTS.map((p) => (
       <li><a href={`/work/${p.slug}/`}>{p.name} - {p.year}, {p.discipline}</a></li>
     ))}

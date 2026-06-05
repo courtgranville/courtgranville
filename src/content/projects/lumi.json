@@ -50,13 +50,7 @@
       "type": "image",
       "imageSlug": "05-final-detail",
       "variant": "field",
-      "alt": "Detail of the threaded-part construction"
-    },
-    {
-      "type": "image",
-      "imageSlug": "06-poster",
-      "variant": "field",
-      "alt": "LUMI poster - the lamp lit in its red warning state"
+      "alt": "Detail of the working, 3D-printed lamp lit in its red warning state"
     }
   ]
 }

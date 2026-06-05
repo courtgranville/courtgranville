@@ -3,7 +3,6 @@
   "year": 2022,
   "discipline": "Product Design",
   "framing": "A classic lamp, rebuilt from the streets of Madrid.",
-  "heroImage": "04-final",
   "group": true,
   "spec": {
     "Brief":     "recreate a well-known lamp using only found or recycled materials",
@@ -28,14 +27,8 @@
     },
     {
       "type": "imageGrid",
-      "imageSlugs": ["01-sketch-1", "02-sketch-2"],
-      "alt": "Hand sketches studying the original lamp's proportions"
-    },
-    {
-      "type": "image",
-      "imageSlug": "03-prototype",
-      "variant": "wide",
-      "alt": "The cardboard prototype, before the final build"
+      "imageSlugs": ["01-sketch-1", "02-sketch-2", "03-prototype"],
+      "alt": "Hand sketches studying the original lamp's proportions, and the cardboard prototype before the final build"
     },
     { "type": "label", "text": "04 - Resolved" },
     {
@@ -44,7 +37,7 @@
     },
     {
       "type": "imageGrid",
-      "imageSlugs": ["05-studio-2", "06-studio-3"],
+      "imageSlugs": ["04-final", "05-studio-2", "06-studio-3"],
       "alt": "The finished Spider-209 desk lamp, studio shots"
     }
   ]

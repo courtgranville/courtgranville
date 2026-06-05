@@ -3,7 +3,6 @@
   "year": 2026,
   "discipline": "Product Design",
   "framing": "A side table in need of repair, reborn as a standing lamp.",
-  "heroImage": "04-final-hero",
   "group": true,
   "spec": {
     "Brief":     "take a found object, transform it into a new product",
@@ -25,12 +24,6 @@
       "type": "text",
       "body": "A side table is horizontal, low and passive - something you put things on. A standing lamp is vertical, tall and active - something that changes a room. Mantis is the move between the two: the same salvaged timber, reconfigured into an object with a completely different posture and purpose. Nothing was bought in to replace what already worked. The design is in the reassembly, not the replacement - and the angular, poised stance the timber ends up in is where the name comes from."
     },
-    {
-      "type": "image",
-      "imageSlug": "05-sketch",
-      "variant": "wide",
-      "alt": "Dimensioned design sketches - the standing-lamp elevation and the joint studies"
-    },
     { "type": "label", "text": "03 - The joint was the project" },
     {
       "type": "text",
@@ -38,8 +31,8 @@
     },
     {
       "type": "imageGrid",
-      "imageSlugs": ["07-joint-marked", "08-joint-printed", "09-joint-iterations"],
-      "alt": "The joint worked out in pen, a 3D-printed connector gripping the salvaged timber, and the printed iterations"
+      "imageSlugs": ["05-sketch", "07-joint-marked", "08-joint-printed", "09-joint-iterations"],
+      "alt": "The standing-lamp elevation and joint studies in pen, the joint marked out, a 3D-printed connector gripping the salvaged timber, and the printed iterations"
     },
     { "type": "label", "text": "04 - Making" },
     {
@@ -58,9 +51,14 @@
     },
     { "type": "label", "text": "06 - The finished lamp" },
     {
-      "type": "imageGrid",
-      "imageSlugs": ["01-joint", "02-lampshade", "03-base"],
-      "alt": "The finished Mantis - the metal-clad joint, the lit shade, and the base"
+      "type": "imagePair",
+      "imageSlugs": ["01-joint", "02-lampshade"],
+      "alt": "The finished Mantis - the metal-clad joint, and the lit shade"
+    },
+    {
+      "type": "imagePair",
+      "imageSlugs": ["03-base", "04-final-hero"],
+      "alt": "The finished Mantis - the base socket, and the standing lamp in place"
     }
   ]
 }

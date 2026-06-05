@@ -77,7 +77,8 @@ const cleanLabel = (text: string) => text.replace(/^\s*\d+\s*[—–-]\s*/, '');
 // ── Group the flat block array into sections at each label boundary ──
 type Block = (typeof blocks)[number];
 interface ImageEntry { src: string; srcset: string; aspect: number; alt: string; caption?: string }
-interface FigRow { orient: 'landscape' | 'portrait'; items: ImageEntry[] }
+type RowMode = 'justify' | 'feature';
+interface FigRow { items: ImageEntry[]; mode: RowMode }
 type TextBlock = Extract<Block, { type: 'text' }>;
 type QuoteBlock = Extract<Block, { type: 'quote' }>;
 type BookletBlock = Extract<Block, { type: 'booklet' }>;
@@ -101,55 +102,103 @@ function entriesOf(b: Block): ImageEntry[] {
   return [];
 }
 
-// Portrait < 1.0 aspect; square and wider count as landscape.
-const isPortrait = (e: ImageEntry) => e.aspect < 1.0;
+// ── Justified gallery ──────────────────────────────────────────────────────
+// One system for every project's photographs. The authored block IS the unit of
+// grouping: an `imagePair` is one row of two, an `imageGrid` is one row (split
+// only if it exceeds the per-row cap), and a run of consecutive single `image`
+// blocks flows together. So the author controls exactly which photos share a row
+// by choosing the block - the layout never second-guesses that grouping.
+//
+// Within a row the images are width-justified: each image's flex-grow is its
+// aspect, so a row fills the content width edge to edge and every image in it
+// lands on the SAME height with no crop (height = rowWidth / Σ aspect). Portrait
+// and landscape therefore sit together cleanly. A single image that is landscape
+// fills the width; a single portrait (a poster, the closing hero) stands large at
+// a set fraction of the column rather than ballooning to a full-width height.
+const GALLERY = {
+  target: 2.6,      // ideal Σ aspect per row when flowing a run of single images
+  featureWide: 1.3, // a single image at/above this aspect fills the full width;
+                    // below it (a portrait poster, the closing hero) it stands
+                    // large at a set fraction of the column
+  maxRowSum: 4.0,   // a row's Σ aspect ceiling: an authored group of mostly-wide
+                    // images that would exceed this is split so the row never gets
+                    // too short (height = width / Σ aspect), e.g. three wide CADs
+                    // become a pair + a full-width single rather than one squat row
+  maxPerRow: 4,     // never cram more than this into one row
+};
 
-// How many images sit in each justified row, by group size - kept to ≤3 so each
-// photo stays large, and balanced (4 → 2+2) so no row is left half-empty.
-function rowSizes(n: number): number[] {
-  if (n <= 1) return [1];
-  if (n === 2) return [2];
-  if (n === 3) return [3];
-  if (n === 4) return [2, 2];
-  if (n === 5) return [3, 2];
-  const sizes: number[] = [];
-  let rem = n;
-  while (rem > 0) { const s = Math.min(3, rem); sizes.push(s); rem -= s; }
-  return sizes;
+// Partition a weight sequence into exactly k contiguous groups that minimise the
+// largest group's sum (binary-searched cap + greedy fill). Equal group sums →
+// equal row heights. A hard per-row count cap keeps small images from stacking
+// too many across. Order is preserved, so images stay in their authored sequence.
+function partitionContiguous(w: number[], k: number, maxPer: number): number[][] {
+  const n = w.length;
+  const total = w.reduce((a, b) => a + b, 0);
+  const fits = (cap: number) => {
+    let groups = 1, sum = 0, count = 0;
+    for (const x of w) {
+      if (count >= maxPer || (count > 0 && sum + x > cap + 1e-9)) { groups++; sum = x; count = 1; }
+      else { sum += x; count++; }
+    }
+    return groups <= k;
+  };
+  let lo = Math.max(...w), hi = total;
+  for (let it = 0; it < 60; it++) { const mid = (lo + hi) / 2; if (fits(mid)) hi = mid; else lo = mid; }
+  const cap = hi;
+  const rows: number[][] = []; let row: number[] = []; let sum = 0;
+  for (let i = 0; i < n; i++) {
+    if (row.length && (row.length >= maxPer || sum + w[i] > cap + 1e-9)) { rows.push(row); row = []; sum = 0; }
+    row.push(i); sum += w[i];
+  }
+  if (row.length) rows.push(row);
+  return rows;
 }
 
-// Split a section's images into landscape then portrait groups (so the two are
-// never adjacent) and chunk each into justified rows.
-function rowsFor(entries: ImageEntry[]): FigRow[] {
-  const build = (list: ImageEntry[], orient: 'landscape' | 'portrait'): FigRow[] => {
-    const rows: FigRow[] = [];
-    let i = 0;
-    for (const s of rowSizes(list.length)) { rows.push({ orient, items: list.slice(i, i + s) }); i += s; }
-    return rows;
-  };
-  return [
-    ...build(entries.filter((e) => !isPortrait(e)), 'landscape'),
-    ...build(entries.filter(isPortrait), 'portrait'),
-  ];
+// Decide how a single row is rendered:
+//   justify - flex-grow by aspect, fills the content width edge to edge
+//   feature - a single portrait / near-square shown large, left-aligned
+function classify(rowAspects: number[]): RowMode {
+  if (rowAspects.length >= 2) return 'justify';        // a real row fills the width
+  return rowAspects[0] >= GALLERY.featureWide ? 'justify' : 'feature';
+}
+
+// Lay one group of images out as justified row(s). An `atomic` group (an authored
+// imagePair / imageGrid) stays on a single row unless it exceeds the per-row cap;
+// a loose run of single images is flowed to the target height.
+function rowsForGroup(entries: ImageEntry[], atomic: boolean): FigRow[] {
+  const n = entries.length;
+  if (n === 0) return [];
+  const w = entries.map((e) => e.aspect);
+  const total = w.reduce((a, b) => a + b, 0);
+  const k = atomic
+    ? Math.min(n, Math.max(Math.ceil(n / GALLERY.maxPerRow), Math.ceil(total / GALLERY.maxRowSum), 1))
+    : Math.min(n, Math.max(Math.round(total / GALLERY.target), Math.ceil(n / GALLERY.maxPerRow), 1));
+  return partitionContiguous(w, k, GALLERY.maxPerRow).map((idxs) => ({
+    items: idxs.map((i) => entries[i]),
+    mode: classify(idxs.map((i) => w[i])),
+  }));
 }
 
 const sections: Section[] = [];
 let current: Section | null = null;
-const pushVisuals: ImageEntry[] = []; // accumulates the current section's images
-function flushRows() { if (current) current.rows = rowsFor(pushVisuals.splice(0)); }
+let imgBuf: ImageEntry[] = []; // a run of consecutive single `image` blocks
+// Flush the pending run of single images as one flowed group before an atomic
+// block (imagePair/imageGrid) or a section boundary, so document order holds.
+function flushBuf() { if (current && imgBuf.length) { current.rows.push(...rowsForGroup(imgBuf, false)); imgBuf = []; } }
 for (const b of blocks) {
   if (b.type === 'label') {
-    flushRows();
+    flushBuf();
     current = { label: b.text, body: [], rows: [], booklets: [] };
     sections.push(current);
   } else {
     if (!current) { current = { label: null, body: [], rows: [], booklets: [] }; sections.push(current); }
     if (b.type === 'text' || b.type === 'quote') current.body.push(b);
     else if (b.type === 'booklet') current.booklets.push(b);
-    else pushVisuals.push(...entriesOf(b));
+    else if (b.type === 'image') imgBuf.push(...entriesOf(b));
+    else { flushBuf(); current.rows.push(...rowsForGroup(entriesOf(b), true)); } // imagePair | imageGrid - one authored row
   }
 }
-flushRows();
+flushBuf();
 
 // The hero studio shot isn't part of the block flow - it closes the page.
 const hero = heroImage ? img(heroImage) : null;
@@ -251,9 +300,9 @@ const nextName = nextProject?.data.name ?? '';
           {s.rows.length > 0 && (
             <div class="proj-figures reveal">
               {s.rows.map((row) => (
-                <div class:list={['fig-row', `fig-row--${row.orient}`, row.items.length === 1 && 'fig-row--solo']}>
+                <div class:list={['fig-row', `fig-row--${row.mode}`]}>
                   {row.items.map((e) => (
-                    <figure class="fig" style={`flex-grow:${e.aspect}`}>
+                    <figure class="fig" style={row.mode === 'justify' ? `flex-grow:${e.aspect}` : ''}>
                       <img
                         src={e.src}
                         srcset={e.srcset}
@@ -282,8 +331,8 @@ const nextName = nextProject?.data.name ?? '';
       {hero && (
         <Grid class="proj-final">
           <div class="proj-figures reveal">
-            <div class:list={['fig-row', heroPortrait ? 'fig-row--portrait' : 'fig-row--landscape', 'fig-row--solo']}>
-              <figure class="fig" style={`flex-grow:${hero.aspect}`}>
+            <div class:list={['fig-row', heroPortrait ? 'fig-row--feature' : 'fig-row--justify']}>
+              <figure class="fig" style={heroPortrait ? '' : `flex-grow:${hero.aspect}`}>
                 <img
                   src={hero.src}
                   srcset={hero.srcset}
@@ -419,29 +468,35 @@ const nextName = nextProject?.data.name ?? '';
      sit directly under the kicker rather than leaving a block of empty space. */
   .proj-sec-head + .proj-figures { margin-top: 0; }
 
-  /* A justified row: each image's flex-grow is its aspect ratio, so columns are
-     proportional to width and every image in the row lands on the SAME height -
-     no crop, no leftover white space. */
+  /* Two row modes:
+
+     .fig-row--justify - the common case. Each image's flex-grow is its aspect, so
+       widths are proportional and every image in the row lands on the SAME height,
+       the row filling the full content width edge to edge (no crop, no white gap).
+
+     .fig-row--feature - a single portrait / near-square shown large and left
+       aligned (a poster, the closing hero). See below. */
   .fig-row { display: flex; gap: var(--gutter); align-items: flex-start; }
-  .fig { margin: 0; flex-basis: 0; min-width: 0; }
+  .fig { margin: 0; min-width: 0; }
   .fig img { width: 100%; height: auto; display: block; }
   .proj-cap { display: block; margin-top: 12px; color: var(--text-quiet); }
 
-  /* A lone portrait would be enormous at full width - sit it left at a measured
-     width. A lone landscape keeps the full width. */
-  .fig-row--portrait.fig-row--solo { justify-content: flex-start; }
-  .fig-row--portrait.fig-row--solo .fig {
-    /* flex-basis must be auto so the width below governs the main size - the base
-       .fig sets flex-basis:0, which (with flex-grow:0) would otherwise collapse a
-       lone portrait to zero width. */
-    flex-grow: 0 !important; flex-basis: auto !important;
-    width: clamp(280px, 42vw, 480px); max-width: 100%;
-  }
+  .fig-row--justify .fig { flex-basis: 0; }
 
-  /* Mobile - one photograph at a time, each at full width. */
+  /* Feature - a single portrait / near-square shown large and left-aligned. Sized
+     by a fraction of the content column, not by viewport height, so it is always
+     comfortably over half the width (and reads at a deliberate scale next to the
+     full-width landscapes), on any screen. Height follows the image's own aspect,
+     so nothing is ever cropped. */
+  .fig-row--feature { justify-content: flex-start; --fig-w: 56%; }
+  .fig-row--feature .fig { flex: 0 0 auto; width: var(--fig-w); max-width: 100%; }
+  .fig-row--feature .fig img { width: 100%; height: auto; }
+
+  /* Mobile - one photograph at a time, each at full width, whatever the row mode. */
   @media (max-width: 767px) {
     .fig-row { flex-direction: column; }
-    .fig-row--portrait.fig-row--solo .fig { width: 100%; }
+    .fig-row .fig { flex: 1 1 auto; width: 100%; }
+    .fig-row .fig img { width: 100%; height: auto; }
   }
 
   /* ── The booklet - the interactive 3D book (BookletViewer). It sits below its
@@ -458,7 +513,9 @@ const nextName = nextProject?.data.name ?? '';
   @media (min-width: 768px)  { .proj-booklet { grid-column: 3 / 9; } }
   @media (min-width: 1200px) { .proj-booklet { grid-column: 3 / 12; } }
 
-  /* ── 4. Closing hero shot ── */
+  /* ── 4. Closing hero shot - the statement image. A landscape hero rides the
+        full content width (.fig-row--justify); a portrait hero uses the same tall
+        left-aligned .fig-row--feature treatment as a lone in-body portrait. ── */
   :global(.proj-final) { margin-top: var(--space-block); }
 
   /* ── Footer nav ── */

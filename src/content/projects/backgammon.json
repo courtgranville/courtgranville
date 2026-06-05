@@ -42,9 +42,14 @@
       "body": "We prototyped in 3D and CNC'd early versions in wood - cheaper iterations to lock down the form and the playing-surface dimensions before committing the single 1m × 1m sheet we couldn't replace."
     },
     {
-      "type": "imageGrid",
-      "imageSlugs": ["04-prototype-1", "05-prototype-2", "06-prototype-3"],
+      "type": "imagePair",
+      "imageSlugs": ["04-prototype-1", "05-prototype-2"],
       "alt": "Wood prototypes, before the final CNC pass"
+    },
+    {
+      "type": "image",
+      "imageSlug": "06-prototype-3",
+      "alt": "A wood prototype at full size, before the final CNC pass"
     },
     { "type": "label", "text": "05 - Resolved" },
     {

@@ -121,9 +121,16 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
     };
     // Resolve the form region (where/how big the nucleus is drawn, in canvas px -
     // which equal viewport px, since every form-region canvas sits at viewport 0,0).
-    //   • viewportParticles → the container's live on-screen box (tracks scroll).
-    //   • --form-* CSS vars  → an explicit offset region (the homepage).
-    //   • neither            → the whole canvas is the form box (project default / gallery).
+    //   • viewportParticles  → the container's live on-screen box (tracks scroll).
+    //   • __cgFormRegion     → the ScrollHero engine's push channel (the homepage).
+    //   • --form-* CSS vars  → an explicit offset region (fallback for hosts
+    //                          that only set the vars).
+    //   • none of the above  → the whole canvas is the form box (project default / gallery).
+    // Only the viewportParticles branch runs per frame (the form must track scroll);
+    // the others run at resize/event time only - polling the CSS vars with
+    // getComputedStyle every frame forced a style recalc per frame on the homepage,
+    // where the engine also writes overlay styles, and that recalc was a large part
+    // of the cursor lag.
     const readFormRegion = () => {
       if (viewportParticles) {
         const rc = container.getBoundingClientRect();
@@ -131,6 +138,12 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
         formCx = rc.left + rc.width / 2;
         formCy = rc.top + rc.height / 2;
         formR = Math.max(1, Math.min(rc.width, rc.height)) * TUNING.fieldRFrac;
+        return;
+      }
+      const pub = (window as unknown as { __cgFormRegion?: { cx: number; cy: number; r: number } }).__cgFormRegion;
+      if (pub && pub.r > 0) {
+        useFormRegion = true;
+        formCx = pub.cx; formCy = pub.cy; formR = pub.r;
         return;
       }
       const cs = getComputedStyle(container);
@@ -146,6 +159,11 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
       }
     };
     resize();
+    // The engine re-fits its camera (and so the form region) on its own schedule -
+    // follow the push channel instead of polling (covers the hydrate-after-fitCamera
+    // race too: the event lands whenever fitCamera next runs).
+    const onFormRegion = () => readFormRegion();
+    window.addEventListener('atom:formregion', onFormRegion);
     // In viewport mode the canvas tracks the window, not the container's size.
     if (viewportParticles) window.addEventListener('resize', resize);
 
@@ -180,17 +198,22 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
     let rawReversals = 0; // pending reversal bumps, drained per frame
 
     const onPointerMove = (e: PointerEvent) => {
-      const r = container.getBoundingClientRect();
       const sample = sampleCoalescedPointer(e);
       // Measure the cursor relative to the form centre/radius so the magnetism and
       // shake-to-split feel right wherever the form sits. In form-region modes the
-      // canvas sits at viewport 0,0, so formCx/formCy are absolute viewport coords.
-      const nx = useFormRegion
-        ? (sample.clientX - formCx) / formR
-        : (sample.clientX - (r.left + r.width / 2)) / (r.width / 2);
-      const ny = useFormRegion
-        ? (sample.clientY - formCy) / formR
-        : (sample.clientY - (r.top + r.height / 2)) / (r.height / 2);
+      // canvas sits at viewport 0,0, so formCx/formCy are absolute viewport coords -
+      // no layout read needed. Only the container-box mode measures the rect, and
+      // only then: getBoundingClientRect forces layout, and this handler runs per
+      // pointer event (up to 1000Hz mice).
+      let nx: number, ny: number;
+      if (useFormRegion) {
+        nx = (sample.clientX - formCx) / formR;
+        ny = (sample.clientY - formCy) / formR;
+      } else {
+        const r = container.getBoundingClientRect();
+        nx = (sample.clientX - (r.left + r.width / 2)) / (r.width / 2);
+        ny = (sample.clientY - (r.top + r.height / 2)) / (r.height / 2);
+      }
       ptr.tx = Math.max(-1.4, Math.min(1.4, nx));
       ptr.ty = Math.max(-1.4, Math.min(1.4, ny));
       ptr.active = true;
@@ -241,7 +264,9 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
       const dt = Math.max(0.001, Math.min(0.05, (now - lastT) / 1000));
       lastT = now;
       const t = (now - t0) / 1000;
-      readFormRegion();
+      // Only the viewport mode reads layout per frame (the form tracks the page's
+      // scroll); everywhere else the region updates by resize/event (see readFormRegion).
+      if (viewportParticles) readFormRegion();
       if (frameTiming) {
         ftFrames++;
         if (now - ftLastReport >= 1000) {
@@ -303,6 +328,9 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
         FAST_SPEED, REQUIRED_T, SHAKE_NEEDED,
         reduced: prefersReduced,
         ink: inkRef.current,
+        // The decimated (small-render) path may skip sub-pixel bulge maths far from
+        // the cursor; the full-fidelity path (project page) never does.
+        decimated: pointStride > 1,
       });
 
       // Detect the idle → splitting transition: the moment the user
@@ -321,6 +349,7 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
     return () => {
       cancelAnimationFrame(rafId);
       window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('atom:formregion', onFormRegion);
       if (viewportParticles) window.removeEventListener('resize', resize);
       ro.disconnect();
       io.disconnect();
@@ -361,6 +390,9 @@ interface DrawFrameArgs {
   SHAKE_NEEDED: number;
   reduced: boolean;
   ink: string;
+  /** True when the polylines were point-decimated (the homepage's small render) -
+   * enables the bulge early-out, which the full-fidelity render path never takes. */
+  decimated: boolean;
 }
 
 function drawFrame(a: DrawFrameArgs): void {
@@ -520,7 +552,27 @@ function drawFrame(a: DrawFrameArgs): void {
   // ── Draw nucleus polylines ────────────────────────────────────────────
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
+  ctx.strokeStyle = a.ink; // constant across every line and half - set once
   const N = polylines.length;
+
+  // Hoisted out of the per-point loop (it runs ~66k times per frame at the
+  // homepage's stride, double that mid-fission - nothing below varies per point).
+  const sigma = halfSrc * 0.50;
+  const inv2s2 = 1 / (2 * sigma * sigma);
+  const pushBase = bulgeGain * halfSrc * 0.50;
+  const dragScale = fission.phase === 'idle' ? 1 : 0.15;
+  const dragBase = impulse * halfSrc * 0.18 * dragScale;
+  const vxDrag = ptr.vx * 0.6;
+  const vyDrag = ptr.vy * 0.6;
+  // Beyond bulgeCutoffSigmas of the Gaussian the cursor push it gates is sub-pixel
+  // (g < 0.011 at 3 sigma), so the decimated small render skips the exp/sqrt for
+  // those points - they are still transformed and drawn, only the push is zeroed.
+  // The full-fidelity path keeps the cutoff at Infinity (every point, byte-identical).
+  const cutoff = TUNING.bulgeCutoffSigmas * sigma;
+  const cutoffSq = a.decimated ? cutoff * cutoff : Infinity;
+  // While the nucleus is split, optionally walk every Nth point (the halves render
+  // at 0.5 scale, so the dropped vertices stay sub-pixel) - see TUNING.fissionPointStride.
+  const kStep = fission.phase === 'idle' ? 1 : Math.max(1, TUNING.fissionPointStride);
 
   for (let hi = 0; hi < halves.length; hi++) {
     const Hh = halves[hi];
@@ -539,42 +591,46 @@ function drawFrame(a: DrawFrameArgs): void {
       const width = 0.42 + 0.55 * (1 - depth);
       ctx.globalAlpha = alpha;
       ctx.lineWidth = width;
-      ctx.strokeStyle = a.ink;
 
+      const dragLine = dragBase * (0.4 + depth * 0.9);
       const jx = reduced ? 0 : 0.18 * Math.sin(t * 0.43 + li * 0.91);
       const jy = reduced ? 0 : 0.18 * Math.cos(t * 0.37 + li * 0.71);
 
       ctx.beginPath();
-      for (let k = 0; k < n; k++) {
-        let dx = pts[k * 2] - bbox.cx;
-        let dy = pts[k * 2 + 1] - bbox.cy;
+      // ki clamps the last step so the polyline always ends on its true final
+      // point whatever the stride; with kStep 1 this walk is the canonical one.
+      for (let k = 0; ; k += kStep) {
+        const ki = k < n ? k : n - 1;
+        let dx = pts[ki * 2] - bbox.cx;
+        let dy = pts[ki * 2 + 1] - bbox.cy;
 
         const ddx = dx - cuxSrc;
         const ddy = dy - cuySrc;
         const distSq = ddx * ddx + ddy * ddy;
-        const sigma = halfSrc * 0.50;
-        const g = Math.exp(-distSq / (2 * sigma * sigma));
-        const distLen = Math.sqrt(distSq) + 1e-3;
-        const push = g * bulgeGain * halfSrc * 0.50;
-        dx += (ddx / distLen) * push;
-        dy += (ddy / distLen) * push;
+        if (distSq < cutoffSq) {
+          const g = Math.exp(-distSq * inv2s2);
+          const distLen = Math.sqrt(distSq) + 1e-3;
+          const push = g * pushBase;
+          dx += (ddx / distLen) * push;
+          dy += (ddy / distLen) * push;
 
-        const dragScale = fission.phase === 'idle' ? 1 : 0.15;
-        const drag = g * impulse * halfSrc * 0.18 * (0.4 + depth * 0.9) * dragScale;
-        dx += ptr.vx * drag * 0.6;
-        dy += ptr.vy * drag * 0.6;
+          const drag = g * dragLine;
+          dx += vxDrag * drag;
+          dy += vyDrag * drag;
+        }
 
         const wob = reduced
           ? 0
-          : 0.0055 * Math.sin(t * 0.55 + li * 0.13 + k * 0.045);
+          : 0.0055 * Math.sin(t * 0.55 + li * 0.13 + ki * 0.045);
         dx *= halfBreathe * (1 + wob);
         dy *= halfBreathe * (1 + wob);
 
         const xx = ccx + dx * halfFit * Hh.sx + driftX + Hh.ox + jx;
         const yy = ccy + dy * halfFit * Hh.sy + driftY + Hh.oy + jy;
         const [x, y] = squish(xx, yy);
-        if (k === 0) ctx.moveTo(x, y);
+        if (ki === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
+        if (ki === n - 1) break;
       }
       ctx.stroke();
     }

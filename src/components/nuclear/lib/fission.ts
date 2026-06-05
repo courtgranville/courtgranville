@@ -34,6 +34,23 @@ export const TUNING = {
   maxParticles: 9000,
   burstCount: 4800,
   particleGravity: 520,
+
+  // Performance tunables - defaults preserve the canonical look exactly.
+  // Fading particles (life <= 0.3) are batched into this many alpha levels so the
+  // tail of a burst is a handful of Path2D fills, not thousands of individual
+  // arc/fill calls. 8 levels keeps the worst-case alpha error to half a bucket
+  // (~6%) on dots already faint and dying; raise to 16 if banding is ever visible.
+  fadeAlphaBuckets: 8,
+  // On the decimated (small-render) nucleus only: skip the cursor-bulge maths for
+  // points beyond this many sigmas of the Gaussian, where the displacement it
+  // would add is sub-pixel (g < 0.011 at 3 sigma). Points are still drawn - only
+  // the invisible push is zeroed. The full-fidelity render path ignores this.
+  bulgeCutoffSigmas: 3,
+  // Draw every Nth polyline point while the nucleus is split (the halves render at
+  // 0.5 scale, so a stride of 2 keeps on-screen vertex spacing near the idle look
+  // and returns fission's doubled point cost to roughly idle cost). 1 = off, the
+  // canonical full-vertex fission - a lever, not a default.
+  fissionPointStride: 1,
 } as const;
 
 export type FissionPhase = 'idle' | 'splitting' | 'bouncing' | 'split' | 'reforming';
@@ -57,6 +74,9 @@ export interface FissionState {
   splitAng: number;
   splitX: number; splitY: number;
   particles: Particle[];
+  /** Recycled dead particles - spawnBurst pops from here before allocating, so a
+   * burst stops churning thousands of fresh objects (and GC pauses) per fission. */
+  freeList: Particle[];
   cooldown: number;
   bouncedImpact: boolean;
 }
@@ -72,6 +92,7 @@ export function makeFissionState(): FissionState {
     splitAng: 0,
     splitX: 0, splitY: 0,
     particles: [],
+    freeList: [],
     cooldown: 0,
     bouncedImpact: false,
   };

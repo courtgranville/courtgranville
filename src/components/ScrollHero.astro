@@ -700,6 +700,13 @@ function fitCamera(){
     atomOverlay.style.setProperty('--form-cx', cx + 'px');
     atomOverlay.style.setProperty('--form-cy', cy + 'px');
     atomOverlay.style.setProperty('--form-r', formR + 'px');
+    // Publish the form region to a JS channel too (mirrors __cgAtomActive /
+    // atom:active). The island's hot loop would otherwise have to poll these
+    // CSS vars with getComputedStyle every frame - a forced style recalc per
+    // frame on the input-to-paint path. The CSS vars stay: they still anchor
+    // the isotope control + hint below.
+    window.__cgFormRegion = { cx, cy, r: formR };
+    dispatchEvent(new CustomEvent('atom:formregion', { detail: window.__cgFormRegion }));
     if (stacked) {
       // Narrow screen: the wide isotope pill can't sit in the form box's corner
       // without covering the visualisation, so stack the control + hint CENTRED
@@ -1050,6 +1057,9 @@ let accumY=0, accumX=0;
 // hydrates later, on idle) reads "paused" until the nucleus beat is actually reached.
 let prevAtomActive = null;
 window.__cgAtomActive = false;
+// Last-written overlay style values, so the render loop can skip redundant
+// per-frame writes (see the atom crossfade block below).
+let lastAtomVis = null, lastAtomPE = null;
 function setAtomActive(on){
   if(on === prevAtomActive) return;
   prevAtomActive = on; window.__cgAtomActive = on;
@@ -1169,8 +1179,12 @@ function frame(ts){
   // it's mostly there, so scrolling/dragging other beats is never blocked.
   if(atomOverlay){
     const atomVis = (c===NUCLEUS_BEAT) ? smootherstep(CONFIG.morph.texAt, 1.0, formW) : 0;
-    atomOverlay.style.opacity = atomVis;
-    atomOverlay.style.pointerEvents = atomVis > 0.6 ? 'auto' : 'none';
+    // Only write when the value actually changes: at rest on the formed atom both
+    // saturate, and a redundant per-frame style write dirties style and forces the
+    // page's layout reads (the atom's own loop, Lenis) into a recalc every frame.
+    if(atomVis !== lastAtomVis){ atomOverlay.style.opacity = atomVis; lastAtomVis = atomVis; }
+    const pe = atomVis > 0.6 ? 'auto' : 'none';
+    if(pe !== lastAtomPE){ atomOverlay.style.pointerEvents = pe; lastAtomPE = pe; }
     particleOpacity = Math.min(particleOpacity, 1 - atomVis);
   }
   ps.material.uniforms.uOpacity.value = particleOpacity;

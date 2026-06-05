@@ -18,13 +18,19 @@ import { NucleusHero } from './NucleusHero';
 // The nucleus contour paths (~271KB) are fetched at runtime from /nucleus-paths.json
 // rather than imported as a module, so they are NOT bundled into this island's JS
 // (which would bloat it ~271KB on every page that mounts the atom). On the homepage
-// ScrollHero already fetches the same URL, so the browser serves it from cache - one
-// download, shared. NucleusHero renders nothing until paths arrive (its frame loop
-// skips while polylines are empty), and rebuilds when they do (its effect deps on paths).
+// ScrollHero already fetches and parses the same file and parks the result on
+// window.__cgNucleusPaths (a Promise); this island awaits that shared promise instead
+// of issuing a second request (one fetch, one parse, shared). Off the homepage the
+// global is absent and the island fetches for itself (see the effect below).
+// NucleusHero renders nothing until paths arrive (its frame loop skips while polylines
+// are empty), and rebuilds when they do (its effect deps on paths).
 
 const FISSION_ROOM_URL = 'https://thenuclearquestion.com/fission';
 const INK_LIGHT = '#0d1a1e';
 const INK_DARK = '#ede9e1';
+// Delay before the single retry of the nucleus-paths fetch (a transient blip should
+// have cleared by then; a hard failure logs once after this).
+const NUCLEUS_PATHS_RETRY_MS = 1200;
 
 const readInk = () =>
   typeof document !== 'undefined' && document.documentElement.dataset.theme === 'dark'
@@ -44,14 +50,36 @@ export default function NuclearAtom({ compact = false, roomLink = true, viewport
   const [paths, setPaths] = useState<string[]>([]);
   const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Fetch the nucleus contour paths at runtime (see import note). Empty until then;
+  // Resolve the nucleus contour paths at runtime (see import note). Empty until then;
   // NucleusHero simply draws nothing and rebuilds once they arrive.
+  //
+  // On the homepage the ScrollHero engine fetches the very same file, so it parks the
+  // parse on window.__cgNucleusPaths (a Promise resolving to the parsed JSON); we await
+  // that shared promise instead of issuing a second request. Off the homepage (the
+  // /work gallery, the project page) ScrollHero is absent and that global is undefined,
+  // so the island falls back to its own fetch. On failure we retry once after a short
+  // delay, then - if it still fails - leave the canvas empty but log one warning so the
+  // silent-render-nothing failure is diagnosable rather than invisible.
   useEffect(() => {
     let cancelled = false;
-    fetch('/nucleus-paths.json')
-      .then((r) => r.json())
-      .then((d) => { if (!cancelled) setPaths(d as string[]); })
-      .catch(() => {});
+    const shared = (window as unknown as { __cgNucleusPaths?: Promise<unknown> }).__cgNucleusPaths;
+
+    const apply = (d: unknown) => { if (!cancelled) setPaths(d as string[]); };
+
+    const fetchOnce = () => fetch('/nucleus-paths.json').then((r) => r.json());
+
+    const source = shared
+      ? shared.then((d) => d) // already-in-flight engine fetch; share its result
+      : fetchOnce().catch(() =>
+          // Retry once after a short delay before giving up (transient network blip).
+          new Promise<unknown>((resolve, reject) => {
+            setTimeout(() => { fetchOnce().then(resolve, reject); }, NUCLEUS_PATHS_RETRY_MS);
+          }),
+        );
+
+    source.then(apply).catch((err) => {
+      if (!cancelled) console.warn('[NuclearAtom] nucleus-paths.json failed to load; atom will not render.', err);
+    });
     return () => { cancelled = true; };
   }, []);
 

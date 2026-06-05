@@ -112,6 +112,10 @@ const structuredData = [
         }
       }
     </script>
+
+    <!-- Page-specific head additions (the homepage passes preload hints for the
+         hero's late-discovered assets - see index.astro). -->
+    <slot name="head" />
   </head>
   <body id="top">
     <a class="skip-link" href="#main">Skip to content</a>
@@ -193,7 +197,10 @@ const structuredData = [
       const cueEl = document.getElementById('scrollCue');
       function onScroll() {
         const y = window.scrollY || window.pageYOffset;
-        if (cueEl) {
+        // The homepage's ScrollHero engine drives the cue itself (its readScroll
+        // writes the opacity every scroll) - writing it here too would double the
+        // per-frame style writes on the shared Lenis. Engine present = its job.
+        if (cueEl && !window.__cgLenis) {
           const fade = Math.max(0, 1 - y / 90);
           cueEl.style.opacity = String(fade * 0.55);
         }
@@ -204,6 +211,23 @@ const structuredData = [
       }
       if (lenis) lenis.on('scroll', onScroll);
       else window.addEventListener('scroll', onScroll, { passive: true });
+
+      // Direct hash landing (e.g. a shared /#contact link): on the homepage the
+      // hero engine forces scrollTo(0,0) (manual scrollRestoration), which kills
+      // the browser's native hash jump entirely; elsewhere the native jump sits
+      // under the fixed nav. Re-run the jump ourselves once things settle, with
+      // the same -92 nav offset the click path uses. Immediate - a landing is a
+      // jump, not a tour through the whole narrative stage.
+      if (location.hash) {
+        const target = document.getElementById(location.hash.slice(1));
+        if (target) {
+          setTimeout(() => {
+            const l = window.__cgLenis || lenis;
+            if (l) l.scrollTo(target, { offset: -92, immediate: true });
+            else target.scrollIntoView();
+          }, 150);
+        }
+      }
 
       // Reveal - IntersectionObserver, single trigger per element. Works for
       // any `.reveal` on the page, including elements added later (a fresh
@@ -217,6 +241,19 @@ const structuredData = [
         }
       }, { threshold: 0.18, rootMargin: '0px 0px -8% 0px' });
       document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+      // Fail-open: scroll restoration and deep links can race the observer and
+      // strand an on-screen element at opacity:0 (the documented WorkGallery
+      // gotcha, but it can bite any .reveal). After a beat, force-reveal anything
+      // at or above the current viewport; below-fold elements keep their entrance.
+      const REVEAL_FAILOPEN_MS = 2500;
+      setTimeout(() => {
+        document.querySelectorAll('.reveal:not(.in)').forEach(el => {
+          if (el.getBoundingClientRect().top < window.innerHeight) {
+            el.classList.add('in');
+            revealObserver.unobserve(el);
+          }
+        });
+      }, REVEAL_FAILOPEN_MS);
     </script>
   </body>
 </html>

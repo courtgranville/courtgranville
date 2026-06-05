@@ -121,6 +121,8 @@ const { pdf, label = 'Booklet', downloadText = 'Download the full booklet (PDF)'
   .cg-booklet .cg-return.show { opacity:1; height:auto; padding:8px 16px; border-color:var(--rule); pointer-events:auto; }
 
   .cg-booklet .cg-dl { width: fit-content; }
+  /* Shown only when the PDF fails to load - a quiet line above the surviving download link. */
+  .cg-booklet .cg-dl-note { margin: 0; color: var(--text-quiet); }
 </style>
 
 <script is:inline>
@@ -143,10 +145,27 @@ const { pdf, label = 'Booklet', downloadText = 'Download the full booklet (PDF)'
     const nextBtn = root.querySelector('.cg-next');
     const indEl = root.querySelector('.cg-ind');
     const returnBtn = root.querySelector('.cg-return');
+    const dlLink = root.querySelector('.cg-dl');
 
     const REST = { rx: 7, ry: -16 }, OPEN = { rx: 9, ry: 0 };
+    // Raster-cache tunables. Every page rasterised to a JPEG data URL is ~200-300KB
+    // of string; holding all 55 of a booklet forever costs 10-15MB, so we keep only
+    // a small window around the current spread (the DOM already only paints +/-2
+    // leaves) plus the cheap-to-reshow cover/last pages, and regenerate on demand.
+    const RASTER_WINDOW_KEEP = 4;       // leaves either side of the current spread whose rasters we retain (the DOM paints +/-2)
+    const RASTER_ALWAYS = (n) => n <= 3 || n === numPages; // 1-indexed pages never evicted
+    const RASTER_YIELD_MS = 0;          // yield to the main thread between page renders on open
+    // Resize tunables. Rasters are sized once on open; a large change in rendered
+    // page height (rotate / window resize) would stretch a stale low-res raster, so
+    // we re-rasterise the visible window when the height moves more than the threshold.
+    const RESIZE_RERASTER_RATIO = 0.25; // re-raster when rendered page height changes by >25%
+    const RESIZE_DEBOUNCE_MS = 250;     // settle the resize before re-rasterising
     let pageURL = [], numPages = 0, leafCount = 0, maxSpread = 0, spread = 0, leaves = [];
-    let ryFree = REST.ry, rxFree = REST.rx, started = false, busy = false;
+    let ryFree = REST.ry, rxFree = REST.rx, started = false, busy = false, failed = false;
+    // Raster state: the live pdf document, the height rasters were last generated at,
+    // and the set of in-flight page renders (guards against double-rendering a page).
+    let pdfDoc = null, rasterH = 0;
+    const renderingPages = new Set();
 
     // Size --pw / --ph (px) from the stage so the cuboid transforms are correct.
     function size(){
@@ -155,7 +174,25 @@ const { pdf, label = 'Booklet', downloadText = 'Download the full booklet (PDF)'
       book.style.setProperty('--pw', pw + 'px'); book.style.setProperty('--ph', ph + 'px');
       book.style.setProperty('--bt', Math.max(Math.min(pw * 0.085, 34), 14) + 'px');
     }
-    new ResizeObserver(size).observe(stage);
+    // Resize: always re-size the cuboid CSS vars, and - debounced - re-rasterise the
+    // visible window if the rendered page height has moved enough that the cached
+    // rasters would visibly stretch (fix P4). Rasters are sized once on open, so a
+    // rotate / large window resize otherwise leaves stale low-res pages scaled up.
+    let resizeTimer = 0;
+    function onResize(){
+      size();
+      if (!pdfDoc || failed) return;
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        const nextH = currentTargetH();
+        if (!rasterH || Math.abs(nextH - rasterH) / rasterH <= RESIZE_RERASTER_RATIO) return;
+        rasterH = nextH;
+        // Drop every cached raster (all now at the wrong height) and rebuild the window.
+        for (let n = 1; n <= numPages; n++) pageURL[n-1] = null;
+        ensureWindow();
+      }, RESIZE_DEBOUNCE_MS);
+    }
+    new ResizeObserver(onResize).observe(stage);
 
     const imgFor = i => pageURL[i] ? `url(${pageURL[i]})` : '';
     function setWindow(){
@@ -178,6 +215,50 @@ const { pdf, label = 'Booklet', downloadText = 'Download the full booklet (PDF)'
         leaf.innerHTML = `<div class="cg-face cg-pf cg-art${cov}"></div><div class="cg-face cg-pb cg-art"></div>`;
         pagesEl.appendChild(leaf); leaves.push(leaf);
       }
+    }
+
+    // --- Raster machinery (shared by start, on-demand regeneration and resize) ---
+    // The rasterisation target height in device pixels, derived from the live stage size.
+    function currentTargetH(){
+      const dpr = window.devicePixelRatio || 1;
+      return Math.min(2400, Math.round((stage.clientHeight || 600) * dpr * 1.7));
+    }
+    // Rasterise a single 1-indexed page to a JPEG data URL at the given height.
+    // Guards against rendering the same page twice while one render is in flight (fix P2).
+    async function renderPage(n){
+      if (!pdfDoc || n < 1 || n > numPages || renderingPages.has(n)) return;
+      renderingPages.add(n);
+      try {
+        const page = await pdfDoc.getPage(n);
+        const sc = rasterH / page.getViewport({ scale: 1 }).height; const vp = page.getViewport({ scale: sc });
+        const cv = document.createElement('canvas'); cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+        const ctx = cv.getContext('2d', { alpha: false }); ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,cv.width,cv.height);
+        await page.render({ canvasContext: ctx, viewport: vp }).promise; pageURL[n-1] = cv.toDataURL('image/jpeg', 0.9);
+      } finally { renderingPages.delete(n); }
+    }
+    // Yield to the main thread so a long rasterise loop stays responsive (fix P3).
+    const yieldToMain = () => new Promise(r => setTimeout(r, RASTER_YIELD_MS));
+    // Is 1-indexed page n inside the keep-window around the current spread? (fix P2)
+    function inKeepWindow(n){
+      const k = Math.floor((n - 1) / 2); // leaf carrying this page
+      return RASTER_ALWAYS(n) || Math.abs(k - spread) <= RASTER_WINDOW_KEEP;
+    }
+    // Drop cached rasters that have fallen outside the keep-window, freeing the
+    // ~200-300KB data-URL string each holds (fix P2). The DOM windowing in setWindow
+    // already stops painting them, so eviction is invisible.
+    function evictOutsideWindow(){
+      for (let n = 1; n <= numPages; n++){ if (pageURL[n-1] && !inKeepWindow(n)) pageURL[n-1] = null; }
+    }
+    // Make sure every page in the current keep-window is rasterised, regenerating any
+    // that were evicted (or never rendered), then repaint and evict the rest (fix P2).
+    // Yields between renders so window changes never block input.
+    async function ensureWindow(){
+      if (!pdfDoc) return;
+      evictOutsideWindow();
+      for (let n = 1; n <= numPages; n++){
+        if (inKeepWindow(n) && !pageURL[n-1] && !renderingPages.has(n)){ await renderPage(n); setWindow(); await yieldToMain(); }
+      }
+      setWindow();
     }
 
     function render(active){
@@ -214,59 +295,97 @@ const { pdf, label = 'Booklet', downloadText = 'Download the full booklet (PDF)'
       indEl.textContent = spread === 0 ? 'Cover' : `${2*spread}–${Math.min(2*spread+1, numPages)} / ${numPages}`;
       returnBtn.classList.toggle('show', spread >= 1 && spread >= maxSpread);
     }
-    function turnTo(s){ s = Math.max(1, Math.min(maxSpread, s)); if (busy || s === spread || spread === 0) return; busy = true; spread = s; render(); setTimeout(() => busy = false, 540); }
+    function turnTo(s){ s = Math.max(1, Math.min(maxSpread, s)); if (busy || s === spread || spread === 0) return; busy = true; spread = s; render(); ensureWindow(); setTimeout(() => busy = false, 540); }
     const next = () => turnTo(spread + 1), prev = () => turnTo(spread - 1);
-    function openBook(){ if (spread !== 0 || busy || !numPages) return; busy = true; spread = 1; render(); setTimeout(() => busy = false, 700); }
-    function closeBook(){ if (spread === 0) return; busy = true; spread = 0; ryFree = REST.ry; rxFree = REST.rx; render(); setTimeout(() => busy = false, 700); }
+    function openBook(){ if (spread !== 0 || busy || !numPages || failed) return; busy = true; spread = 1; document.addEventListener('keydown', onKeydown); render(); ensureWindow(); setTimeout(() => busy = false, 700); }
+    function closeBook(){ if (spread === 0) return; busy = true; spread = 0; ryFree = REST.ry; rxFree = REST.rx; document.removeEventListener('keydown', onKeydown); render(); ensureWindow(); setTimeout(() => busy = false, 700); }
 
     nextBtn.addEventListener('click', () => spread === 0 ? openBook() : next());
     prevBtn.addEventListener('click', prev);
     closeX.addEventListener('click', closeBook);
     returnBtn.addEventListener('click', () => turnTo(1));
-    document.addEventListener('keydown', e => { if (!root.classList.contains('is-open')) return; if (e.key === 'Escape') closeBook(); if (e.key === 'ArrowRight') next(); if (e.key === 'ArrowLeft') prev(); });
+
+    // Scoped listeners (fix P3): rather than registering keydown + the two window-level
+    // pointer handlers for the whole page lifetime, they only live while they can do
+    // something. Keydown (Esc/arrows) is bound on open and removed on close. The window
+    // pointermove/pointerup are bound on pointerdown (when a drag - spin or page-flip -
+    // actually begins) and removed on pointerup, so they never sit idle. The
+    // IntersectionObserver that triggers loading stays page-lifetime (see below).
+    function onKeydown(e){ if (!root.classList.contains('is-open')) return; if (e.key === 'Escape') closeBook(); if (e.key === 'ArrowRight') next(); if (e.key === 'ArrowLeft') prev(); }
 
     // Spin shut, flip pages open.
     let mode = null, sx = 0, sy = 0, moved = 0, velY = 0, dragK = -1, dragDir = 1, dragW = 0, dragLive = 0, raf = 0;
     book.addEventListener('pointerdown', e => {
-      if (busy || !numPages) return; cancelAnimationFrame(raf); sx = e.clientX; sy = e.clientY; moved = 0; velY = 0;
+      if (busy || !numPages || failed) return; cancelAnimationFrame(raf); sx = e.clientX; sy = e.clientY; moved = 0; velY = 0;
       if (spread === 0){ mode = 'spin'; book.classList.add('cg-grabbing'); }
       else { const r = book.getBoundingClientRect(); const x = (e.clientX - r.left) / r.width;
         if (x >= 0.5 && spread < maxSpread){ mode = 'page'; dragK = spread; dragDir = 1; dragW = r.width; }
         else if (x < 0.5 && spread > 0){ mode = 'page'; dragK = spread - 1; dragDir = -1; dragW = r.width; } else mode = null;
         if (mode === 'page') leaves[dragK].style.transition = 'none'; }
-      if (mode) book.setPointerCapture?.(e.pointerId);
+      // Only attach the window-level drag handlers once a drag is actually under way.
+      // Pointer capture is best-effort: synthetic pointer events (assistive tech,
+      // tests) carry ids setPointerCapture rejects with a DOMException - which must
+      // not abort the handler before the up-listener binds, or a tap can't open the book.
+      if (mode){ try { book.setPointerCapture?.(e.pointerId); } catch (err) {} window.addEventListener('pointermove', onPointerMove); window.addEventListener('pointerup', onPointerUp); }
     });
-    window.addEventListener('pointermove', e => {
+    function onPointerMove(e){
       if (!mode) return; const dx = e.clientX - sx, dy = e.clientY - sy; moved += Math.abs(e.clientX - sx) + Math.abs(e.clientY - sy);
       if (mode === 'spin'){ ryFree += dx * 0.45; rxFree = Math.max(-34, Math.min(34, rxFree - dy * 0.35)); velY = dx * 0.45; sx = e.clientX; sy = e.clientY;
         book.style.setProperty('--ry', ryFree + 'deg'); book.style.setProperty('--rx', rxFree + 'deg'); }
       else { let f = dragDir === 1 ? (-dx / (dragW * 0.5)) : 1 - (dx / (dragW * 0.5)); f = Math.max(0, Math.min(1, f)); dragLive = f; render({ k: dragK, f }); }
-    });
-    window.addEventListener('pointerup', () => {
+    }
+    function onPointerUp(){
+      // The drag is over - detach the window handlers until the next pointerdown.
+      window.removeEventListener('pointermove', onPointerMove); window.removeEventListener('pointerup', onPointerUp);
       if (!mode) return; const wasMoved = moved > 6, m = mode; mode = null; book.classList.remove('cg-grabbing');
       if (m === 'spin'){ if (!wasMoved) openBook(); else { const d = () => { velY *= 0.94; ryFree += velY; book.style.setProperty('--ry', ryFree + 'deg'); if (Math.abs(velY) > 0.04 && spread === 0) raf = requestAnimationFrame(d); }; raf = requestAnimationFrame(d); } }
       else { leaves[dragK].style.transition = ''; if (!wasMoved) (dragDir === 1 ? next() : prev()); else if (dragDir === 1) (dragLive > 0.4 ? turnTo(spread + 1) : render()); else (dragLive < 0.6 ? turnTo(spread - 1) : render()); }
-    });
+    }
+
+    // The PDF could not be loaded (CDN blocked, offline, corrupt) - hide the dead
+    // interactive book and leave the download link as the surviving affordance (fix P1).
+    function markFailed(){
+      failed = true;
+      stage.style.display = 'none';
+      root.querySelector('.cg-controls').style.display = 'none';
+      // Prefix the download link with a quiet, label-voice explanation.
+      if (!root.querySelector('.cg-dl-note')){
+        const note = document.createElement('p');
+        note.className = 'label cg-dl-note';
+        note.textContent = 'Booklet unavailable - download the PDF';
+        dlLink.before(note);
+      }
+    }
 
     // Lazy: load pdf.js + rasterise pages the first time the book is near view.
     async function start(){
       if (started) return; started = true; size();
-      const pdfjs = await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/pdf.min.mjs');
-      pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/pdf.worker.min.mjs';
-      const doc = await pdfjs.getDocument(PDF).promise;
-      numPages = doc.numPages; pageURL = new Array(numPages).fill(null);
+      try {
+        const pdfjs = await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/pdf.min.mjs');
+        pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/pdf.worker.min.mjs';
+        pdfDoc = await pdfjs.getDocument(PDF).promise;
+      } catch (err) {
+        // CDN blocked by an ad-blocker, offline, or the PDF failed to parse: one quiet
+        // fallback, no retry spinner.
+        console.warn('[BookletViewer] pdf.js load failed; falling back to download link.', err);
+        markFailed();
+        return;
+      }
+      numPages = pdfDoc.numPages; pageURL = new Array(numPages).fill(null);
       buildLeaves(); render();
-      const dpr = window.devicePixelRatio || 1;
-      const targetH = Math.min(2400, Math.round((stage.clientHeight || 600) * dpr * 1.7));
-      const renderPage = async (n) => {
-        const page = await doc.getPage(n); const sc = targetH / page.getViewport({ scale: 1 }).height; const vp = page.getViewport({ scale: sc });
-        const cv = document.createElement('canvas'); cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
-        const ctx = cv.getContext('2d', { alpha: false }); ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,cv.width,cv.height);
-        await page.render({ canvasContext: ctx, viewport: vp }).promise; pageURL[n-1] = cv.toDataURL('image/jpeg', 0.9);
-      };
-      for (const n of [1, 2, 3, numPages]) if (n >= 1 && n <= numPages) await renderPage(n);
+      rasterH = currentTargetH();
+      // Visible spread first (cover + first/last), then fill the rest in order, yielding
+      // between pages so input/scroll stays responsive (fix P3). Pages that drift outside
+      // the keep-window are evicted as we go so the cache never holds the whole booklet (fix P2).
+      for (const n of [1, 2, 3, numPages]) if (n >= 1 && n <= numPages){ await renderPage(n); await yieldToMain(); }
       setWindow();
-      for (let n = 4; n < numPages; n++){ await renderPage(n); if (Math.abs(Math.floor((n-1)/2) - spread) <= 2) setWindow(); }
+      for (let n = 4; n < numPages; n++){
+        await renderPage(n);
+        if (Math.abs(Math.floor((n-1)/2) - spread) <= 2) setWindow();
+        evictOutsideWindow();
+        await yieldToMain();
+      }
+      setWindow();
     }
     const io = new IntersectionObserver((ents) => { ents.forEach(e => { if (e.isIntersecting){ start(); io.disconnect(); } }); }, { rootMargin: '300px' });
     io.observe(root);

@@ -13,6 +13,10 @@ export default defineConfig({
   site: 'https://courtgranville.com',
   trailingSlash: 'always',
 
+  // Hover-prefetch internal links (gallery -> project page especially): the pages
+  // are small static HTML, so the hop feels instant at negligible cost.
+  prefetch: { prefetchAll: true, defaultStrategy: 'hover' },
+
   build: {
     format: 'directory',
   },

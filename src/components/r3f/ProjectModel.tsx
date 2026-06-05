@@ -11,12 +11,16 @@
 // stage CSS on the page.
 
 import { Canvas, useThree } from '@react-three/fiber';
+// Barrel import kept deliberately - see the WorkGallery import note: subpath
+// imports were measured to change the shared island chunk by ~6 bytes (drei 10
+// already tree-shakes from the barrel) and are more fragile, so the barrel stays.
 import { OrbitControls, useGLTF } from '@react-three/drei';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+import ModelBoundary from './ModelBoundary';
 
 type Props = {
   model: string;
@@ -130,9 +134,14 @@ export default function ProjectModel({ model, fill = DEFAULT_FILL, viewRY = 0, v
         <StudioEnv />
         <directionalLight position={[2, 3, 2]} intensity={1.1} />
         <directionalLight position={[-2, 0.5, -1.5]} intensity={0.35} />
-        <Suspense fallback={null}>
-          <Model url={model} fill={fill} viewRY={viewRY} viewRX={viewRX} />
-        </Suspense>
+        {/* A failed/aborted GLB makes useGLTF throw past the Suspense fallback;
+            ModelBoundary catches it so the stage collapses to a quiet empty
+            ground rather than a stuck, never-painting canvas. */}
+        <ModelBoundary>
+          <Suspense fallback={null}>
+            <Model url={model} fill={fill} viewRY={viewRY} viewRX={viewRX} />
+          </Suspense>
+        </ModelBoundary>
         <OrbitControls
           makeDefault
           enableZoom={false}

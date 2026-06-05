@@ -89,11 +89,18 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
     const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
 
-    // Honour reduced-motion at mount time. Canvas still renders a static
-    // nucleus (one frame), but breathing/drift/fission detection are off.
-    const prefersReduced =
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Honour reduced-motion. The canvas still renders the static nucleus, but
+    // breathing/drift are off (fission stays - it is a deliberate user gesture).
+    // Tracked live, not just sampled at mount: subscribe to the MediaQueryList so
+    // toggling the OS setting while the page is open updates the running loop. The
+    // listener (and its cleanup) are added below, after motionMq is in scope.
+    const motionMq =
+      typeof window.matchMedia === 'function'
+        ? window.matchMedia('(prefers-reduced-motion: reduce)')
+        : null;
+    let prefersReduced = !!motionMq?.matches;
+    const onMotionChange = (e: MediaQueryListEvent) => { prefersReduced = e.matches; };
+    motionMq?.addEventListener('change', onMotionChange);
 
     let W = 0;
     let H = 0;
@@ -245,6 +252,31 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
     let lastT = t0;
     let rafId = 0;
 
+    // Visibility gate: a backgrounded tab keeps requestAnimationFrame scheduled
+    // (browsers throttle but don't stop a self-rescheduling loop), so stop
+    // scheduling frames entirely while the document is hidden and resume on
+    // return. This sits ALONGSIDE the existing active/on-screen gates - those
+    // skip the draw but keep the loop alive; this stops the loop outright when
+    // the whole tab is hidden. scheduleFrame is the single rescheduling point so
+    // the visibility check lives in one place; rafId === 0 marks "stopped" so the
+    // visibilitychange handler knows whether it needs to restart the loop.
+    const scheduleFrame = () => {
+      if (document.hidden) { rafId = 0; return; }
+      rafId = requestAnimationFrame(frame);
+    };
+    const onVisibility = () => {
+      if (document.hidden) {
+        // Stop scheduling; the in-flight frame (if any) will see rafId reset.
+        if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+      } else if (!rafId) {
+        // Resume. Reset lastT so the first frame back doesn't compute a huge dt
+        // from the hidden gap (dt is clamped anyway, but keep timing clean).
+        lastT = performance.now();
+        scheduleFrame();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
     // Dev-only diagnostic: ?frametiming in the URL logs average dt per
     // second to the console so we can compare actual RAF rates across
     // browsers. Used to diagnose the Chrome over-reactivity report -
@@ -260,7 +292,7 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
       // but skip the full-viewport clear + nucleus redraw + particle step. This is
       // the dominant homepage scroll cost; resuming is instant (drawFrame fully
       // repaints each frame, so one paused-then-active frame is clean).
-      if (!activeRef.current || !onScreenRef.current) { lastT = now; rafId = requestAnimationFrame(frame); return; }
+      if (!activeRef.current || !onScreenRef.current) { lastT = now; scheduleFrame(); return; }
       const dt = Math.max(0.001, Math.min(0.05, (now - lastT) / 1000));
       lastT = now;
       const t = (now - t0) / 1000;
@@ -312,7 +344,7 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
 
       ctx.clearRect(0, 0, W, H);
       if (!polylines.length || !bbox) {
-        rafId = requestAnimationFrame(frame);
+        scheduleFrame();
         return;
       }
 
@@ -342,14 +374,16 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
 
       stepAndDrawParticles(ctx, fission, dt, H);
 
-      rafId = requestAnimationFrame(frame);
+      scheduleFrame();
     };
-    rafId = requestAnimationFrame(frame);
+    scheduleFrame();
 
     return () => {
       cancelAnimationFrame(rafId);
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('atom:formregion', onFormRegion);
+      document.removeEventListener('visibilitychange', onVisibility);
+      motionMq?.removeEventListener('change', onMotionChange);
       if (viewportParticles) window.removeEventListener('resize', resize);
       ro.disconnect();
       io.disconnect();
@@ -442,8 +476,6 @@ function drawFrame(a: DrawFrameArgs): void {
 
   fission.shakeScore += a.reversalsThisFrame;
   fission.shakeScore = Math.max(0, fission.shakeScore - dt * 2.5);
-  fission.lastVx = ptr.vx;
-  fission.lastVy = ptr.vy;
 
   if (fission.phase === 'idle' && fission.cooldown <= 0) {
     if (isFast && nearCentre) fission.fastT += dt;

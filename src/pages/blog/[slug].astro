@@ -21,10 +21,22 @@ const { post } = Astro.props;
 const { Content } = await render(post);
 const { title, description, pubDate, updatedDate, tags, draft } = post.data;
 const fmt = (d: Date) => d.toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
+
+// Structured data for the post (rendered by Layout alongside Person/WebSite).
+const articleLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: title,
+  description,
+  datePublished: pubDate.toISOString(),
+  ...(updatedDate ? { dateModified: updatedDate.toISOString() } : {}),
+  url: new URL(Astro.url.pathname, Astro.site).toString(),
+  author: { '@type': 'Person', name: 'Court Granville' },
+};
 ---
-<Layout title={`${title} - Court Granville`} description={description}>
+<Layout title={`${title} - Court Granville`} description={description} jsonLd={[articleLd]}>
   <Nav />
-  <main>
+  <main id="main">
     <article class="post">
       <Grid class="post-head">
         <span class="label post-meta">
@@ -79,7 +91,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { year: 'numeric', month:
 
   :global(.post-foot) { margin-top: var(--space-section); padding-top: var(--space-block);
     border-top: 1px solid var(--rule); padding-bottom: clamp(48px, 6vh, 72px); }
-  .post-updated { grid-column: 1 / -1; display: block; color: var(--text-faint); margin-bottom: 12px; }
+  .post-updated { grid-column: 1 / -1; display: block; color: var(--text-quiet); margin-bottom: 12px; }
   .all-posts { grid-column: 1 / -1; font-family: var(--sans); font-weight: 500;
     font-size: var(--fs-label); letter-spacing: var(--ls-label); text-transform: uppercase; color: var(--text-quiet); }
   .all-posts:hover { color: var(--accent); }

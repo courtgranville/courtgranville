@@ -9,7 +9,7 @@ import Grid from '../../components/Grid.astro';
 ---
 <Layout title="Contact - Court Granville" description="Get in touch with Court Granville - open to roles, freelance and collaborations in technology, energy and other technical fields. London & Madrid.">
   <Nav />
-  <main>
+  <main id="main">
     <Grid as="article" class="contact">
       <span class="label contact-kicker reveal">Contact</span>
       <h1 class="contact-lead reveal" data-stagger="1">
@@ -61,7 +61,7 @@ import Grid from '../../components/Grid.astro';
     margin: 0; max-width: 52ch;
   }
   .contact-types { grid-column: 1 / -1; display: block; margin-top: 8px; }
-  .contact-loc { grid-column: 1 / -1; display: block; margin-top: 4px; color: var(--text-faint); }
+  .contact-loc { grid-column: 1 / -1; display: block; margin-top: 4px; color: var(--text-quiet); }
 
   @media (min-width: 768px) {
     .contact-kicker { grid-column: 1 / 3; }

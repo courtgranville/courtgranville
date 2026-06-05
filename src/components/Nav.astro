@@ -195,7 +195,7 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
   .nav-burger {
     display: none;            /* shown < 900px (below) */
     align-items: center; justify-content: center;
-    width: 40px; height: 40px; margin-right: -8px;   /* optical: pull to the edge */
+    width: 44px; height: 44px; margin-right: -10px;  /* optical: pull to the edge; 44px tap target */
     color: var(--text); opacity: 0.9;
     transition: opacity var(--dur-hover) var(--ease-out);
   }
@@ -362,7 +362,19 @@ const isCurrent = (href: string) => !href.includes('#') && (path === href || pat
     // so they'd otherwise leave the panel open over the section.
     panel.querySelectorAll('.nav-panel-link').forEach((a) => a.addEventListener('click', () => setMenu(false)));
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && panel.getAttribute('aria-hidden') === 'false') setMenu(false);
+      if (panel.getAttribute('aria-hidden') !== 'false') return;
+      if (e.key === 'Escape') { setMenu(false); return; }
+      // The panel is role="dialog" aria-modal - trap Tab inside it so keyboard
+      // focus can't wander into the dimmed page behind.
+      if (e.key === 'Tab') {
+        const focusables = panel.querySelectorAll('a[href], button:not([disabled])');
+        if (!focusables.length) return;
+        const first = focusables[0];
+        const last  = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        else if (!panel.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+      }
     });
     // If the viewport grows past the burger breakpoint while open, close cleanly.
     matchMedia('(min-width: 900px)').addEventListener('change', (e) => { if (e.matches) setMenu(false); });

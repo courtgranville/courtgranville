@@ -212,10 +212,23 @@ const nextSlug = idx >= 0 && idx < ORDER.length - 1 ? ORDER[idx + 1] : ORDER[0];
 const allProjects = await getCollection('projects');
 const nextProject = allProjects.find((p) => p.id.replace(/\.json$/, '') === nextSlug);
 const nextName = nextProject?.data.name ?? '';
+
+// Structured data for the project (rendered by Layout alongside Person/WebSite).
+const projectLd = {
+  '@context': 'https://schema.org',
+  '@type': 'CreativeWork',
+  name,
+  description: framing,
+  dateCreated: String(year),
+  genre: discipline,
+  url: new URL(Astro.url.pathname, Astro.site).toString(),
+  ...(hero ? { image: new URL(hero.src, Astro.site).toString() } : {}),
+  author: { '@type': 'Person', name: 'Court Granville' },
+};
 ---
-<Layout title={`${name} - Court Granville`} description={framing}>
+<Layout title={`${name} - Court Granville`} description={framing} jsonLd={[projectLd]}>
   <Nav />
-  <main>
+  <main id="main">
     <article>
       <!-- Breadcrumb - a way back to the gallery from the top of the page. -->
       <Grid class="proj-crumb">

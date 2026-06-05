@@ -1,0 +1,56 @@
+---
+// 404 - branded not-found page on the shared chrome. Astro emits dist/404.html,
+// which Cloudflare Pages serves with a real 404 status for unknown URLs
+// (without it, Pages falls back to the homepage with a 200 - a soft-404).
+
+import Layout from '../components/Layout.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import Grid from '../components/Grid.astro';
+---
+<Layout title="Page not found - Court Granville" description="This page does not exist." noindex>
+  <Nav />
+  <main id="main">
+    <Grid as="article" class="nf">
+      <span class="label nf-kicker reveal">404</span>
+      <h1 class="nf-lead reveal" data-stagger="1">
+        This page does not exist.
+      </h1>
+      <p class="nf-body reveal" data-stagger="2">
+        The address may have moved, or it never was. The work, at least, is where it should be.
+      </p>
+      <p class="nf-links reveal" data-stagger="3">
+        <a class="nf-link" href="/work/">See the work &rarr;</a>
+        <a class="nf-link" href="/">Back to the start &rarr;</a>
+      </p>
+    </Grid>
+  </main>
+  <Footer />
+</Layout>
+
+<style>
+  :global(.nf) {
+    padding-block: calc(var(--nav-h) + clamp(64px, 14vh, 180px)) clamp(80px, 16vh, 200px);
+    row-gap: clamp(24px, 4vh, 40px);
+  }
+  .nf-kicker { grid-column: 1 / -1; display: block; }
+  .nf-lead {
+    grid-column: 1 / -1;
+    font-family: var(--serif); font-weight: 400;
+    font-size: var(--fs-display-l); line-height: var(--lh-display-l); color: var(--text);
+    margin: 0; max-width: 22ch;
+  }
+  .nf-body {
+    grid-column: 1 / -1;
+    font-size: var(--fs-body); line-height: var(--lh-body); color: var(--text-quiet);
+    margin: 0; max-width: 52ch;
+  }
+  .nf-links { grid-column: 1 / -1; display: flex; gap: 32px; margin: 0; }
+  .nf-link {
+    font-family: var(--serif); font-weight: 400;
+    font-size: var(--fs-heading-s, 20px); color: var(--text);
+    border-bottom: 1px solid var(--rule); padding-bottom: 4px; width: fit-content;
+    transition: color var(--dur-hover) var(--ease-out), border-color var(--dur-hover) var(--ease-out);
+  }
+  .nf-link:hover { color: var(--accent); border-bottom-color: var(--accent); }
+</style>

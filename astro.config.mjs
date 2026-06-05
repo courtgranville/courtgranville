@@ -23,5 +23,10 @@ export default defineConfig({
     },
   },
 
-  integrations: [sitemap(), react()],
+  integrations: [
+    // /lab/ is a dev workbench (unlinked from nav, noindex'd via its Layout) -
+    // keep it out of the sitemap so it is never submitted to search engines.
+    sitemap({ filter: (page) => !page.includes('/lab/') }),
+    react(),
+  ],
 });

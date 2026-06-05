@@ -15,7 +15,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { year: 'numeric', month:
 ---
 <Layout title="Writing - Court Granville" description="Notes on design, trust, and contested technology - the writing track of the site.">
   <Nav />
-  <main>
+  <main id="main">
     <Grid as="section" class="blog">
       <span class="label t-rail blog-kicker reveal">Writing</span>
       <h1 class="t-body blog-lead reveal" data-stagger="1">Design, trust, and contested technology.</h1>
@@ -55,7 +55,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { year: 'numeric', month:
   .post-row a { display: grid; gap: 6px; padding: clamp(18px,2.4vh,28px) 0; color: var(--text);
     transition: padding-left var(--dur-hover) var(--ease-out); }
   .post-row a:hover { padding-left: 10px; }
-  .post-date { display: block; color: var(--text-faint); }
+  .post-date { display: block; color: var(--text-quiet); }
   .post-title {
     font-family: var(--serif); font-weight: 400;
     font-size: var(--fs-heading-m); line-height: var(--lh-heading-m);

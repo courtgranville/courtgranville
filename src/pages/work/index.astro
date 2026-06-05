@@ -32,7 +32,7 @@ const PROJECTS = [
 ---
 <Layout title="Work - Court Granville" description="Selected projects by Court Granville - each presented as the product itself, in 3D.">
   <Nav />
-  <main class="work-main">
+  <main id="main" class="work-main">
     <Grid as="section" class="work" aria-label="Selected work">
       <header class="work-head">
         <span class="label reveal">Selected Work</span>
@@ -125,8 +125,11 @@ const PROJECTS = [
   }
   .wg-cap .wg-link {
     font-size: clamp(13px, 0.62vw, 16px);
-    color: var(--text-faint);
-    margin-top: clamp(10px, 0.9vw, 20px);
+    color: var(--text-quiet);
+    /* Pad the hit area to a 24px+ tap target without shifting the layout. */
+    display: inline-block;
+    padding: 6px 0;
+    margin-top: clamp(4px, 0.6vw, 14px);
     transition: color var(--dur-hover) var(--ease-out);
   }
   .wg-cap:hover { color: var(--accent); }

@@ -37,8 +37,8 @@ pnpm-debug.log*
 *.swo
 .tmp-screenshots/
 
-# local Claude Code settings (personal, machine-specific)
-.claude/settings.local.json
+# local Claude Code settings + harness state (personal, machine-specific)
+.claude/
 
 # local tooling artifacts + working docs (never deployed)
 .specstory/

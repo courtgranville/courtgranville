@@ -50,6 +50,10 @@
 #   - static.cloudflareinsights.com / cloudflareinsights.com: Cloudflare Web
 #     Analytics, injected by Cloudflare itself (verified in the network log).
 #   - api.web3forms.com: the contact form (fetch + the no-JS form-action path).
+#   - 'wasm-unsafe-eval': the meshopt decoder is WebAssembly - without it an
+#     ENFORCING policy breaks every GLB decode (caught by report-only, 06-06).
+#   - connect-src blob:: GLTFLoader fetches GLB-embedded textures via blob URLs
+#     (ImageBitmapLoader uses fetch) - enforcement would strip model textures.
 #   - No SRI / import-map integrity: a considered position - support is uneven
 #     and a hash mismatch silently kills the hero; version-pinned immutable CDN
 #     URLs + this origin allow-list are the supply-chain control.
@@ -61,4 +65,4 @@
   X-Frame-Options: DENY
   Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=()
   Strict-Transport-Security: max-age=300
-  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://cdn.jsdelivr.net https://api.web3forms.com https://cloudflareinsights.com; worker-src 'self' blob: https://cdn.jsdelivr.net; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://api.web3forms.com; object-src 'none'; upgrade-insecure-requests
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' blob: https://cdn.jsdelivr.net https://api.web3forms.com https://cloudflareinsights.com; worker-src 'self' blob: https://cdn.jsdelivr.net; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://api.web3forms.com; object-src 'none'; upgrade-insecure-requests

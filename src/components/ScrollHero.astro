@@ -1264,6 +1264,26 @@ function frame(ts){
 }
 rafId = requestAnimationFrame(frame);
 
+// Diagnostic HUD (?perf): live frame cadence for cross-browser triage (Firefox
+// cannot be driven by the Chrome tooling, so the page reports its own numbers).
+// Invisible without the flag; its own rAF so it measures the real presented
+// cadence even while the engine early-returns. Rides the theme tokens.
+if (new URLSearchParams(location.search).has('perf')){
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:80;font:600 11px/1.6 monospace;color:var(--text);background:var(--bg);border:1px solid var(--rule);padding:8px 10px;pointer-events:none;white-space:pre;opacity:0.92';
+  document.body.appendChild(el);
+  let pf = 0, pworst = 0, psum = 0, pover = 0, plast = performance.now();
+  const ptick = (now)=>{ const d = now - plast; plast = now; pf++; psum += d; if(d > pworst) pworst = d; if(d > 17) pover++; requestAnimationFrame(ptick); };
+  requestAnimationFrame(ptick);
+  setInterval(()=>{
+    if(!pf) return;
+    el.textContent =
+      `fps ${(1000/(psum/pf)).toFixed(0)}  avg ${(psum/pf).toFixed(1)}ms  worst ${pworst.toFixed(0)}ms  >17ms ${Math.round(100*pover/pf)}%\n` +
+      `dpr ${curDPR.toFixed(2)}  pts ${COUNT.toLocaleString()}  hz~${refreshHz}${refreshSampled ? '' : '?'}  beat ${state.p.toFixed(2)}`;
+    pf = 0; pworst = 0; psum = 0; pover = 0;
+  }, 500);
+}
+
 // ── Context-loss teardown ────────────────────────────────────────────────────
 // After webglcontextlost the fallback monogram is showing and every engine
 // resource is a pure leak: the old handler left the rAF loop, the particle sim

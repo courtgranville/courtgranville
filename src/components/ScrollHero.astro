@@ -329,7 +329,20 @@ const CONFIG = {
   // dprRecoverFrames/dprFastFrac: the adaptive DPR may step DOWN on sustained jank;
   // a long run of comfortably-fast frames (faster than dprFastFrac x the budget)
   // steps it back up, so a one-off spike can't blur the hero for the whole session.
-  perf: { resizeDebounceMs: 150, dprRecoverFrames: 180, dprFastFrac: 0.7 },
+  // The quality LADDER the runtime governor walks under sustained jank, one rung
+  // per ~24 slow frames: DPR 2.0 -> 1.5 -> 1.0, then BLOOM OFF (the dark theme's
+  // multi-pass blur is the single heaviest full-screen cost on slow GL stacks -
+  // Firefox/Zen measured 87ms/frame AT REST where Chrome runs 16ms), then the
+  // PARTICLE COUNT itself steps down (the primary tuning lever per CLAUDE.md) -
+  // drawn via setDrawRange + partial buffer upload, so sim, upload and fill all
+  // shrink together. Recovery climbs back one rung at a time on sustained fast
+  // frames, but only frames doing REAL work count (idle/static frames are cheap
+  // and would otherwise yo-yo the quality).
+  // idleAfterMs: with no input, no morph motion and no drag for this long, the
+  // dust is converged - the sim + the 1.7 MB/frame upload stop entirely (the
+  // group rotation still spins the formed cloud; the draw continues).
+  perf: { resizeDebounceMs: 150, dprRecoverFrames: 180, dprFastFrac: 0.7,
+          countTiers: [0.65, 0.45, 0.3], idleAfterMs: 1200 },
   // Theme colours for the WebGL surface (the editorial body flips via CSS tokens).
   // Light keeps today's values exactly; dark turns the particles white on a
   // near-black ground and switches on bloom. The bloom values are starting
@@ -570,11 +583,12 @@ function resolveMorph(p){
 // One pass: position = direct morph target + spring-play displacement (pointer repel).
 function stepParticles(dt, probe){
   const pos=ps.geometry.attributes.position.array, vel=ps.vel, disp=ps.disp;
+  const LIVE = liveCount;   // governor-reduced particle budget (== COUNT at full quality)
   const FROM=M.FROM, TO=M.TO, e=M.e, ie=1-e;
   const P=CONFIG.play, k=P.springK, dmp=P.damping, maxD=P.maxDisp, maxD2=maxD*maxD;
   const on=probe.active, ox=probe.o.x,oy=probe.o.y,oz=probe.o.z, rx=probe.d.x,ry=probe.d.y,rz=probe.d.z;
   const pr=CONFIG.pointer.radius, pr2=pr*pr, str=CONFIG.pointer.strength;
-  for(let n=0;n<COUNT;n++){
+  for(let n=0;n<LIVE;n++){
     const j=n*3;
     const tx=FROM[j]*ie+TO[j]*e, ty=FROM[j+1]*ie+TO[j+1]*e, tz=FROM[j+2]*ie+TO[j+2]*e;
     let dx=disp[j], dy=disp[j+1], dz=disp[j+2];
@@ -592,7 +606,12 @@ function stepParticles(dt, probe){
     disp[j]=dx; disp[j+1]=dy; disp[j+2]=dz;
     pos[j]=tx+dx; pos[j+1]=ty+dy; pos[j+2]=tz+dz;
   }
-  ps.geometry.attributes.position.needsUpdate=true;
+  // Partial upload: only the live range goes to the GPU (updateRange is consumed
+  // per upload in three r162, so it is set every frame). At reduced tiers this
+  // cuts the per-frame transfer in the same proportion as the sim.
+  const attr = ps.geometry.attributes.position;
+  if(attr.updateRange){ attr.updateRange.offset = 0; attr.updateRange.count = LIVE*3; }
+  attr.needsUpdate = true;
 }
 
 // ── THREE setup ──
@@ -812,6 +831,26 @@ function applyDPR(r){
   renderer.setPixelRatio(r); renderer.setSize(innerWidth, innerHeight, false); sizeScale();
   if(composer){ composer.setPixelRatio(r); composer.setSize(innerWidth, innerHeight); }
 }
+
+// ── Quality governor ─────────────────────────────────────────────────────────
+// One rung index walks the whole ladder (see CONFIG.perf). Rungs 1..2 step the
+// DPR (as before), rung 3 turns the dark-theme bloom off (direct render), rungs
+// 4+ step the live particle count. Everything derives from the rung, so the
+// ladder can't get into inconsistent states.
+const DPR_RUNGS = 2;                                  // rungs that step DPR (0 = full)
+const MAX_RUNG = DPR_RUNGS + 1 + CONFIG.perf.countTiers.length;
+let qualityRung = 0;
+let liveCount = COUNT;
+let bloomAllowed = true;
+function applyQuality(rung){
+  qualityRung = Math.max(0, Math.min(MAX_RUNG, rung));
+  const dpr = Math.max(DPR_FLOOR, baseDPR - 0.5 * Math.min(qualityRung, DPR_RUNGS));
+  if(dpr !== curDPR){ curDPR = dpr; applyDPR(curDPR); }
+  bloomAllowed = qualityRung <= DPR_RUNGS;
+  const frac = qualityRung > DPR_RUNGS + 1 ? CONFIG.perf.countTiers[qualityRung - DPR_RUNGS - 2] : 1;
+  const n = Math.floor(COUNT * frac);
+  if(n !== liveCount){ liveCount = n; ps.geometry.setDrawRange(0, liveCount); }
+}
 // Estimate the display's frame budget so the jank threshold scales to the refresh rate.
 // A 26ms (sub-40fps) threshold is right for 60Hz but far too lax for a 120Hz ProMotion
 // panel, where 16.7ms is already a dropped frame. Sampled once from the first stable
@@ -829,7 +868,7 @@ function estimateRefresh(dtMs){
     refreshSampled = true;
   }
 }
-function adaptQuality(frameMs){
+function adaptQuality(frameMs, doingRealWork){
   // 120Hz: a sustained run below 60fps (>16.7ms) steps down; 60Hz: below 40fps (>26ms),
   // as before. ~24 consecutive slow frames (~0.4s) are still required, so a one-off
   // GLB-upload / lazy-composer hitch or the brief dispersal never trips it.
@@ -838,15 +877,17 @@ function adaptQuality(frameMs){
   const slowMs = refreshHz >= 120 ? 16.7 : 26;
   if(frameMs > slowMs){
     fastRun = 0;
-    if(++slowRun >= 24 && curDPR > DPR_FLOOR){ curDPR = Math.max(DPR_FLOOR, curDPR - 0.5); applyDPR(curDPR); slowRun = 0; }
+    if(++slowRun >= 24 && qualityRung < MAX_RUNG){ applyQuality(qualityRung + 1); slowRun = 0; }
   } else {
     slowRun = 0;
-    // Recover: a transient spike (GC, thermal blip, a backgrounded tab) must not
-    // leave the hero soft for the rest of the session - a sustained run of fast
-    // frames steps the DPR back toward the device cap, one notch at a time.
-    if(curDPR < baseDPR && frameMs < slowMs * CONFIG.perf.dprFastFrac){
-      if(++fastRun >= CONFIG.perf.dprRecoverFrames){ curDPR = Math.min(baseDPR, curDPR + 0.5); applyDPR(curDPR); fastRun = 0; }
-    } else fastRun = 0;
+    // Recover one rung at a time on sustained fast frames - but only frames doing
+    // REAL work count as evidence (an idle/static frame is cheap by construction;
+    // recovering on those would restore full quality while resting, then jank the
+    // moment the user touches anything - a quality yo-yo).
+    if(qualityRung > 0 && doingRealWork && frameMs < slowMs * CONFIG.perf.dprFastFrac){
+      if(++fastRun >= CONFIG.perf.dprRecoverFrames){ applyQuality(qualityRung - 1); fastRun = 0; }
+    } else if(!doingRealWork) { /* hold fastRun - no evidence either way */ }
+    else fastRun = 0;
   }
 }
 
@@ -945,9 +986,11 @@ function stepLoadIn(time){
 }
 
 // ── Pointer: repel probe (cloud) OR drag-spin (settled model). ──
+// Last real input (pointer movement / wheel) - drives the idle sim-skip.
+let lastInputMs = performance.now();
 const probe = { active:false, o:new THREE.Vector3(1e6,1e6,1e6), d:new THREE.Vector3(0,0,-1),
   ndc:new THREE.Vector2(), sm:new THREE.Vector2(), snap:false, ray:new THREE.Raycaster(), inv:new THREE.Matrix4() };
-function probeSet(x,y){ probe.ndc.set(x,y); if(!probe.active){ probe.snap=true; } probe.active=true; }
+function probeSet(x,y){ probe.ndc.set(x,y); if(!probe.active){ probe.snap=true; } probe.active=true; lastInputMs = performance.now(); }
 function probeUpdate(){
   if(!probe.active) return;
   if(probe.snap){ probe.sm.copy(probe.ndc); probe.snap=false; } else probe.sm.lerp(probe.ndc, CONFIG.pointer.smoothing);
@@ -1015,7 +1058,7 @@ function readScroll(){
   const cue = Math.max(0, 1 - y/90); scrollCue.style.opacity = String(cue*0.5);
 }
 let lastWheelT=-1e9, snapping=false, prevSnapP=0, scrollDir=1;
-function noteInput(){ lastWheelT = clock ? clock.elapsedTime*1000 : 0; snapping=false; }
+function noteInput(){ lastWheelT = clock ? clock.elapsedTime*1000 : 0; snapping=false; lastInputMs = performance.now(); }
 if(lenis){ ['wheel','touchstart','touchmove'].forEach(ev=> addEventListener(ev, noteInput, { passive:true })); }
 function maybeSnap(nowMs){
   if(!lenis || drag.on){ prevSnapP = state.p; return; }
@@ -1101,6 +1144,9 @@ window.__cgAtomActive = false;
 // Last-written overlay style values, so the render loop can skip redundant
 // per-frame writes (see the atom crossfade block below).
 let lastAtomVis = null, lastAtomPE = null;
+// Previous frame's cloudHidden - the governor reads it before this frame's value
+// exists (hidden frames are cheap, so they are not recovery evidence either).
+let cloudHiddenPrev = false;
 function setAtomActive(on){
   if(on === prevAtomActive) return;
   prevAtomActive = on; window.__cgAtomActive = on;
@@ -1170,7 +1216,14 @@ function frame(ts){
   // smoothing absorbs per-notch stepping a raw target would show. No Lenis lerp lag.
   const fk = lenis ? (1 - Math.exp(-dt / CONFIG.scroll.followTau)) : 1;
   state.p += (pTarget - state.p) * fk;
-  if(loadIn && loadIn.done){ maybeSnap(time*1000); adaptQuality(rawDt*1000); }
+  // Idle detection: no input for idleAfterMs AND the morph is at rest AND nothing
+  // is being dragged or snapped - the dust is converged, so the per-particle sim
+  // and the position upload are pure waste. The formed cloud still draws and the
+  // group rotation still spins it; any input resumes the sim the same frame.
+  const morphAtRest = Math.abs(pTarget - state.p) < 5e-4 && !snapping;
+  const cloudStatic = !!(loadIn && loadIn.done) && morphAtRest && !drag.on &&
+                      (performance.now() - lastInputMs) > CONFIG.perf.idleAfterMs;
+  if(loadIn && loadIn.done){ maybeSnap(time*1000); adaptQuality(rawDt*1000, !cloudStatic && !cloudHiddenPrev); }
 
   let c, formW;
   if(loadIn && !loadIn.done){ c=0; formW=1; M.formW=1; }
@@ -1197,6 +1250,7 @@ function frame(ts){
   const skinnable = !!(BEATS[c] && ((BEATS[c].kind==='model' && models[c]) || BEATS[c].kind==='nucleus'));
   const skinVis = skinnable ? smootherstep(CONFIG.morph.texAt, 1.0, formW) : 0;
   const cloudHidden = !!(loadIn && loadIn.done) && skinVis > 0.99;
+  cloudHiddenPrev = cloudHidden;
 
   // Drive the live-atom pause: only animate the canvas-2D nucleus once it is about to
   // be VISIBLE (formW past a hair before the atomVis fade-in at texAt=0.62), not for
@@ -1222,7 +1276,7 @@ function frame(ts){
 
   probeUpdate();
   if(loadIn && !loadIn.done) stepLoadIn(time);
-  else if(!cloudHidden) stepParticles(dt, probe);   // skip the sim while the dust is fully hidden behind a skinned form
+  else if(!cloudHidden && !cloudStatic) stepParticles(dt, probe);   // skip while hidden behind a skin OR converged-idle
 
   let particleOpacity = 1;
   for(let i=0;i<N;i++){
@@ -1260,7 +1314,7 @@ function frame(ts){
   canvas.classList.toggle('grabbable', activeModel>=0 && !drag.on);
   // Light mode: the original direct render (unchanged). Dark mode: the lazy
   // bloom composer. The OutputPass in the chain handles tone-mapping + sRGB.
-  if(useBloom && composer) composer.render(); else renderer.render(scene, camera);
+  if(useBloom && composer && bloomAllowed) composer.render(); else renderer.render(scene, camera);
 }
 rafId = requestAnimationFrame(frame);
 
@@ -1279,7 +1333,7 @@ if (new URLSearchParams(location.search).has('perf')){
     if(!pf) return;
     el.textContent =
       `fps ${(1000/(psum/pf)).toFixed(0)}  avg ${(psum/pf).toFixed(1)}ms  worst ${pworst.toFixed(0)}ms  >17ms ${Math.round(100*pover/pf)}%\n` +
-      `dpr ${curDPR.toFixed(2)}  pts ${COUNT.toLocaleString()}  hz~${refreshHz}${refreshSampled ? '' : '?'}  beat ${state.p.toFixed(2)}`;
+      `dpr ${curDPR.toFixed(2)}  pts ${liveCount.toLocaleString()}/${COUNT.toLocaleString()}  rung ${qualityRung}${bloomAllowed ? '' : ' nobloom'}  hz~${refreshHz}${refreshSampled ? '' : '?'}  beat ${state.p.toFixed(2)}`;
     pf = 0; pworst = 0; psum = 0; pover = 0;
   }, 500);
 }

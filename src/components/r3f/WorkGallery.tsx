@@ -204,7 +204,7 @@ function ModelCell({ p }: { p: Project }) {
         <div className={`wg-skeleton${loaded ? ' is-loaded' : ''}`} aria-hidden="true" />
         <Canvas
           frameloop={active ? 'always' : 'never'}
-          dpr={[1, 2]}
+          dpr={[1, 1.5]} // capped: on a 4K viewport DPR 2 cells are 4x the pixels of 1.5 for no visible gain at this stage size - Firefox's GL stack in particular pays heavily
           camera={{ position: [1.0, 0.45, 3.0], fov: 32 }}
           gl={{ antialias: true, alpha: true, preserveDrawingBuffer: false, toneMapping: THREE.ACESFilmicToneMapping }}
           // Absolute (inline, so it overrides R3F's own inline position:relative)

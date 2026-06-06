@@ -122,7 +122,10 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
       // to a 3.0 global ceiling didn't change its effective cap on
       // retina (still 2.0) so this is a no-op for NucleusHero
       // specifically. Explicit for parity with the other components.
-      const { dpr } = fitCanvasToDpr(canvas, W, H, 2.0);
+      // Full quality caps at 2.0 (the long-standing value); under pressure the
+      // backing store drops to TUNING.pressure.dpr - on a 4K viewport that is
+      // the difference between repainting 8 megapixels and ~3 per frame.
+      const { dpr } = fitCanvasToDpr(canvas, W, H, pressureMode ? TUNING.pressure.dpr : 2.0);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       readFormRegion();
     };
@@ -286,6 +289,9 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
       new URLSearchParams(window.location.search).has('frametiming');
     let ftFrames = 0;
     let ftLastReport = performance.now();
+    // Pressure mode (see TUNING.pressure): engaged once, sticky for the session.
+    let pressureMode = false;
+    let pressureRun = 0;
 
     const frame = (now: number) => {
       // Paused (homepage, nucleus is not the active beat): keep the rAF loop alive
@@ -295,6 +301,13 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
       if (!activeRef.current || !onScreenRef.current) { lastT = now; scheduleFrame(); return; }
       const dt = Math.max(0.001, Math.min(0.05, (now - lastT) / 1000));
       lastT = now;
+      // Engage pressure mode on sustained slow ANIMATED frames (the pause gates
+      // above guarantee this is real work, not an idle/throttled tab).
+      if (!pressureMode) {
+        if (dt * 1000 > TUNING.pressure.frameMs) {
+          if (++pressureRun >= TUNING.pressure.frames) { pressureMode = true; resize(); }
+        } else pressureRun = 0;
+      }
       const t = (now - t0) / 1000;
       // Only the viewport mode reads layout per frame (the form tracks the page's
       // scroll); everywhere else the region updates by resize/event (see readFormRegion).
@@ -357,6 +370,7 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
         cursorAngleRef: { get: () => cursorAngle, set: v => { cursorAngle = v; } },
         polylines, bbox,
         fission,
+        pressure: pressureMode,
         FAST_SPEED, REQUIRED_T, SHAKE_NEEDED,
         reduced: prefersReduced,
         ink: inkRef.current,
@@ -423,6 +437,7 @@ interface DrawFrameArgs {
   REQUIRED_T: number;
   SHAKE_NEEDED: number;
   reduced: boolean;
+  pressure: boolean;
   ink: string;
   /** True when the polylines were point-decimated (the homepage's small render) -
    * enables the bulge early-out, which the full-fidelity render path never takes. */
@@ -430,7 +445,7 @@ interface DrawFrameArgs {
 }
 
 function drawFrame(a: DrawFrameArgs): void {
-  const { ctx, W, H, t, dt, ptr, smoothSpeed, polylines, bbox, fission, reduced } = a;
+  const { ctx, W, H, t, dt, ptr, smoothSpeed, polylines, bbox, fission, reduced, pressure } = a;
   // The nucleus is drawn at the form centre with the form radius as its field -
   // small and offset on the homepage's full-screen canvas, the whole canvas
   // otherwise. The fission particles (below) are not bounded by this, so they
@@ -604,7 +619,9 @@ function drawFrame(a: DrawFrameArgs): void {
   const cutoffSq = a.decimated ? cutoff * cutoff : Infinity;
   // While the nucleus is split, optionally walk every Nth point (the halves render
   // at 0.5 scale, so the dropped vertices stay sub-pixel) - see TUNING.fissionPointStride.
-  const kStep = fission.phase === 'idle' ? 1 : Math.max(1, TUNING.fissionPointStride);
+  // Under pressure the stride applies in EVERY phase (half the contour points,
+  // half the bulge math + draw calls); otherwise the canonical behaviour.
+  const kStep = pressure ? 2 : (fission.phase === 'idle' ? 1 : Math.max(1, TUNING.fissionPointStride));
 
   for (let hi = 0; hi < halves.length; hi++) {
     const Hh = halves[hi];

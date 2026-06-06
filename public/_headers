@@ -3,6 +3,13 @@
 # cf-cache-status: DYNAMIC (revalidated every visit, never edge-cached), the
 # single biggest cheap repeat-visit cost. These rules cache the heavy, stable
 # static assets hard so a returning visitor re-downloads nothing.
+#
+# NB: Cache-Control governs the BROWSER cache. Cloudflare's EDGE only caches
+# extensions on its default list - .glb/.json are not on it, so the edge needs
+# a Cache Rule in the Cloudflare dashboard (Rules -> Cache Rules: hostname
+# courtgranville.com AND URI path starts with /models/ OR equals
+# /nucleus-paths.json -> Eligible for cache). Verified 2026-06-05: without it
+# the models report cf-cache-status: DYNAMIC on every request.
 
 # Fingerprinted Astro build output - the filename changes whenever the content
 # does, so it is safe to cache forever and skip revalidation entirely.
@@ -22,3 +29,36 @@
 # Nucleus contour paths - fetched at runtime by the hero + the atom island, stable.
 /nucleus-paths.json
   Cache-Control: public, max-age=2592000
+
+# Stable documents + the social card (the 3.4 MB booklet PDF especially).
+/*.pdf
+  Cache-Control: public, max-age=2592000
+/og.jpg
+  Cache-Control: public, max-age=2592000
+
+# ── Security headers ─────────────────────────────────────────────────────────
+# The CSP ships REPORT-ONLY first (nothing breaks; violations log to the console)
+# and is flipped to enforcing only after a clean walk of every page + the booklet
+# + a form submit on a preview deploy. The directive set is the pragmatic one for
+# this stack, each relaxation deliberate:
+#   - script-src 'unsafe-inline': the is:inline theme script (must be inline for
+#     no-flash), the import map and the hero's inline module cannot be nonced in
+#     a static Astro build. Low XSS surface: static site, no user content.
+#   - style-src 'unsafe-inline': Astro scoped styles + inline style attributes.
+#   - cdn.jsdelivr.net: three/lenis via the import map + pdf.js (script, its
+#     worker, and connect for the dynamic import).
+#   - static.cloudflareinsights.com / cloudflareinsights.com: Cloudflare Web
+#     Analytics, injected by Cloudflare itself (verified in the network log).
+#   - api.web3forms.com: the contact form (fetch + the no-JS form-action path).
+#   - No SRI / import-map integrity: a considered position - support is uneven
+#     and a hash mismatch silently kills the hero; version-pinned immutable CDN
+#     URLs + this origin allow-list are the supply-chain control.
+# HSTS starts deliberately SHORT (300s) - raised to a year only after the headers
+# prove clean in production; never add `preload` without an explicit decision.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=()
+  Strict-Transport-Security: max-age=300
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://cdn.jsdelivr.net https://api.web3forms.com https://cloudflareinsights.com; worker-src 'self' blob: https://cdn.jsdelivr.net; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://api.web3forms.com; object-src 'none'; upgrade-insecure-requests

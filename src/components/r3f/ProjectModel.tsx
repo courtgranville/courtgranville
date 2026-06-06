@@ -123,7 +123,7 @@ export default function ProjectModel({ model, fill = DEFAULT_FILL, viewRY = 0, v
     <div className="proj-stage-canvas" ref={wrapRef}>
       <Canvas
         frameloop={active ? 'always' : 'never'}
-        dpr={[1, 2]}
+        dpr={[1, 1.5]} // capped: on a 4K viewport DPR 2 cells are 4x the pixels of 1.5 for no visible gain at this stage size - Firefox's GL stack in particular pays heavily
         camera={{ position: [1.0, 0.45, 3.0], fov: 32 }}
         gl={{ antialias: true, alpha: true, preserveDrawingBuffer: false, toneMapping: THREE.ACESFilmicToneMapping }}
         // Absolute (inline, overriding R3F's own inline position:relative) pulls the

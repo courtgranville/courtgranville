@@ -51,6 +51,12 @@ export const TUNING = {
   // and returns fission's doubled point cost to roughly idle cost). 1 = off, the
   // canonical full-vertex fission - a lever, not a default.
   fissionPointStride: 1,
+  // Self-pressure response: if the island's OWN frames run slower than frameMs
+  // for `frames` consecutive animated frames (Firefox/Zen measured ~100ms where
+  // Chrome runs 16ms), it sheds load - canvas DPR drops to `dpr` and the contour
+  // walk strides by 2. Sticky for the session: a browser that slow does not
+  // recover mid-visit, and flapping quality is worse than steady-lower quality.
+  pressure: { frameMs: 40, frames: 24, dpr: 1.25 },
   // Cap on dead particles kept in the recycle pool. Without it the freeList grows to
   // ~maxParticles and pins that whole array of objects forever after the first big
   // burst. A single typical burst's worth of spares is enough to recycle through the

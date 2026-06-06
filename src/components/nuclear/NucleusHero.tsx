@@ -112,6 +112,12 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
     // the cursor is measured relative to it. Particles always use the full canvas.
     let formCx = 0, formCy = 0, formR = 0, useFormRegion = false;
 
+    // Pressure mode (see TUNING.pressure): engaged once, sticky for the session.
+    // Declared BEFORE resize - resize reads it on its first call below, and a
+    // later `let` would be a temporal-dead-zone crash that kills the island.
+    let pressureMode = false;
+    let pressureRun = 0;
+
     const resize = () => {
       // viewportParticles: the canvas covers the whole viewport (host fixes it),
       // so particles span the screen. Otherwise the canvas is its container.
@@ -289,9 +295,6 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
       new URLSearchParams(window.location.search).has('frametiming');
     let ftFrames = 0;
     let ftLastReport = performance.now();
-    // Pressure mode (see TUNING.pressure): engaged once, sticky for the session.
-    let pressureMode = false;
-    let pressureRun = 0;
 
     const frame = (now: number) => {
       // Paused (homepage, nucleus is not the active beat): keep the rAF loop alive

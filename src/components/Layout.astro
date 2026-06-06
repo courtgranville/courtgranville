@@ -13,16 +13,42 @@ import '../styles/global.css';
 export interface Props {
   title?: string;
   description?: string;
+  /** Extra JSON-LD blocks a page wants alongside the site-wide Person/WebSite. */
+  jsonLd?: Record<string, unknown>[];
+  /** Keep a page out of search indexes (the /lab/ workbench). */
+  noindex?: boolean;
 }
 
 const {
   title = 'Court Granville',
   description = 'Court Granville is a multidisciplinary designer working across product, interaction, data visualisation and the web - translating complex, contested subjects into things people can understand and use. London & Madrid.',
+  jsonLd = [],
+  noindex = false,
 } = Astro.props;
 
 // Absolute URLs for canonical + social cards (Astro.site is set in config).
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const ogImage = new URL('/og.jpg', Astro.site);
+
+// Structured data: the site-wide identity plus any page-supplied blocks
+// (a project page passes CreativeWork, a post passes Article).
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: 'Court Granville',
+    jobTitle: 'Multidisciplinary Designer',
+    url: Astro.site?.toString(),
+    email: 'mailto:court@courtgranville.com',
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'Court Granville',
+    url: Astro.site?.toString(),
+  },
+  ...jsonLd,
+];
 ---
 <!doctype html>
 <html lang="en-GB">
@@ -44,6 +70,8 @@ const ogImage = new URL('/og.jpg', Astro.site);
     <link rel="canonical" href={canonical} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <meta name="theme-color" content="#0E0E0E" />
+    {noindex && <meta name="robots" content="noindex" />}
+    <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
@@ -86,6 +114,7 @@ const ogImage = new URL('/og.jpg', Astro.site);
     </script>
   </head>
   <body id="top">
+    <a class="skip-link" href="#main">Skip to content</a>
     <slot />
 
     <script is:inline type="module">

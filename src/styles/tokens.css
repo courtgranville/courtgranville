@@ -11,7 +11,7 @@
   /* ── Colour ───────────────────────────────────────── */
   --bg:         #FFFFFF;
   --text:       #161616;
-  --text-quiet: rgba(22,22,22,0.55);
+  --text-quiet: rgba(22,22,22,0.62);   /* 4.5:1+ on white - quiet is the lowest ACCESSIBLE text voice; faint is decorative-only */
   --text-faint: rgba(22,22,22,0.32);
   --rule:       rgba(22,22,22,0.10);
   --hairline:   #E5E5E5;

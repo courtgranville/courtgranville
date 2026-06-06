@@ -59,7 +59,7 @@ const experience: { org: string; place: string; role: string; year: string; blur
   description="Court Granville is a multidisciplinary designer working where technology meets communication - across objects, interfaces, data and the web. London & Madrid."
 >
   <Nav />
-  <main>
+  <main id="main">
     <!-- Intro -->
     <Grid as="article" class="about">
       <span class="label about-kicker reveal">About</span>
@@ -97,7 +97,7 @@ const experience: { org: string; place: string; role: string; year: string; blur
         <div class="ab-disciplines">
           {disciplines.map(([h, p]) => (
             <div class="ab-disc">
-              <h3 class="ab-disc-h">{h}</h3>
+              <h2 class="ab-disc-h">{h}</h2>
               <p class="ab-disc-p">{p}</p>
             </div>
           ))}

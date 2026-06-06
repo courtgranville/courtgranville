@@ -117,15 +117,20 @@
           body: new FormData(contactForm),
           headers: { Accept: 'application/json' },
         });
-        const json = await res.json();
-        if (json.success) {
+        // A 5xx from the API can return HTML - res.json() would throw and the
+        // real failure mode would be masked. Parse defensively and tell the
+        // sender something that distinguishes "try again" from "use email".
+        const json = await res.json().catch(() => null);
+        if (json && json.success) {
           contactForm.reset();
           setResult('Thanks - your message is on its way.');
+        } else if (json && json.message) {
+          setResult('The form service rejected the message. You can also email court@courtgranville.com.', true);
         } else {
-          setResult('Something went wrong. Please try again.', true);
+          setResult('Something went wrong. Please try again - or email court@courtgranville.com.', true);
         }
       } catch (err) {
-        setResult('Something went wrong. Please try again.', true);
+        setResult('Could not reach the form service. Please email court@courtgranville.com.', true);
       } finally {
         if (sendBtn) sendBtn.disabled = false;
       }

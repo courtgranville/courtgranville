@@ -323,6 +323,13 @@ const CONFIG = {
   // (`advanceThresh` ~0.4 = only advance once you are ~40% into a gap). All tunable.
   scroll: { sectionVh: 1.3, modelVh: 0.85, exitVh: 1.6, snapDuration: 0.45, snapStopMs: 320, snapStopMsHard: 650, snapVel: 0.06, snapSettle: 0.0015, advanceThresh: 0.4, followTau: 0.055 },
   modelBase: '/models/',
+  // Runtime-quality housekeeping. resizeDebounceMs: mobile URL-bar show/hide fires a
+  // resize STREAM mid-scroll - one refit after the burst settles is visually identical
+  // and keeps the full camera/renderer/atom-overlay recompute off the hot path.
+  // dprRecoverFrames/dprFastFrac: the adaptive DPR may step DOWN on sustained jank;
+  // a long run of comfortably-fast frames (faster than dprFastFrac x the budget)
+  // steps it back up, so a one-off spike can't blur the hero for the whole session.
+  perf: { resizeDebounceMs: 150, dprRecoverFrames: 180, dprFastFrac: 0.7 },
   // Theme colours for the WebGL surface (the editorial body flips via CSS tokens).
   // Light keeps today's values exactly; dark turns the particles white on a
   // near-black ground and switches on bloom. The bloom values are starting
@@ -610,6 +617,11 @@ function showHeroFallback(){
   try { window.dispatchEvent(new CustomEvent('hero:loaded')); } catch(e){}
 }
 
+// Engine lifecycle: `dead` flips on context loss (teardownEngine) and gates the
+// frame loop + theme application; declared up here because applyTheme runs at
+// module level well before the loop section. rafId lets teardown cancel the loop.
+let dead = false, rafId = 0;
+
 let renderer;
 try {
   renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false });
@@ -618,7 +630,7 @@ try {
   throw err;   // WebGL is required for everything below - abort the engine cleanly
 }
 // If the GPU drops the context later, fall back rather than freeze on a blank canvas.
-canvas.addEventListener('webglcontextlost', (e)=>{ e.preventDefault(); visible = false; showHeroFallback(); }, false);
+canvas.addEventListener('webglcontextlost', (e)=>{ e.preventDefault(); visible = false; showHeroFallback(); teardownEngine(); }, false);
 renderer.setPixelRatio(Math.min(lowEnd ? 1.5 : 2, window.devicePixelRatio));
 renderer.setSize(innerWidth, innerHeight, false);
 renderer.setClearColor(new THREE.Color(CONFIG.theme[themeKey()].bg));
@@ -770,6 +782,7 @@ function buildComposer(){
   composer.setSize(innerWidth, innerHeight);
 }
 function applyTheme(key){
+  if(dead) return;   // engine torn down after context loss - uniforms/composer are disposed
   const c = CONFIG.theme[key] || CONFIG.theme.light;
   renderer.setClearColor(new THREE.Color(c.bg));
   scene.background.set(c.bg);
@@ -806,6 +819,7 @@ function applyDPR(r){
 // so a brief dispersal spike never downscales the crisp hero - only a genuinely weak GPU
 // holding sub-60fps does.
 let refreshHz = 60, refreshSampled = false; const refreshSamples = [];
+let fastRun = 0;   // consecutive comfortably-fast frames (drives DPR recovery)
 function estimateRefresh(dtMs){
   if(refreshSampled) return;
   refreshSamples.push(dtMs);
@@ -816,14 +830,24 @@ function estimateRefresh(dtMs){
   }
 }
 function adaptQuality(frameMs){
-  if(!refreshSampled) estimateRefresh(frameMs);
   // 120Hz: a sustained run below 60fps (>16.7ms) steps down; 60Hz: below 40fps (>26ms),
   // as before. ~24 consecutive slow frames (~0.4s) are still required, so a one-off
   // GLB-upload / lazy-composer hitch or the brief dispersal never trips it.
+  // (Refresh sampling itself runs in the frame loop from the load-in onwards, so a
+  // visitor who scrolls straight past the hero still gets a correct 120Hz budget.)
   const slowMs = refreshHz >= 120 ? 16.7 : 26;
   if(frameMs > slowMs){
+    fastRun = 0;
     if(++slowRun >= 24 && curDPR > DPR_FLOOR){ curDPR = Math.max(DPR_FLOOR, curDPR - 0.5); applyDPR(curDPR); slowRun = 0; }
-  } else slowRun = 0;
+  } else {
+    slowRun = 0;
+    // Recover: a transient spike (GC, thermal blip, a backgrounded tab) must not
+    // leave the hero soft for the rest of the session - a sustained run of fast
+    // frames steps the DPR back toward the device cap, one notch at a time.
+    if(curDPR < baseDPR && frameMs < slowMs * CONFIG.perf.dprFastFrac){
+      if(++fastRun >= CONFIG.perf.dprRecoverFrames){ curDPR = Math.min(baseDPR, curDPR + 0.5); applyDPR(curDPR); fastRun = 0; }
+    } else fastRun = 0;
+  }
 }
 
 // ── Targets: text/glyph/disperse up front; models async. ──
@@ -846,12 +870,15 @@ function buildTextTargets(){
 // back to DISPERSE, exactly like an unloaded model.
 async function loadNucleus(i){
   try{
-    const res = await fetch(CONFIG.nucleus.pathsUrl);
-    const paths = await res.json();
+    // One shared in-flight fetch: the NuclearAtom island consumes
+    // window.__cgNucleusPaths when present, so the 265 KB JSON is no longer
+    // requested twice per homepage load (engine + island used to race).
+    window.__cgNucleusPaths ||= fetch(CONFIG.nucleus.pathsUrl).then((r)=>r.json());
+    const paths = await window.__cgNucleusPaths;
     targets[i] = sampleNucleus(paths, COUNT, { worldHeight:CONFIG.nucleus.worldHeight, depth:CONFIG.nucleus.depth, seed:23 });
   }catch(e){ console.warn('[ScrollHero] nucleus load failed', e); }
 }
-function loadModel(i){
+function loadModel(i, attempt = 0){
   const b=BEATS[i]; if(b.kind!=='model') return Promise.resolve();
   return new Promise((res)=>{
     gltfLoader.load(CONFIG.modelBase+b.file, (gltf)=>{
@@ -875,7 +902,15 @@ function loadModel(i){
       scene.add(outer);
       models[i] = { group: outer, materials: mats, solid:null };
       res();
-    }, undefined, (err)=>{ console.warn('[ScrollHero] model load failed', b.file, err); res(); });
+    }, undefined, (err)=>{
+      if(attempt === 0){
+        // One quiet retry - a flaky network or cold edge can drop a single fetch.
+        // Still resolves (never rejects): if both attempts fail the beat keeps its
+        // DISPERSE fallback and updateOverlay suppresses the product chrome.
+        console.warn('[ScrollHero] model load failed, retrying', b.file, err);
+        setTimeout(()=>{ loadModel(i, 1).then(res); }, 1200);
+      } else { console.warn('[ScrollHero] model load failed', b.file, err); res(); }
+    });
   });
 }
 
@@ -1043,7 +1078,10 @@ function updateOverlay(){
   const center=state.center, w=state.shapeW;
   ov.lead.style.opacity = (center===0) ? w : 0;
   const cb=BEATS[center];
-  if(cb && (cb.kind==='model' || cb.kind==='nucleus')){ setProductChrome(center); ov.product.style.opacity = w; }
+  // Only narrate a product whose form actually exists: if a GLB (or the nucleus
+  // data) failed to load, the beat rests as dispersed dust - showing the name,
+  // copy and a View-project link over an amorphous cloud reads as broken.
+  if(cb && (cb.kind==='model' || cb.kind==='nucleus') && targets[center]){ setProductChrome(center); ov.product.style.opacity = w; }
   else ov.product.style.opacity = 0;
   dots.forEach((d,idx)=> d.classList.toggle('on', idx+1===center));
 }
@@ -1078,32 +1116,54 @@ scrollTo(0,0);
   ps.home.set(targets[0]);
   startLoadIn();
   ready=true;
-  // Load models, then PRE-WARM the GPU (offscreen render) so the first scroll to each
-  // product doesn't hitch on a lazy texture upload.
-  Promise.all(BEATS.map((b,i)=> b.kind==='model' ? loadModel(i) : b.kind==='nucleus' ? loadNucleus(i) : null)).then(()=>{
-    const rt = new THREE.WebGLRenderTarget(4,4);
-    models.forEach(m=>{ if(m) m.group.visible = true; });
-    renderer.setRenderTarget(rt);
-    renderer.render(scene, camera);
-    renderer.setRenderTarget(null);
-    models.forEach(m=>{ if(m) m.group.visible = false; });
-    rt.dispose();
+  // PRE-WARM each model on the GPU AS IT ARRIVES (offscreen render uploads its
+  // textures), so the first scroll to a product never hitches on a lazy upload -
+  // and one slow straggler no longer delays the warm-up of models already here
+  // (the old Promise.all gated every warm-up on the LAST load).
+  const prewarmRT = new THREE.WebGLRenderTarget(4,4);
+  let warmPending = 0;
+  const prewarm = (i)=>{
+    const m = models[i]; if(!m || dead) return;
+    m.group.visible = true;
+    renderer.setRenderTarget(prewarmRT); renderer.render(scene, camera); renderer.setRenderTarget(null);
+    m.group.visible = false;
+  };
+  BEATS.forEach((b,i)=>{
+    if(b.kind==='model'){ warmPending++; loadModel(i).then(()=>{ prewarm(i); if(--warmPending===0) prewarmRT.dispose(); }); }
+    else if(b.kind==='nucleus') loadNucleus(i);
   });
 })();
 
-addEventListener('resize', ()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
-  fitCamera(); renderer.setSize(innerWidth,innerHeight,false); sizeScale();
-  if(composer){ composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(innerWidth,innerHeight); } });
+// Debounced (CONFIG.perf.resizeDebounceMs): the mobile URL bar fires a resize
+// stream mid-scroll, and each refit is a camera reprojection + renderer realloc +
+// eight atom-overlay CSS-var writes + a CustomEvent - off the hot path, one refit
+// after the burst settles is visually identical. Named so teardownEngine can remove it.
+let resizeT = 0;
+function onResize(){
+  clearTimeout(resizeT);
+  resizeT = setTimeout(()=>{
+    camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
+    fitCamera(); renderer.setSize(innerWidth,innerHeight,false); sizeScale();
+    if(composer){ composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(innerWidth,innerHeight); }
+  }, CONFIG.perf.resizeDebounceMs);
+}
+addEventListener('resize', onResize);
 
 // Pause the render loop while the stage is fully off-screen (scrolled into the body).
 let visible = true;
-new IntersectionObserver(([e])=>{ visible = e.isIntersecting; }, { threshold: 0 }).observe(stage);
+const stageIO = new IntersectionObserver(([e])=>{ visible = e.isIntersecting; }, { threshold: 0 });
+stageIO.observe(stage);
 
 function frame(ts){
-  requestAnimationFrame(frame);
+  if(dead) return;   // teardownEngine has taken over (context loss) - see below
+  rafId = requestAnimationFrame(frame);
   if(lenis) lenis.raf(ts);
   if(!ready || !visible) return;
   const rawDt=clock.getDelta(), dt=Math.min(rawDt,1/30), time=clock.elapsedTime;
+  // Sample the display's refresh rate from the very first visible frames (the
+  // load-in), so a visitor who scrolls straight past the hero still leaves the
+  // adaptive-DPR budget correct for a 120Hz panel.
+  if(!refreshSampled) estimateRefresh(rawDt*1000);
   readScroll();
   // Ease the timeline to the scroll intent with a tight, frame-rate-independent follow
   // (same settle at 60 and 120 Hz). Small followTau = glued to the wheel; the gentle
@@ -1202,5 +1262,34 @@ function frame(ts){
   // bloom composer. The OutputPass in the chain handles tone-mapping + sRGB.
   if(useBloom && composer) composer.render(); else renderer.render(scene, camera);
 }
-requestAnimationFrame(frame);
+rafId = requestAnimationFrame(frame);
+
+// ── Context-loss teardown ────────────────────────────────────────────────────
+// After webglcontextlost the fallback monogram is showing and every engine
+// resource is a pure leak: the old handler left the rAF loop, the particle sim
+// scheduling, all listeners and the dead GL handles running for the page's life.
+// Page scroll must SURVIVE teardown - Lenis only moves when something calls
+// lenis.raf - so the heavy loop is swapped for a minimal one that only drives it.
+function teardownEngine(){
+  if(dead) return;
+  dead = true;
+  cancelAnimationFrame(rafId);
+  if(lenis){
+    const lenisOnly = (ts)=>{ rafId = requestAnimationFrame(lenisOnly); lenis.raf(ts); };
+    rafId = requestAnimationFrame(lenisOnly);
+  }
+  try{ stageIO.disconnect(); }catch(e){}
+  removeEventListener('resize', onResize);
+  try{
+    ps.geometry.dispose(); ps.material.dispose();
+    models.forEach((m)=>{
+      if(!m) return;
+      m.group.traverse((n)=>{ if(n.isMesh) n.geometry.dispose(); });
+      m.materials.forEach((mat)=>{ if(mat.map) mat.map.dispose(); mat.dispose(); });
+    });
+    if(composer && composer.dispose) composer.dispose();
+    pmrem.dispose();
+    renderer.dispose();
+  }catch(e){ /* GPU handles are already invalid after a real context loss */ }
+}
 </script>

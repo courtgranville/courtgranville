@@ -51,6 +51,12 @@ export const TUNING = {
   // and returns fission's doubled point cost to roughly idle cost). 1 = off, the
   // canonical full-vertex fission - a lever, not a default.
   fissionPointStride: 1,
+  // Cap on dead particles kept in the recycle pool. Without it the freeList grows to
+  // ~maxParticles and pins that whole array of objects forever after the first big
+  // burst. A single typical burst's worth of spares is enough to recycle through the
+  // next without re-allocating; the excess is dropped (let GC reclaim it) once a burst
+  // has settled. Derived from burstCount so it scales with the burst size.
+  freeListCap: 2400,
 } as const;
 
 export type FissionPhase = 'idle' | 'splitting' | 'bouncing' | 'split' | 'reforming';
@@ -68,7 +74,6 @@ export interface FissionState {
   tension: number;
   fastT: number;
   shakeScore: number;
-  lastVx: number; lastVy: number;
   phase: FissionPhase;
   pf: number;
   splitAng: number;
@@ -86,7 +91,6 @@ export function makeFissionState(): FissionState {
     tension: 0,
     fastT: 0,
     shakeScore: 0,
-    lastVx: 0, lastVy: 0,
     phase: 'idle',
     pf: 0,
     splitAng: 0,

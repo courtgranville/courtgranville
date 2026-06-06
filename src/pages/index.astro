@@ -35,6 +35,20 @@ const principles: [string, string][] = [
   title="Court Granville - Multidisciplinary Designer"
   description="Court Granville is a multidisciplinary designer working across product, interaction, data visualisation and the web - translating complex, contested subjects into things people can understand and use. London & Madrid."
 >
+  <!-- The hero's heaviest critical assets are otherwise discovered LATE (fetched
+       from inside the inline module, which itself waits on the CDN import map):
+       preload the nucleus contour data + the first product model, and let the
+       browser start three.js itself at first parse. First-paint editorial pages
+       don't pay this - it is homepage-only via the Layout head slot. -->
+  <Fragment slot="head">
+    <!-- crossorigin="anonymous" is REQUIRED on as="fetch" preloads even same-origin:
+         a bare preload requests with credentials "include", but fetch()/GLTFLoader
+         request with "same-origin" - mismatched credentials = the preload is wasted
+         and the asset downloads twice (verified in the network log). -->
+    <link rel="preload" href="/nucleus-paths.json" as="fetch" crossorigin="anonymous" />
+    <link rel="preload" href="/models/mantis.glb" as="fetch" crossorigin="anonymous" />
+    <link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js" crossorigin="anonymous" />
+  </Fragment>
   <Nav />
   <main id="main">
     <!-- Screen 1 onward - the scroll-driven particle narrative: CG hero (carrying the

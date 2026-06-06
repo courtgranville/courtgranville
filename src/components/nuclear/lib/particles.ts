@@ -1,7 +1,7 @@
 import type { FissionState } from './fission';
 import { TUNING } from './fission';
 
-const { burstColors, maxParticles, burstCount, fadeAlphaBuckets } = TUNING;
+const { burstColors, maxParticles, burstCount, fadeAlphaBuckets, freeListCap } = TUNING;
 
 export function spawnBurst(
   state: FissionState,
@@ -116,6 +116,11 @@ export function stepAndDrawParticles(
     path.arc(p.x, p.y, p.size, 0, Math.PI * 2);
   }
   arr.length = write;
+  // Trim the recycle pool back to its cap so a burst's worth of dead objects isn't
+  // retained forever (the freeList would otherwise grow to ~maxParticles and pin the
+  // whole set after the first big fission). Done here, once per frame, so the excess
+  // is shed as a burst settles - spawnBurst still finds plenty to recycle next time.
+  if (free.length > freeListCap) free.length = freeListCap;
 
   ctx.globalAlpha = 1;
   for (let c = 0; c < NC; c++) {

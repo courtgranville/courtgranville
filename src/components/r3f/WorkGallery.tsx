@@ -13,13 +13,27 @@
 // one frame once it's ready. Styling lives as global .wg-* CSS on the page.
 
 import { Canvas, useThree } from '@react-three/fiber';
+// Barrel import kept deliberately. We measured the alternative: switching to
+// deep subpath imports (@react-three/drei/core/OrbitControls + /core/Gltf for
+// useGLTF) changed this island's vendor chunk by 6 bytes (88,824 -> 88,818) -
+// drei 10 is authored as ESM per-component files, so Vite/Rollup already
+// tree-shakes the unused surface out of the barrel. The subpath form buys
+// nothing and is more fragile (drei 10 has no `exports` map, so the deep paths
+// could break on a minor bump), so the barrel stays.
 import { OrbitControls, useGLTF } from '@react-three/drei';
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import NuclearAtom from '../nuclear/NuclearAtom';
+import ModelBoundary from './ModelBoundary';
+
+// Hysteresis on the off-screen pause: a cell activates immediately on enter but
+// waits this long before pausing on leave, and a re-enter cancels the pending
+// pause - so a rapid flick-scroll can't thrash a cell's frameloop always/never
+// many times a second.
+const PAUSE_DELAY_MS = 400;
 
 type Project = {
   name: string;
@@ -55,6 +69,16 @@ function useFitScale(radius: number, fill: number) {
   }, [camera, size.width, size.height, fill, radius]);
 }
 
+// PMREM source-cube size for the prefiltered env. CONSTRAINT, do not re-flag as
+// a leak: each cell is its own Canvas => its own WebGLRenderer => its own GL
+// context, so a GPU-side env texture CANNOT be shared across cells (a texture
+// belongs to the context that allocated it). The only lever left is making each
+// per-context prefilter cheaper. RoomEnvironment is a smooth, low-frequency
+// studio box, so halving the source cube (128px vs PMREM's 256 default) is a
+// real saving on the 7 identical passes with no visible change to the reflections
+// on these matte/semi-rough product surfaces at gallery scale.
+const ENV_SIZE = 128;
+
 // Neutral studio IBL generated in-engine (no HDRI download → safe for the static
 // Cloudflare deploy). Requests one frame once ready, since we run on `demand`.
 function StudioEnv() {
@@ -63,7 +87,7 @@ function StudioEnv() {
   const invalidate = useThree((s) => s.invalidate);
   useEffect(() => {
     const pmrem = new THREE.PMREMGenerator(gl);
-    const env = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    const env = pmrem.fromScene(new RoomEnvironment(), 0.04, 0.1, 100, { size: ENV_SIZE }).texture;
     scene.environment = env;
     invalidate();
     return () => { scene.environment = null; env.dispose(); pmrem.dispose(); };
@@ -117,38 +141,60 @@ function Model({ url, fill, viewRY, viewRX, onReady }: { url: string; fill: numb
   );
 }
 
-function Cell({ p }: { p: Project }) {
+// The atom cell (The Nuclear Question - no GLB) is just the live NuclearAtom
+// island plus the caption: NuclearAtom owns its own IntersectionObserver pause,
+// so the Cell's IO + active/loaded state were dead wiring here (a useless
+// observer + setActive re-renders). Split it out so only model cells pay for the
+// observer + frameloop machinery.
+function AtomCell({ p }: { p: Project }) {
+  return (
+    <article className="wg-cell">
+      <div className="wg-stage wg-stage--atom">
+        <NuclearAtom compact />
+      </div>
+      <a className="wg-cap" href={`/work/${p.slug}/`}>
+        <span className="wg-name">{p.name}</span>
+        <span className="wg-meta label">{p.year} · {p.discipline}</span>
+        <span className="wg-link label">View project &rarr;</span>
+      </a>
+    </article>
+  );
+}
+
+function ModelCell({ p }: { p: Project }) {
   // Render only while the cell is on (or near) screen: an off-screen cell pauses
   // its loop so a wall of canvases stays cheap, and `rootMargin` re-arms it just
   // before it scrolls into view so the model is always painted by the time it's
   // seen - no blank pre-load frame, no compositor-cleared buffer.
   const wrapRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(true);
+  // `loaded` drives the skeleton fade; on a GLB failure ModelBoundary flips it
+  // too, so the skeleton stops pulsing and the cell rests as a clean empty stage
+  // (the caption / View-project link below stays usable either way).
   const [loaded, setLoaded] = useState(false);
+  // Stable callback so Model's `useEffect(..., [onReady])` fires once on ready,
+  // not on every parent commit (an inline arrow would be a fresh ref each render).
+  const onReady = useCallback(() => setLoaded(true), []);
+
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
-    const io = new IntersectionObserver(([e]) => setActive(e.isIntersecting), { threshold: 0, rootMargin: '300px 0px' });
+    // Hysteresis: activate immediately on enter, but DELAY the pause on leave -
+    // a rapid flick-scroll would otherwise toggle frameloop always/never many
+    // times a second. A pending pause is cancelled if the cell re-enters first.
+    let pauseTimer: ReturnType<typeof setTimeout> | undefined;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
+        if (pauseTimer !== undefined) { clearTimeout(pauseTimer); pauseTimer = undefined; }
+        setActive(true);
+      } else {
+        if (pauseTimer !== undefined) clearTimeout(pauseTimer);
+        pauseTimer = setTimeout(() => { setActive(false); pauseTimer = undefined; }, PAUSE_DELAY_MS);
+      }
+    }, { threshold: 0, rootMargin: '300px 0px' });
     io.observe(el);
-    return () => io.disconnect();
+    return () => { if (pauseTimer !== undefined) clearTimeout(pauseTimer); io.disconnect(); };
   }, []);
-
-  // Projects with no GLB (The Nuclear Question) are shown as the live atom - a
-  // compact, cursor-reactive nucleus - instead of an R3F model canvas.
-  if (!p.model) {
-    return (
-      <article className="wg-cell">
-        <div className="wg-stage wg-stage--atom" ref={wrapRef}>
-          <NuclearAtom compact />
-        </div>
-        <a className="wg-cap" href={`/work/${p.slug}/`}>
-          <span className="wg-name">{p.name}</span>
-          <span className="wg-meta label">{p.year} · {p.discipline}</span>
-          <span className="wg-link label">View project &rarr;</span>
-        </a>
-      </article>
-    );
-  }
 
   return (
     <article className="wg-cell">
@@ -169,9 +215,13 @@ function Cell({ p }: { p: Project }) {
           <StudioEnv />
           <directionalLight position={[2, 3, 2]} intensity={1.1} />
           <directionalLight position={[-2, 0.5, -1.5]} intensity={0.35} />
-          <Suspense fallback={null}>
-            <Model url={p.model!} fill={p.fill ?? DEFAULT_FILL} viewRY={p.viewRY ?? 0} viewRX={p.viewRX ?? 0} onReady={() => setLoaded(true)} />
-          </Suspense>
+          {/* ModelBoundary catches a failed/aborted GLB (which throws past the
+              Suspense fallback) and fades the skeleton so the cell rests empty. */}
+          <ModelBoundary onError={onReady}>
+            <Suspense fallback={null}>
+              <Model url={p.model!} fill={p.fill ?? DEFAULT_FILL} viewRY={p.viewRY ?? 0} viewRX={p.viewRX ?? 0} onReady={onReady} />
+            </Suspense>
+          </ModelBoundary>
           <OrbitControls
             makeDefault
             enableZoom={false}
@@ -191,6 +241,12 @@ function Cell({ p }: { p: Project }) {
       </a>
     </article>
   );
+}
+
+function Cell({ p }: { p: Project }) {
+  // Projects with no GLB (The Nuclear Question) are shown as the live atom - a
+  // compact, cursor-reactive nucleus - instead of an R3F model canvas.
+  return p.model ? <ModelCell p={p} /> : <AtomCell p={p} />;
 }
 
 export default function WorkGallery({ projects }: Props) {

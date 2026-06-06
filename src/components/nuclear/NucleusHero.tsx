@@ -35,6 +35,15 @@ interface NucleusHeroProps {
    * every point every frame, so a higher stride is a direct per-frame saving where
    * the nucleus renders small (the homepage beat). Default 1 = full fidelity. */
   pointStride?: number;
+  /** Touch-device shake-to-fission. When true, a physical shake of the handset
+   * triggers the same fission as a cursor shake (the handler injects into the same
+   * raw reversal / speed channels the pointer path feeds). The wrapper only sets
+   * this on touch-primary devices AND once devicemotion is usable (permission
+   * granted on iOS 13+, or not required elsewhere) - denied/unsupported leaves it
+   * false, so no listener is ever attached and the atom stays a pure visual. The
+   * listener self-gates further on armed (U-238) + active + visible, so it costs
+   * nothing while the nucleus is U-235, off-beat or off-screen. */
+  shakeEnabled?: boolean;
 }
 
 /**
@@ -46,12 +55,22 @@ interface NucleusHeroProps {
  * same state machine, same magnetism math. The isotope prop is read through a
  * ref so toggling it never restarts the loop.
  */
-export function NucleusHero({ paths, isotope, children, onFissionFire, ink, viewportParticles = false, pointStride = 1 }: NucleusHeroProps) {
+export function NucleusHero({ paths, isotope, children, onFissionFire, ink, viewportParticles = false, pointStride = 1, shakeEnabled = false }: NucleusHeroProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   // Live ref so the loop reads the latest isotope without restarting.
   const isotopeRef = useRef<number>(isotope);
   isotopeRef.current = isotope;
+  // Live refs for the devicemotion gate so toggling the isotope (armed = U-238) or
+  // the shake-enabled flag never restarts the canvas effect; the effect installs a
+  // sync function on syncDeviceMotionRef that these effects below call to re-evaluate
+  // whether the listener should currently be attached.
+  const shakeEnabledRef = useRef<boolean>(shakeEnabled);
+  shakeEnabledRef.current = shakeEnabled;
+  const syncDeviceMotionRef = useRef<(() => void) | null>(null);
+  // Re-evaluate the devicemotion attachment whenever arming (isotope) or the
+  // shake-enabled flag changes - the canvas effect owns the actual attach/detach.
+  useEffect(() => { syncDeviceMotionRef.current?.(); }, [isotope, shakeEnabled]);
   // Live ref for the fire callback so changes don't restart the effect.
   const onFissionFireRef = useRef<(() => void) | undefined>(onFissionFire);
   onFissionFireRef.current = onFissionFire;
@@ -71,7 +90,12 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
     !(typeof window !== 'undefined' && (window as unknown as { __cgAtomActive?: boolean }).__cgAtomActive === false),
   );
   useEffect(() => {
-    const onActive = (e: Event) => { activeRef.current = !!(e as CustomEvent).detail?.active; };
+    const onActive = (e: Event) => {
+      activeRef.current = !!(e as CustomEvent).detail?.active;
+      // Active-beat changes also gate the devicemotion listener (attached only while
+      // armed + active + visible), so re-evaluate when the beat enters/leaves.
+      syncDeviceMotionRef.current?.();
+    };
     window.addEventListener('atom:active', onActive);
     return () => window.removeEventListener('atom:active', onActive);
   }, []);
@@ -180,10 +204,35 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
     // Pause the loop while the canvas is off-screen (project page / gallery cell
     // scrolled away). 200px margin so it resumes just before re-entering view.
     const io = new IntersectionObserver(
-      ([e]) => { onScreenRef.current = e.isIntersecting; },
+      ([e]) => {
+        onScreenRef.current = e.isIntersecting;
+        // Visibility also gates the devicemotion listener - re-evaluate on scroll
+        // into / out of view so we don't listen to the accelerometer off-screen.
+        syncDeviceMotion();
+      },
       { rootMargin: '200px 0px' },
     );
     io.observe(container);
+
+    // DPR-change refit. The ResizeObserver above only fires on a container-size
+    // change, but browser zoom or dragging the window onto another monitor changes
+    // window.devicePixelRatio WITHOUT resizing the container - leaving the backing
+    // store at the old ratio and the nucleus blurry / mis-scaled. A media query of
+    // `(resolution: <current>dppx)` flips the moment the DPR moves off its current
+    // value, so we re-fit on its change. The query string is pinned to a specific
+    // dppx, so each new DPR needs a fresh query: re-subscribe after every change.
+    let dprMq: MediaQueryList | null = null;
+    const onDprChange = () => {
+      resize(); // re-fit the backing store at the new devicePixelRatio
+      watchDpr(); // re-arm against the now-current dppx (the old query no longer matches)
+    };
+    const watchDpr = () => {
+      if (typeof window.matchMedia !== 'function') return;
+      dprMq?.removeEventListener('change', onDprChange);
+      dprMq = window.matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`);
+      dprMq.addEventListener('change', onDprChange);
+    };
+    watchDpr();
 
     // Parse paths once.
     const { polylines, bbox } = buildPolylines(paths, pointStride);
@@ -244,6 +293,69 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
     };
     window.addEventListener('pointermove', onPointerMove, { passive: true });
 
+    // ── Devicemotion shake-to-fission (touch) ─────────────────────────────────
+    // On a phone there is no cursor to shake, so a physical shake of the handset
+    // drives the SAME fission as a cursor shake: this handler writes into the very
+    // same rawSpeed / rawReversals channels the pointer path feeds (see onPointerMove
+    // above), and the shared per-frame state machine in drawFrame takes it from there
+    // - no parallel fission path. On touch the cursor stays at the form centre
+    // (ptr.x/y default 0), so `nearCentre` already holds and only the speed + reversal
+    // gates need feeding. We detect a shake from the JERK (change in acceleration
+    // between samples) reversing direction, which mirrors the cursor reversal test.
+    const DM = TUNING.deviceMotion;
+    const accLast = { x: 0, y: 0, z: 0, jx: 0, jy: 0, jz: 0, have: false };
+    const onDeviceMotion = (e: DeviceMotionEvent) => {
+      // Prefer gravity-free acceleration; fall back to includingGravity (the only one
+      // many Android browsers provide). Either way we work in jerk (deltas), which
+      // cancels the constant gravity offset so the fall-back behaves like the clean signal.
+      const a = e.acceleration && e.acceleration.x != null ? e.acceleration : e.accelerationIncludingGravity;
+      if (!a) return;
+      const ax = a.x ?? 0, ay = a.y ?? 0, az = a.z ?? 0;
+      if (accLast.have) {
+        // Jerk = change in acceleration this sample.
+        const jx = ax - accLast.x, jy = ay - accLast.y, jz = az - accLast.z;
+        const jMag = Math.hypot(jx, jy, jz);
+        if (jMag > DM.jerkThreshold) {
+          // Reversal: this jerk opposes the previous jerk (dot < 0) and both were
+          // brisk - a genuine back-and-forth shake, not a single jolt. Mirrors the
+          // cursor reversal gate, and feeds the same shakeScore channel.
+          const dot = jx * accLast.jx + jy * accLast.jy + jz * accLast.jz;
+          if (dot < 0 && jMag > DM.reversalMinJerk) {
+            rawReversals += 1;
+            if (DM.rawSpeedInject > rawSpeed) rawSpeed = DM.rawSpeedInject;
+          }
+        }
+        accLast.jx = jx; accLast.jy = jy; accLast.jz = jz;
+      }
+      accLast.x = ax; accLast.y = ay; accLast.z = az; accLast.have = true;
+    };
+
+    // Attach the accelerometer listener only while it can matter: shake usable
+    // (touch + permission), armed (U-238), the active beat, on-screen AND the tab
+    // foreground. Removed the instant any of those drops (battery discipline - the
+    // sensor stays off the ~99% of the time the nucleus is U-235, off-beat, scrolled
+    // away or backgrounded) and on unmount.
+    let dmAttached = false;
+    const syncDeviceMotion = () => {
+      const want =
+        shakeEnabledRef.current &&
+        isotopeRef.current === 1 &&
+        activeRef.current &&
+        onScreenRef.current &&
+        !document.hidden;
+      if (want === dmAttached) return;
+      if (want) {
+        accLast.have = false; // fresh baseline so the first sample never reads as a jerk
+        window.addEventListener('devicemotion', onDeviceMotion);
+      } else {
+        window.removeEventListener('devicemotion', onDeviceMotion);
+      }
+      dmAttached = want;
+    };
+    // Expose to the prop-driven effects (isotope / shakeEnabled changes call this).
+    syncDeviceMotionRef.current = syncDeviceMotion;
+    syncDeviceMotion();
+
     // Animation state.
     const fission: FissionState = makeFissionState();
     let smoothSpeed = 0;
@@ -274,6 +386,9 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
         lastT = performance.now();
         scheduleFrame();
       }
+      // The devicemotion gate includes !document.hidden, so detach/re-attach the
+      // accelerometer with the tab's foreground state too.
+      syncDeviceMotion();
     };
     document.addEventListener('visibilitychange', onVisibility);
 
@@ -384,6 +499,9 @@ export function NucleusHero({ paths, isotope, children, onFissionFire, ink, view
       window.removeEventListener('atom:formregion', onFormRegion);
       document.removeEventListener('visibilitychange', onVisibility);
       motionMq?.removeEventListener('change', onMotionChange);
+      dprMq?.removeEventListener('change', onDprChange);
+      window.removeEventListener('devicemotion', onDeviceMotion);
+      syncDeviceMotionRef.current = null;
       if (viewportParticles) window.removeEventListener('resize', resize);
       ro.disconnect();
       io.disconnect();

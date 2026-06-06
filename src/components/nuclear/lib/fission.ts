@@ -57,6 +57,27 @@ export const TUNING = {
   // next without re-allocating; the excess is dropped (let GC reclaim it) once a burst
   // has settled. Derived from burstCount so it scales with the burst size.
   freeListCap: 2400,
+
+  // Devicemotion shake-to-fission (touch devices). On a phone there is no cursor
+  // to shake, so a physical shake of the handset drives the SAME fission as a
+  // cursor shake: the devicemotion handler injects into the same raw reversal /
+  // speed channels the pointer path feeds, and the shared state machine takes it
+  // from there. These thresholds gate what counts as a deliberate shake (vs the
+  // small jitter of holding a phone) so the atom never fissions by accident.
+  deviceMotion: {
+    // A "jerk" (change in acceleration between samples, m/s^2) below this is treated
+    // as hand-tremor and ignored. devicemotion fires ~60Hz, so this is per-sample.
+    jerkThreshold: 12,
+    // Reversal: the jerk direction flipped against the previous jerk (dot < 0) AND
+    // both jerks cleared jerkThreshold - i.e. a genuine back-and-forth shake, not a
+    // single jolt. Each reversal feeds one bump into the shared shakeScore channel.
+    // Below this magnitude a reversal still counts but injects no extra raw speed.
+    reversalMinJerk: 14,
+    // Normalised-units/sec written into the raw speed channel per qualifying shake
+    // sample, so effectiveSpeed clears the isotope FAST_SPEED gate (1.0 on U-238)
+    // the way a brisk cursor flick would. The shared per-frame decay drains it.
+    rawSpeedInject: 3.0,
+  },
 } as const;
 
 export type FissionPhase = 'idle' | 'splitting' | 'bouncing' | 'split' | 'reforming';

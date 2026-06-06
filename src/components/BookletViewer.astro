@@ -67,6 +67,12 @@ const { pdf, label = 'Booklet', downloadText = 'Download the full booklet (PDF)'
     --bt: 30px; position: absolute; inset: 0; transform-style: preserve-3d; transform-origin: var(--orig, 75%) center;
     transform: translateX(var(--tx, -50%)) rotateX(var(--rx, 7deg)) rotateY(var(--ry, -16deg));
     transition: transform 0.95s var(--bturn), transform-origin 0s;
+    /* Touch discipline: claim only the horizontal axis. A vertical swipe scrolls
+       the page natively (the book is editorial content, not a fullscreen viewer),
+       while a horizontal drag drives the pointer spin / page-flip below. The
+       handlers read clientX deltas, so horizontal still works with pan-y; the
+       trade is that closed-book vertical tilt yields to page scroll on touch. */
+    touch-action: pan-y;
   }
   .cg-booklet .cg-spinnable { cursor: grab; } .cg-booklet .cg-grabbing { cursor: grabbing; transition: none; }
 

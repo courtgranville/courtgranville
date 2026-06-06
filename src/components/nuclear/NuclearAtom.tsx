@@ -28,6 +28,27 @@ import { NucleusHero } from './NucleusHero';
 const FISSION_ROOM_URL = 'https://thenuclearquestion.com/fission';
 const INK_LIGHT = '#0d1a1e';
 const INK_DARK = '#ede9e1';
+
+// Devicemotion permission lifecycle for the touch shake-to-fission.
+//   'idle'        - not yet relevant / not requested
+//   'unsupported' - not a touch device, or DeviceMotionEvent absent
+//   'granted'     - usable: either iOS granted, or the API needs no permission
+//   'denied'      - user declined the iOS prompt (or it errored) - no shake hint shown
+type MotionPermission = 'idle' | 'unsupported' | 'granted' | 'denied';
+
+// iOS 13+ exposes DeviceMotionEvent.requestPermission() (a static method) and gates
+// the event behind it; it must be called from a user gesture. Everywhere else the
+// event needs no permission. Narrow the type without leaning on `any`.
+type DeviceMotionEventiOS = typeof DeviceMotionEvent & {
+  requestPermission?: () => Promise<'granted' | 'denied'>;
+};
+
+// Touch-primary device: the coarse pointer is the canonical "is this a phone / tablet"
+// signal (matches the audit's gate) and is what makes the shake gesture meaningful.
+const isCoarsePointer = () =>
+  typeof window !== 'undefined' &&
+  typeof window.matchMedia === 'function' &&
+  window.matchMedia('(pointer: coarse)').matches;
 // Delay before the single retry of the nucleus-paths fetch (a transient blip should
 // have cleared by then; a hard failure logs once after this).
 const NUCLEUS_PATHS_RETRY_MS = 1200;
@@ -49,6 +70,60 @@ export default function NuclearAtom({ compact = false, roomLink = true, viewport
   const [ink, setInk] = useState<string>(INK_LIGHT);
   const [paths, setPaths] = useState<string[]>([]);
   const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Touch shake-to-fission. `isTouch` decides cursor-vs-phone copy and whether the
+  // shake path is even relevant; `motionPermission` tracks the iOS permission gate.
+  // Both resolve client-side (matchMedia needs the window), so they start neutral and
+  // settle in the effect below - the server / first paint shows the cursor copy.
+  const [isTouch, setIsTouch] = useState(false);
+  const [motionPermission, setMotionPermission] = useState<MotionPermission>('idle');
+
+  useEffect(() => {
+    const touch = isCoarsePointer();
+    setIsTouch(touch);
+    // Non-touch, or no DeviceMotionEvent at all → shake is not on the table.
+    if (!touch || typeof window === 'undefined' || typeof DeviceMotionEvent === 'undefined') {
+      setMotionPermission('unsupported');
+      return;
+    }
+    // Where requestPermission does NOT exist, devicemotion needs no gate (Android
+    // Chrome, older iOS): it is usable straight away. Where it DOES exist (iOS 13+),
+    // stay 'idle' until the user taps U-238, since the prompt must come from a gesture.
+    const DME = DeviceMotionEvent as DeviceMotionEventiOS;
+    if (typeof DME.requestPermission !== 'function') setMotionPermission('granted');
+  }, []);
+
+  // shakeEnabled = the listener may attach (NucleusHero still self-gates on
+  // armed/active/visible). Only true on touch once devicemotion is actually usable.
+  const shakeEnabled = isTouch && motionPermission === 'granted';
+
+  // Hint copy. Touch + usable accelerometer → promise the phone shake. Touch but
+  // denied/unsupported → no shake hint (don't promise a gesture that can't fire).
+  // Desktop → the cursor copy. On touch while the iOS prompt is still pending ('idle')
+  // we also keep the phone copy, since tapping U-238 is what fires the prompt.
+  const shakeHint: string | null = !isTouch
+    ? 'Shake your cursor to split the atom'
+    : motionPermission === 'granted' || motionPermission === 'idle'
+      ? 'Shake your phone to split the atom'
+      : null;
+
+  // Request iOS devicemotion permission from the U-238 tap (a genuine user gesture,
+  // which iOS requires). No-op unless the API exists and we have not already resolved
+  // it. Wired into the isotope toggle below so the prompt rides the arming gesture.
+  const ensureMotionPermission = () => {
+    if (typeof window === 'undefined' || typeof DeviceMotionEvent === 'undefined') return;
+    const DME = DeviceMotionEvent as DeviceMotionEventiOS;
+    if (typeof DME.requestPermission !== 'function') return; // already 'granted' (no gate)
+    if (motionPermission === 'granted' || motionPermission === 'denied') return; // resolved once
+    DME.requestPermission()
+      .then((res) => setMotionPermission(res === 'granted' ? 'granted' : 'denied'))
+      .catch(() => setMotionPermission('denied'));
+  };
+
+  const armU238 = () => {
+    setIsotope(1);
+    ensureMotionPermission();
+  };
 
   // Resolve the nucleus contour paths at runtime (see import note). Empty until then;
   // NucleusHero simply draws nothing and rebuilds once they arrive.
@@ -114,6 +189,7 @@ export default function NuclearAtom({ compact = false, roomLink = true, viewport
         ink={ink}
         viewportParticles={viewportParticles}
         pointStride={lowDensity ? 2 : 1}
+        shakeEnabled={shakeEnabled}
         onFissionFire={() => setFissionFired(true)}
       >
         {!compact && (
@@ -125,12 +201,16 @@ export default function NuclearAtom({ compact = false, roomLink = true, viewport
               <div className="atom-switch" data-on={isotope}>
                 <span className="atom-thumb" aria-hidden="true" />
                 <button type="button" aria-pressed={isotope === 0} onClick={() => setIsotope(0)}>U-235</button>
-                <button type="button" aria-pressed={isotope === 1} onClick={() => setIsotope(1)}>U-238</button>
+                <button type="button" aria-pressed={isotope === 1} onClick={armU238}>U-238</button>
               </div>
             </div>
 
-            {hintVisible && (
-              <div className="atom-hint" role="status">Shake your cursor to split the atom</div>
+            {/* Hint copy follows the input device. On touch with a usable accelerometer
+                we promise the shake gesture; if devicemotion is denied or unsupported we
+                show NO shake hint at all rather than a broken promise (the atom stays a
+                beautiful, cursor-reactive visual). Desktop keeps the cursor copy. */}
+            {hintVisible && shakeHint && (
+              <div className="atom-hint" role="status">{shakeHint}</div>
             )}
           </>
         )}
